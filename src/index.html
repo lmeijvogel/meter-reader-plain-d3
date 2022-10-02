@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <title>Energie</title>
+    <script type="module" src="main.ts"></script>
+    <link rel="stylesheet" href="./styles/d3-tip.css" />
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+      <h1 id="page_title">Energie</h1>
+      <div class="row">
+          <viz-card>
+              <svg id="gas_carpet_chart_yearly" width=500 height=300></svg>
+          </viz-card>
+          <viz-card>
+              <svg id="stroom_carpet_chart_yearly" width=500 height=300></svg>
+          </viz-card>
+          <viz-card>
+              <svg id="water_carpet_chart_yearly" width=500 height=300></svg>
+          </viz-card>
+      </div>
+      <div class="row">
+          <viz-card>
+              <svg id="gas_carpet_chart_monthly" width=500 height=300></svg>
+          </viz-card>
+          <viz-card>
+              <svg id="stroom_carpet_chart_monthly" width=500 height=300></svg>
+          </viz-card>
+          <viz-card>
+              <svg id="water_carpet_chart_monthly" width=500 height=300></svg>
+          </viz-card>
+      </div>
+  </body>
+
+  <template id="card-template">
+    <style>
+    .card {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+
+        align-items: center;
+        background-color: #ffffff;
+        margin: 5px;
+
+        border: 0.5px solid #ddd;
+        border-radius: 3px;
+    }
+
+    .card-title {
+        margin: 5px;
+        padding: 0px;
+        text-align: center;
+
+        font-weight: 400;
+        font-style: italic;
+    }
+
+    </style>
+    <div class="card">
+        <h3 class="card-title"><slot name="title"></slot></h3>
+        <slot></slot>
+    </div>
+
+  </template>
+</html>

@@ -1,0 +1,31 @@
+{
+    "name": "Energie",
+    "version": "1.0.0",
+    "main": "index.js",
+    "author": "Lennaert Meijvogel",
+    "license": "GPL-3.0-only",
+    "private": false,
+    "browserslist": "> 0.5%, last 2 versions, not dead",
+    "source": "src/index.html",
+    "scripts": {
+        "start": "parcel",
+        "build": "parcel build"
+    },
+    "devDependencies": {
+        "autoprefixer": "^10.4.12",
+        "http-proxy-middleware": "^2.0.6",
+        "parcel": "^2.7.0",
+        "postcss-modules": "^4.3.0",
+        "prettier": "^2.7.1",
+        "typescript": "^4.8.4"
+    },
+    "dependencies": {
+        "@types/d3": "^7.4.0",
+        "@types/node": "^18.7.23",
+        "classnames": "^2.3.2",
+        "d3": "^7.6.1",
+        "d3-v6-tip": "^1.0.9",
+        "date-fns": "^2.29.3",
+        "date-fns-tz": "^1.3.7"
+    }
+}
