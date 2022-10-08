@@ -77,7 +77,7 @@ async function fetchTemperatureData(periodDescription: PeriodDescription): Promi
 
 fetchTemperatureData(initialPeriodDescription).then((result) => {
     const chartContainer = d3.select("#temperature_line_chart");
-    const temperatureChart = lineChart(initialPeriodDescription);
+    const temperatureChart = lineChart(initialPeriodDescription).tooltipValueFormat(".1f").tooltipDisplayableUnit("°C");
 
     [
         ["huiskamer", "#ff0000"],
@@ -146,7 +146,11 @@ const gaugeContainer = d3.select("#current_power_gauge");
 const recentCurrentContainer = d3.select("#recent_current");
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
-const recentCurrentGraph = lineChart(new LastHourDescription()).domain([-3000, 3000]);
+const recentCurrentGraph = lineChart(new LastHourDescription())
+    .domain([-3000, 3000])
+    .tooltipDateFormat("HH:mm")
+    .tooltipValueFormat("d")
+    .tooltipDisplayableUnit("W");
 
 const updatePowerUsage = () => {
     fetch("/api/stroom/recent")
