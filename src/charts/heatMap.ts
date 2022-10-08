@@ -5,6 +5,7 @@ import { monthNames } from "../lib/monthNames";
 import { MeasurementEntry } from "../models/MeasurementEntry";
 
 import { tip as d3tip } from "d3-v6-tip";
+import { PeriodDescription } from "../models/PeriodDescription";
 
 type GraphType = "30_days" | "year";
 
@@ -36,6 +37,7 @@ type Store = {
     mapY: (d: MeasurementEntry) => number;
     scaleX: d3.ScaleTime<number, number, never>;
     scaleY: d3.ScaleLinear<number, number, never>;
+    onClick: (date: Date) => void;
 };
 
 export function heatMap(graphType: GraphType) {
@@ -53,7 +55,8 @@ export function heatMap(graphType: GraphType) {
         scaleY: d3.scaleLinear(),
         min: 0,
         mapX: () => 0,
-        mapY: () => 0
+        mapY: () => 0,
+        onClick: () => {}
     };
 
     const api = {
@@ -117,6 +120,12 @@ export function heatMap(graphType: GraphType) {
             return api;
         },
 
+        onClick: (handler: (date: Date) => void) => {
+            store.onClick = handler;
+
+            return api;
+        },
+
         draw: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             ["values", "xAxis", "yAxis"].forEach((className) => addContainerIfNotExists(selection, className));
 
@@ -174,7 +183,10 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         .on("mouseover", (event, d) => {
             tip.show(event, d);
         })
-        .on("mouseout", tip.hide);
+        .on("mouseout", tip.hide)
+        .on("click", (_event, d) => {
+            store.onClick(d.timestamp);
+        });
 }
 
 function drawBorder(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
