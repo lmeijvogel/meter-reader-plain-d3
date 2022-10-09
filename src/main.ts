@@ -18,8 +18,11 @@ import { padData } from "./helpers/padData";
 import { barChart } from "./charts/barChart";
 import { GasGraphDescription, StroomGraphDescription, WaterGraphDescription } from "./models/GraphDescription";
 import { lineChart } from "./charts/lineChart";
+import { initializeNavigation } from "./navigation";
 
 defineWebComponents();
+
+const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
 
 const periodGasContainer = d3.select("#gas_period_data");
 const periodStroomContainer = d3.select("#stroom_period_data");
@@ -30,6 +33,8 @@ function selectPeriod(periodDescription: PeriodDescription) {
 }
 
 function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
+    navigation.setPeriodDescription(periodDescription);
+
     // PeriodUsage
     async function fetchPeriodData(
         fieldName: UsageField,
@@ -210,6 +215,5 @@ const updatePowerUsage = () => {
 };
 
 retrieveAndDrawPeriodCharts(MonthDescription.thisMonth());
-
 setInterval(updatePowerUsage, 5000);
 updatePowerUsage();

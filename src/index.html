@@ -1,76 +1,95 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8"/>
-    <title>Energie</title>
-    <script type="module" src="main.ts"></script>
-    <link rel="stylesheet" href="./styles/d3-tip.css" />
-    <link rel="stylesheet" href="./styles/main.css" />
-  </head>
-  <body>
-      <h1 id="page_title">Energie</h1>
-      <div class="row">
-          <viz-card>
-              <svg id="gas_period_data" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="stroom_period_data" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="water_period_data" width=500 height=300></svg>
-          </viz-card>
-      </div>
-      <div class="row">
-          <viz-card>
-              <svg id="recent_current" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="current_power_gauge" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="temperature_line_chart" width=500 height=300></svg>
-          </viz-card>
-      </div>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Energie</title>
+        <script type="module" src="main.ts"></script>
+        <link rel="stylesheet" href="./styles/d3-tip.css" />
+        <link rel="stylesheet" href="./styles/main.css" />
+        <link rel="stylesheet" href="./styles/navigation.css" />
+    </head>
+    <body>
+        <div class="navigationOverlay js-navigate-overlay" {...handlers}>
+            <div class="upButtonsContainer js-navigate-up js-buttons-top">
+                <button class="label">up</button>
+            </div>
+            <div class="row">
+                <h1 class="pageTitle js-page-title"></h1>
+            </div>
+            <div class="sideButtonsContainer prevButton js-navigate-prev js-buttons-left">
+              <button class="label">prev</button>
+            </div>
+            <div class="row">
+                <viz-card>
+                    <svg id="gas_period_data" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="stroom_period_data" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="water_period_data" width=500 height=300></svg>
+                </viz-card>
+            </div>
+            <div class="row">
+                <viz-card>
+                    <svg id="recent_current" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="current_power_gauge" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="temperature_line_chart" width=500 height=300></svg>
+                </viz-card>
+            </div>
 
-      <div class="row">
-          <viz-card>
-              <svg id="gas_heatmap_yearly" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="stroom_heatmap_yearly" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="water_heatmap_yearly" width=500 height=300></svg>
-          </viz-card>
-      </div>
-      <div class="row">
-          <viz-card>
-              <svg id="gas_heatmap_monthly" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="stroom_heatmap_monthly" width=500 height=300></svg>
-          </viz-card>
-          <viz-card>
-              <svg id="water_heatmap_monthly" width=500 height=300></svg>
-          </viz-card>
-      </div>
-      <div id="tooltip"></div>
-  </body>
+            <div class="row">
+                <viz-card>
+                    <svg id="gas_heatmap_yearly" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="stroom_heatmap_yearly" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="water_heatmap_yearly" width=500 height=300></svg>
+                </viz-card>
+            </div>
+            <div class="row">
+                <viz-card>
+                    <svg id="gas_heatmap_monthly" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="stroom_heatmap_monthly" width=500 height=300></svg>
+                </viz-card>
+                <viz-card>
+                    <svg id="water_heatmap_monthly" width=500 height=300></svg>
+                </viz-card>
+            </div>
+            <div class="sideButtonsContainer forwardButtons js-buttons-right">
+                <div class="forwardButton nextButton js-navigate-next">
+                    <button class="label">next</button>
+                </div>
+                <div class="forwardButton todayButton js-navigate-today">
+                    <button class="label">today</button>
+                </div>
+            </div>
+        </div>
+        <div id="tooltip"></div>
+    </body>
 
-  <template id="card-template">
-    <style>
-    .card {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
+    <template id="card-template">
+        <style>
+.card {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 
-        align-items: center;
-        background-color: #ffffff;
-        margin: 5px;
+    align-items: center;
+    background-color: #ffffff;
+    margin: 5px;
 
-        border: 0.5px solid #ddd;
-        border-radius: 3px;
-    }
+    border: 0.5px solid #ddd;
+    border-radius: 3px;
+}
 
     .card-title {
         margin: 5px;
@@ -81,11 +100,13 @@
         font-style: italic;
     }
 
-    </style>
-    <div class="card">
-        <h3 class="card-title"><slot name="title"></slot></h3>
-        <slot></slot>
-    </div>
+        </style>
+        <div class="card">
+            <h3 class="card-title"><slot name="title"></slot></h3>
+            <slot></slot>
+        </div>
 
-  </template>
+    </template>
+
+
 </html>

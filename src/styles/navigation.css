@@ -1,0 +1,109 @@
+.navigationOverlay {
+    height: 100%;
+}
+
+.pageTitle {
+    text-align: center;
+    cursor: pointer;
+}
+
+.upButtonsContainer {
+    position: absolute;
+
+    background-color: #e0e0e0;
+    height: 60px;
+    width: 100%;
+
+    top: -80px;
+
+    padding: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    cursor: pointer;
+
+    transition: top 100ms;
+}
+
+.upButtonsContainer.visible {
+    top: 0px;
+}
+
+.sideButtonsContainer {
+    position: fixed;
+
+    background-color: #e0e0e0;
+    height: 100%;
+    width: 60px;
+
+    top: 0;
+
+    padding: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: space-around;
+    align-items: center;
+}
+
+@media screen and (max-width: 575px) {
+    .button {
+        display: none;
+    }
+}
+
+.prevButton {
+    left: -80px;
+
+    transition: left 100ms;
+
+    cursor: pointer;
+}
+
+.prevButton.visible {
+    left: 0;
+}
+
+.forwardButtons {
+    width: 60px;
+
+    right: -80px;
+
+    transition: right 100ms;
+}
+
+.forwardButtons.visible {
+    right: 0;
+}
+
+.forwardButton {
+    display: flex;
+
+    width: 60px;
+    height: 60px;
+
+    align-items: center;
+    background-color: #d8d8d8;
+    cursor: pointer;
+}
+
+.nextButton {
+    flex-grow: 2;
+    margin-bottom: 4px;
+}
+.todayButton {
+    flex-grow: 0.5;
+}
+
+.label {
+    width: 100%;
+    height: 100%;
+
+    border: 0;
+    text-align: center;
+}
