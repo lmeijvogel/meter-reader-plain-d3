@@ -8,11 +8,14 @@
     "browserslist": "> 0.5%, last 2 versions, not dead",
     "source": "src/index.html",
     "scripts": {
+        "dev": "concurrently -n react,api \"npm:start\" \"npm:start-api\"",
         "start": "parcel",
+        "start-api": "cd ../api ; ruby app.rb",
         "build": "parcel build"
     },
     "devDependencies": {
         "autoprefixer": "^10.4.12",
+        "concurrently": "^7.4.0",
         "http-proxy-middleware": "^2.0.6",
         "parcel": "^2.7.0",
         "postcss-modules": "^4.3.0",

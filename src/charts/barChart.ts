@@ -14,6 +14,7 @@ type Store = {
     relativeMinMax: boolean;
     graphTickPositions: "on_value" | "between_values";
     unit: string;
+    onValueClick: (periodDescription: PeriodDescription) => void;
 };
 
 const width = 480;
@@ -40,7 +41,8 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         graphTickPositions: "on_value",
         relativeMinMax: true,
         data: [],
-        unit: graphDescription.displayableUnit
+        unit: graphDescription.displayableUnit,
+        onValueClick: () => {}
     };
 
     const scaleX = d3.scaleBand<Date>().padding(0.15);
@@ -152,6 +154,12 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             return api;
         },
 
+        onClick: (handler: (periodDescription: PeriodDescription) => void) => {
+            store.onValueClick = handler;
+
+            return api;
+        },
+
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             if (firstDrawCall) {
                 addSvgChildTags(selection);
@@ -178,7 +186,10 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
                 .selectAll("rect")
                 .data(store.data)
                 .join("rect")
-                // .on("click", store.onValueClick)
+                .on("click", (_event: any, d) => {
+                    const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
+                    store.onValueClick(clickedPeriod);
+                })
                 .attr("x", (el) => calculateBarXPosition(el.timestamp))
                 .attr("y", (el) => scaleY(el.value))
                 .attr("height", (el) => scaleY(0) - scaleY(el.value))

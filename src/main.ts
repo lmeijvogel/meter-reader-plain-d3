@@ -47,21 +47,21 @@ function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
 
     fetchPeriodData("gas", periodDescription).then((values) => {
         const graphDescription = new GasGraphDescription(periodDescription);
-        const api = barChart(periodDescription, graphDescription).data(values);
+        const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
         api.call(periodGasContainer);
     });
 
     fetchPeriodData("stroom", periodDescription).then((values) => {
         const graphDescription = new StroomGraphDescription(periodDescription);
-        const api = barChart(periodDescription, graphDescription).data(values);
+        const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
         api.call(periodStroomContainer);
     });
 
     fetchPeriodData("water", periodDescription).then((values) => {
         const graphDescription = new WaterGraphDescription(periodDescription);
-        const api = barChart(periodDescription, graphDescription).data(values);
+        const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
         api.call(periodWaterContainer);
     });
@@ -183,7 +183,6 @@ const updatePowerUsage = () => {
     fetch("/api/stroom/recent")
         .then((response) => response.json())
         .then((json) => {
-            console.log({ json });
             return json;
         })
         .then((json) => ({
