@@ -1,22 +1,24 @@
+import * as d3 from "d3";
+
+import { costsFor, PriceCategory } from "./helpers/PriceCalculator";
+
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { UsageField } from "./models/UsageData";
 
 import { heatMap } from "./charts/heatMap";
 import { gauge } from "./charts/gauge";
-import * as d3 from "d3";
 
 import { defineWebComponents } from "./customElements/VizCard";
-import {
-    DayDescription,
-    HourDescription,
-    LastHourDescription,
-    MonthDescription,
-    PeriodDescription
-} from "./models/PeriodDescription";
+import { DayDescription, LastHourDescription, MonthDescription, PeriodDescription } from "./models/PeriodDescription";
 import { padData } from "./helpers/padData";
 import { barChart } from "./charts/barChart";
-import { GasGraphDescription, StroomGraphDescription, WaterGraphDescription } from "./models/GraphDescription";
+import {
+    GasGraphDescription,
+    GraphDescription,
+    StroomGraphDescription,
+    WaterGraphDescription
+} from "./models/GraphDescription";
 import { lineChart } from "./charts/lineChart";
 import { initializeNavigation } from "./navigation";
 
@@ -54,6 +56,9 @@ function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
         const graphDescription = new GasGraphDescription(periodDescription);
         const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
+        const cardTitle = createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
+        setCardTitle("js-period-gas-title", cardTitle);
+
         api.call(periodGasContainer);
     });
 
@@ -61,12 +66,18 @@ function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
         const graphDescription = new StroomGraphDescription(periodDescription);
         const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
+        const cardTitle = createPeriodDataCardTitle(values, "stroom", graphDescription, periodDescription);
+        setCardTitle("js-period-stroom-title", cardTitle);
+
         api.call(periodStroomContainer);
     });
 
     fetchPeriodData("water", periodDescription).then((values) => {
         const graphDescription = new WaterGraphDescription(periodDescription);
         const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
+
+        const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
+        setCardTitle("js-period-water-title", cardTitle);
 
         api.call(periodWaterContainer);
     });
@@ -213,6 +224,31 @@ const updatePowerUsage = () => {
             recentCurrentContainer.call(recentCurrentGraph.call);
         });
 };
+
+function createPeriodDataCardTitle(
+    values: MeasurementEntry[],
+    priceCategory: PriceCategory,
+    graphDescription: GraphDescription,
+    periodDescription: PeriodDescription
+): string {
+    const usage = values.map((v) => v.value).reduce((acc: number, el: number) => acc + el, 0);
+    const costs = costsFor(usage, priceCategory, periodDescription.startOfPeriod());
+
+    const categoryName = priceCategory === "gas" ? "Gas" : priceCategory === "stroom" ? "Stroom" : "Water";
+
+    return `${categoryName}: ${d3.format(graphDescription.tooltipValueFormat)(usage)} ${
+        graphDescription.displayableUnit
+    } (${costs})`;
+}
+
+function setCardTitle(selector: string, title: string) {
+    const titleElement = document.getElementsByClassName(selector)[0];
+
+    if (!titleElement) {
+        throw new Error(`Could not find selector ${selector}`);
+    }
+    titleElement.textContent = title;
+}
 
 retrieveAndDrawPeriodCharts(MonthDescription.thisMonth());
 setInterval(updatePowerUsage, 5000);

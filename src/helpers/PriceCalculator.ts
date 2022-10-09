@@ -1,8 +1,6 @@
-export enum PriceCategory {
-    Gas,
-    Stroom,
-    Water
-}
+import { assertNever } from "../lib/assertNever";
+
+export type PriceCategory = "gas" | "stroom" | "water";
 
 export class Money {
     constructor(private readonly euros: number) {}
@@ -63,12 +61,14 @@ export function costsFor(units: number, priceCategory: PriceCategory, date: Date
     const currentRate = rateForDate(date);
 
     switch (priceCategory) {
-        case PriceCategory.Gas:
+        case "gas":
             return currentRate.gasPrice.multiply(units);
-        case PriceCategory.Stroom:
+        case "stroom":
             return currentRate.stroomPrice.multiply(units);
-        case PriceCategory.Water:
+        case "water":
             return currentRate.waterPrice.multiply(units);
+        default:
+            return assertNever(priceCategory);
     }
 }
 
