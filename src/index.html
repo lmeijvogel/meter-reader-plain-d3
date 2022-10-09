@@ -21,47 +21,59 @@
             </div>
             <div class="row">
                 <viz-card>
-                    <svg id="gas_period_data" width=500 height=300></svg>
+                    <h3 slot="title">Gas</h3>
+                    <svg id="gas_period_data" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="stroom_period_data" width=500 height=300></svg>
+                    <h3 slot="title">Stroom</h3>
+                    <svg id="stroom_period_data" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="water_period_data" width=500 height=300></svg>
+                    <h3 slot="title">Water</h3>
+                    <svg id="water_period_data" width=480 height=250></svg>
                 </viz-card>
             </div>
             <div class="row">
                 <viz-card>
-                    <svg id="recent_current" width=500 height=300></svg>
+                    <h3 slot="title">Recente energie (W)</h3>
+                    <svg id="recent_current" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="current_power_gauge" width=500 height=300></svg>
+                    <h3 slot="title">Huidige energie (W)</h3>
+                    <svg id="current_power_gauge" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="temperature_line_chart" width=500 height=300></svg>
+                    <h3 slot="title">Temperatuur</h3>
+                    <svg id="temperature_line_chart" width=480 height=250></svg>
                 </viz-card>
             </div>
 
             <div class="row">
                 <viz-card>
-                    <svg id="gas_heatmap_yearly" width=500 height=300></svg>
+                    <h3 slot="title">Gas (laatste jaar)</h3>
+                    <svg id="gas_heatmap_yearly" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="stroom_heatmap_yearly" width=500 height=300></svg>
+                    <h3 slot="title">Stroom (laatste jaar)</h3>
+                    <svg id="stroom_heatmap_yearly" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="water_heatmap_yearly" width=500 height=300></svg>
+                    <h3 slot="title">Water (laatste jaar)</h3>
+                    <svg id="water_heatmap_yearly" width=480 height=250></svg>
                 </viz-card>
             </div>
             <div class="row">
                 <viz-card>
-                    <svg id="gas_heatmap_monthly" width=500 height=300></svg>
+                    <h3 slot="title">Gas (30 dagen)</h3>
+                    <svg id="gas_heatmap_monthly" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="stroom_heatmap_monthly" width=500 height=300></svg>
+                    <h3 slot="title">Stroom (30 dagen)</h3>
+                    <svg id="stroom_heatmap_monthly" width=480 height=250></svg>
                 </viz-card>
                 <viz-card>
-                    <svg id="water_heatmap_monthly" width=500 height=300></svg>
+                    <h3 slot="title">Water (30 dagen)</h3>
+                    <svg id="water_heatmap_monthly" width=480 height=250></svg>
                 </viz-card>
             </div>
             <div class="sideButtonsContainer forwardButtons js-buttons-right">
@@ -81,12 +93,11 @@
 .card {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
 
-    align-items: center;
     background-color: #ffffff;
     margin: 5px;
 
+    padding: 5px;
     border: 0.5px solid #ddd;
     border-radius: 3px;
 }
@@ -102,7 +113,7 @@
 
         </style>
         <div class="card">
-            <h3 class="card-title"><slot name="title"></slot></h3>
+            <div class="card-title"><slot name="title"></slot></div>
             <slot></slot>
         </div>
 

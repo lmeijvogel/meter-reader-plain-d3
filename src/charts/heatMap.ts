@@ -13,8 +13,8 @@ const borderGrey = "#ccc";
 const xAxisWidth = 40;
 const yAxisHeight = 20;
 
-const width = 500;
-const height = 300;
+const width = 480;
+const height = 240;
 
 const padding = 10;
 
