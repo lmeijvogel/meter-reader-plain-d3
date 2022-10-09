@@ -177,7 +177,7 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         .attr("x", (d) => store.mapX(d))
         .attr("y", (d) => store.mapY(d))
         .attr("width", store.cellWidth)
-        .attr("height", 10)
+        .attr("height", store.cellHeight)
         .attr("fill", (d) => colorScale(d.value))
         .text((d) => d.value)
         .on("mouseover", (event, d) => {
@@ -196,7 +196,6 @@ function drawBorder(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         .attr("width", width - 2 * padding)
         .attr("height", height - 2 * padding)
         .attr("fill", "none")
-        .attr("stroke", borderGrey)
         .attr("stroke-width", "1px");
 }
 
