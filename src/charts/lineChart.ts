@@ -4,6 +4,7 @@ import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { format } from "date-fns";
+import { getWindowWidth } from "../lib/getWindowWidth";
 
 type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string }>;
 
@@ -44,6 +45,12 @@ export function lineChart(periodDescription: PeriodDescription) {
     };
 
     let firstDrawCall = true;
+
+    let windowWidth = getWindowWidth();
+
+    window.addEventListener("resize", () => {
+        windowWidth = getWindowWidth();
+    });
 
     const minimumX = padding.left + axisWidth;
     const maximumX = width - padding.right;
@@ -101,9 +108,20 @@ export function lineChart(periodDescription: PeriodDescription) {
                     return;
                 }
 
-                d3.select("#tooltip")
-                    .style("left", event.pageX + 20 + "px")
-                    .style("top", event.pageY - 58 + "px")
+                const tooltipWidth = 250; // Matches the CSS value
+                const tooltipX = event.pageX + 20;
+
+                const tooltipSelector = d3.select("#tooltip");
+
+                const fitsOnRight = tooltipX + tooltipWidth < windowWidth;
+
+                // Show the tooltip to the left if it doesn't fit to the right of the cursor
+                const left = fitsOnRight ? event.pageX + 20 + "px" : event.pageX - tooltipWidth - 80 + "px";
+
+                tooltipSelector
+                    .style("top", event.pageY - 170 + "px")
+                    .style("left", left)
+
                     .html(() => {
                         // This allows to find the closest X index of the mouse:
                         var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;

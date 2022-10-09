@@ -1,3 +1,5 @@
+import { getWindowWidth } from "./lib/getWindowWidth";
+
 import { DayDescription, PeriodDescription, YearDescription } from "./models/PeriodDescription";
 
 const displayThresholdInPx = 60;
@@ -70,11 +72,6 @@ export function initializeNavigation(onPeriodChange: (periodDescription: PeriodD
 
 function setPageTitle(title: string) {
     document.getElementsByClassName("js-page-title")[0].textContent = title;
-}
-
-function getWindowWidth() {
-    const rects = document.body.getClientRects();
-    return rects[0].width;
 }
 
 const setMouseCoords = (x: number, y: number) => {
