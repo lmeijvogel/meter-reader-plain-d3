@@ -6,7 +6,7 @@ import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasuremen
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { UsageField } from "./models/UsageData";
 
-import { heatMap } from "./charts/heatMap";
+import { formatMonthNames, heatMap } from "./charts/heatMap";
 import { gauge } from "./charts/gauge";
 
 import { defineWebComponents } from "./customElements/VizCard";
@@ -21,6 +21,7 @@ import {
 } from "./models/GraphDescription";
 import { lineChart } from "./charts/lineChart";
 import { initializeNavigation } from "./navigation";
+import { getDate, getDay } from "date-fns";
 
 defineWebComponents();
 
@@ -141,6 +142,7 @@ loadData("gas", "last_year").then((result) => {
         .colors("#ffffff", "#e73710", "#791d09")
         .data(result)
         .unit("m³")
+        .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
         .draw(chartContainer);
 });
@@ -152,6 +154,7 @@ loadData("stroom", "last_year").then((result) => {
         .colors("#ffffff", "#f0ad4e", "#784805")
         .data(result)
         .unit("kWh")
+        .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
         .draw(chartContainer);
 });
@@ -163,6 +166,7 @@ loadData("water", "last_year").then((result) => {
         .colors("#ffffff", "#428bca", "#224767")
         .data(result)
         .unit("L")
+        .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
         .draw(chartContainer);
 });
@@ -170,19 +174,35 @@ loadData("water", "last_year").then((result) => {
 loadData("gas", "last_30_days").then((result) => {
     const chartContainer = d3.select("#gas_heatmap_monthly");
 
-    heatMap("30_days").colors("#ffffff", "#e73710", "#791d09").data(result).unit("m³").draw(chartContainer);
+    heatMap("30_days")
+        .colors("#ffffff", "#e73710", "#791d09")
+        .data(result)
+        .unit("m³")
+        .tickFormat((value: Date) => getDate(value).toString())
+        .draw(chartContainer);
 });
 
 loadData("stroom", "last_30_days").then((result) => {
     const chartContainer = d3.select("#stroom_heatmap_monthly");
 
-    heatMap("30_days").colors("#ffffff", "#f0ad4e", "#784805").min(0.1).data(result).unit("kWh").draw(chartContainer);
+    heatMap("30_days")
+        .colors("#ffffff", "#f0ad4e", "#784805")
+        .min(0.1)
+        .data(result)
+        .unit("kWh")
+        .tickFormat((value: Date) => getDate(value).toString())
+        .draw(chartContainer);
 });
 
 loadData("water", "last_30_days").then((result) => {
     const chartContainer = d3.select("#water_heatmap_monthly");
 
-    heatMap("30_days").colors("#ffffff", "#428bca", "#224767").data(result).unit("L").draw(chartContainer);
+    heatMap("30_days")
+        .colors("#ffffff", "#428bca", "#224767")
+        .data(result)
+        .unit("L")
+        .tickFormat((value: Date) => getDate(value).toString())
+        .draw(chartContainer);
 });
 
 const gaugeContainer = d3.select("#current_power_gauge");

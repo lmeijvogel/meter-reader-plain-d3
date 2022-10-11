@@ -37,8 +37,13 @@ type Store = {
     mapY: (d: MeasurementEntry) => number;
     scaleX: d3.ScaleTime<number, number, never>;
     scaleY: d3.ScaleLinear<number, number, never>;
+    tickFormat: (domainValue: Date) => string;
     onClick: (date: Date) => void;
 };
+
+export function formatMonthNames(domainValue: d3.NumberValue): string {
+    return monthNames[getMonth(domainValue as any) + 1]; // Months are 0-based
+}
 
 export function heatMap(graphType: GraphType) {
     let tip: any;
@@ -56,7 +61,8 @@ export function heatMap(graphType: GraphType) {
         min: 0,
         mapX: () => 0,
         mapY: () => 0,
-        onClick: () => {}
+        onClick: () => {},
+        tickFormat: (value) => value.toString()
     };
 
     const api = {
@@ -117,6 +123,11 @@ export function heatMap(graphType: GraphType) {
         min: (min: number) => {
             store.min = min;
 
+            return api;
+        },
+
+        tickFormat: (formatter: (domainValue: Date) => string) => {
+            store.tickFormat = formatter;
             return api;
         },
 
@@ -200,9 +211,7 @@ function drawBorder(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
 }
 
 function drawAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
-    const xAxis = d3.axisBottom(store.scaleX).tickFormat((domainValue: d3.NumberValue) => {
-        return monthNames[getMonth(domainValue as any) + 1]; // Months are 0-based
-    });
+    const xAxis = d3.axisBottom(store.scaleX).tickFormat(store.tickFormat);
 
     const xAxisContainer = svg.select(".xAxis").attr("transform", `translate(0, ${store.scaleY(0)})`);
 
