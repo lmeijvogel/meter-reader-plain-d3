@@ -1,5 +1,6 @@
 import { PeriodDescription } from "./PeriodDescription";
 import { UsageField } from "../models/UsageData";
+import { assertNever } from "../lib/assertNever";
 
 export abstract class GraphDescription {
     constructor(protected readonly periodDescription: PeriodDescription) {}
