@@ -86,7 +86,7 @@ export class StroomGraphDescription extends GraphDescription {
             case "month":
                 return 20;
             case "day":
-                return 2;
+                return 1;
             default:
                 return assertNever(this.periodSize);
         }
