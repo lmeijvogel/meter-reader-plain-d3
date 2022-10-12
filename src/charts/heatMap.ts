@@ -190,7 +190,7 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         .attr("y", (d) => store.mapY(d))
         .attr("width", store.cellWidth)
         .attr("height", store.cellHeight)
-        .attr("fill", (d) => colorScale(d.value))
+        .attr("fill", (d) => colorScale(d.value ?? 0))
         .text((d) => d.value)
         .on("mouseover", (event, d) => {
             tip.show(event, d);
