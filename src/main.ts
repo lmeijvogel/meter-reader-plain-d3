@@ -21,7 +21,7 @@ import {
 } from "./models/GraphDescription";
 import { lineChart } from "./charts/lineChart";
 import { initializeNavigation } from "./navigation";
-import { getDate, getDay } from "date-fns";
+import { getDate, getDay, subHours } from "date-fns";
 
 defineWebComponents();
 
@@ -204,47 +204,6 @@ loadData("water", "last_30_days").then((result) => {
         .tickFormat((value: Date) => getDate(value).toString())
         .draw(chartContainer);
 });
-
-const gaugeContainer = d3.select("#current_power_gauge");
-const recentCurrentContainer = d3.select("#recent_current");
-const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
-
-const recentCurrentGraph = lineChart(new LastHourDescription())
-    .domain([-3000, 3000])
-    .tooltipDateFormat("HH:mm")
-    .tooltipValueFormat("d")
-    .tooltipDisplayableUnit("W");
-
-const updatePowerUsage = () => {
-    fetch("/api/stroom/recent")
-        .then((response) => response.json())
-        .then((json) => {
-            return json;
-        })
-        .then((json) => ({
-            current: json["current"].map(responseRowToMeasurementEntry),
-            generation: json["generation"].map(responseRowToMeasurementEntry)
-        }))
-        .then((fieldsKW: { current: MeasurementEntry[]; generation: MeasurementEntry[] }) => {
-            const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
-            const generationInW = fieldsKW.generation.map((entry) => ({ ...entry, value: entry.value * -1000 }));
-
-            const lastCurrent = currentInW[currentInW.length - 1]?.value ?? 0;
-            const lastGeneration = generationInW[generationInW.length - 1]?.value ?? 0;
-
-            const newValue = lastCurrent + lastGeneration;
-
-            powerUsageGauge.value(newValue);
-
-            gaugeContainer.call(powerUsageGauge.call);
-
-            recentCurrentGraph.setSeries("current", currentInW, "#f0ad4e");
-            recentCurrentGraph.setSeries("generation", generationInW, "#adf04e");
-
-            recentCurrentContainer.call(recentCurrentGraph.call);
-        });
-};
-
 function createPeriodDataCardTitle(
     values: MeasurementEntry[],
     priceCategory: PriceCategory,
@@ -270,6 +229,91 @@ function setCardTitle(selector: string, title: string) {
     titleElement.textContent = title;
 }
 
+const gaugeContainer = d3.select("#current_power_gauge");
+const recentCurrentContainer = d3.select("#recent_current");
+const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
+
+const recentCurrentGraph = lineChart(new LastHourDescription())
+    .domain([-3000, 3000])
+    .tooltipDateFormat("HH:mm")
+    .tooltipValueFormat("d")
+    .tooltipDisplayableUnit("W");
+
+type CurrentFields = { current: MeasurementEntry[]; generation: MeasurementEntry[] };
+
+async function retrievePowerUsage(page = 0) {
+    return fetch(`/api/stroom/recent?page=${page}`)
+        .then((response) => response.json())
+        .then((json) => {
+            const fieldsKW: CurrentFields = {
+                current: json["current"].map(responseRowToMeasurementEntry),
+                generation: json["generation"].map(responseRowToMeasurementEntry)
+            };
+
+            return fieldsKW;
+        });
+}
+
+const powerUsage: CurrentFields = {
+    current: [],
+    generation: []
+};
+
+async function updatePowerUsage(page = 0) {
+    const newValues = await retrievePowerUsage(page);
+
+    powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
+    powerUsage.generation = addAndReplaceValues(powerUsage.generation, newValues.generation);
+
+    drawPowerUsage(powerUsage);
+}
+
+function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
+    const addedValues = newValues.filter((newValue) => !existing.some((m) => m.timestamp === newValue.timestamp));
+
+    const tooOld = subHours(new Date(), 1);
+
+    const result = [...existing, ...addedValues].filter((m) => m.timestamp >= tooOld);
+
+    return result;
+}
+
+function drawPowerUsage(fieldsKW: CurrentFields) {
+    const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
+    const generationInW = fieldsKW.generation.map((entry) => ({ ...entry, value: entry.value * -1000 }));
+
+    const lastCurrent = currentInW[currentInW.length - 1]?.value ?? 0;
+    const lastGeneration = generationInW[generationInW.length - 1]?.value ?? 0;
+
+    const newValue = lastCurrent + lastGeneration;
+
+    powerUsageGauge.value(newValue);
+
+    gaugeContainer.call(powerUsageGauge.call);
+
+    recentCurrentGraph.setSeries("current", currentInW, "#f0ad4e");
+    recentCurrentGraph.setSeries("generation", generationInW, "#adf04e");
+
+    recentCurrentContainer.call(recentCurrentGraph.call);
+}
+
 retrieveAndDrawPeriodCharts(MonthDescription.thisMonth());
-setInterval(updatePowerUsage, 5000);
-updatePowerUsage();
+retrieveAndDrawPowerUsageInBatches();
+
+async function retrieveAndDrawPowerUsageInBatches() {
+    for (let i = 0; i < 6; i++) {
+        const batch = await retrievePowerUsage(i);
+
+        powerUsage.current = sortByTimestamp([...batch.current, ...powerUsage.current]);
+        powerUsage.generation = sortByTimestamp([...batch.generation, ...powerUsage.generation]);
+
+        drawPowerUsage(powerUsage);
+    }
+
+    // Done with the batches: Only set interval now, now that we're in a known state.
+    setInterval(updatePowerUsage, 5000);
+}
+
+function sortByTimestamp(entries: MeasurementEntry[]): MeasurementEntry[] {
+    return d3.sort(entries, (a, b) => (a.timestamp < b.timestamp ? -1 : 1));
+}
