@@ -39,16 +39,6 @@ export abstract class GraphDescription {
     }
 }
 
-function range(start: number, end: number): number[] {
-    const result = [];
-
-    for (let n = start; n < end; n++) {
-        result.push(n);
-    }
-
-    return result;
-}
-
 export class GasGraphDescription extends GraphDescription {
     readonly barColor = "#e73710";
     readonly lightColor = "#e73710";
@@ -78,6 +68,10 @@ export class StroomGraphDescription extends GraphDescription {
     readonly darkColor = "#784805";
     readonly fieldName = "stroom";
     readonly displayableUnit = "kWh";
+
+    get minY() {
+        return -this.maxY;
+    }
 
     get maxY() {
         switch (this.periodSize) {

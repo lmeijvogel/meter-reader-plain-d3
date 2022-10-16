@@ -326,8 +326,8 @@ export class DayDescription extends PeriodDescription {
         return addMinutes(date, -30);
     }
 
-    atIndex(date: Date): HourDescription {
-        return new HourDescription(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours());
+    atIndex(_date: Date): DayDescription {
+        return this; // HourDescription is not fully supported.
     }
 
     normalize(date: Date) {

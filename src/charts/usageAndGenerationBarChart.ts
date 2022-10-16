@@ -1,16 +1,36 @@
 import * as d3 from "d3";
 import { GraphDescription } from "../models/GraphDescription";
+import { MeasurementEntry } from "../models/MeasurementEntry";
 import { PeriodDescription } from "../models/PeriodDescription";
-import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { tip as d3tip } from "d3-v6-tip";
-import { format } from "date-fns";
+import { format, isEqual } from "date-fns";
+
+type Data = {
+    consumption: MeasurementEntry[];
+    generation: MeasurementEntry[];
+    backDelivery: MeasurementEntry[];
+};
+
+type ConsolidatedData = {
+    timestamp: Date;
+    consumption: number;
+    generation: number;
+    backDelivery: number;
+};
+
+type PowerSourcesAndBackDelivery = {
+    solarSource: number;
+    gridSource: number;
+    backDelivery: number;
+    timestamp: Date;
+};
 
 type Store = {
     periodDescription: PeriodDescription;
     barColor: string;
     hasTextLabels: boolean;
-    data: ValueWithTimestamp[];
+    data: PowerSourcesAndBackDelivery[];
     relativeMinMax: boolean;
     graphTickPositions: "on_value" | "between_values";
     unit: string;
@@ -29,7 +49,10 @@ const padding = {
 
 const axisWidth = 50;
 
-export function barChart(initialPeriodDescription: PeriodDescription, graphDescription: GraphDescription) {
+export function usageAndGenerationBarChart(
+    initialPeriodDescription: PeriodDescription,
+    graphDescription: GraphDescription
+) {
     let tip: any;
 
     let firstDrawCall = true;
@@ -48,7 +71,10 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
     const scaleX = d3.scaleBand<Date>().padding(0.15);
     const scaleXForInversion = d3.scaleTime();
 
-    const scaleY = d3.scaleLinear().clamp(true);
+    const scaleY = d3
+        .scaleLinear()
+        .range([height - padding.bottom - xAxisHeight(), padding.top])
+        .clamp(true);
     const yAxis = d3.axisLeft(scaleY);
 
     const renderXAxis = (xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
@@ -109,15 +135,18 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         return !!pos ? pos : 0;
     };
 
-    const getDomain = (): number[] => {
-        return [graphDescription.minY, graphDescription.maxY];
+    const getRelativeDomain = (): number[] => {
+        const minY = store.data.reduce((min, el) => Math.min(el.backDelivery, min), 0);
+        const maxY = store.data.reduce((max, el) => Math.max(el.gridSource + el.solarSource, max), 0);
+
+        return [minY, maxY];
     };
 
     const updateScales = (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
         const { periodDescription } = store;
 
-        const domainY = store.relativeMinMax ? getDomain() : [graphDescription.minY, graphDescription.maxY];
-        scaleY.domain(domainY).range([height - padding.bottom - xAxisHeight(), padding.top]);
+        const domainY = store.relativeMinMax ? getRelativeDomain() : [graphDescription.minY, graphDescription.maxY];
+        scaleY.domain(domainY);
 
         const domainX = periodDescription
             .getExpectedDomainValues()
@@ -143,18 +172,29 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .call(yAxis as any);
     };
 
-    function drawBars(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+    function drawBars(
+        selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+        data: PowerSourcesAndBackDelivery[],
+        field: Exclude<keyof PowerSourcesAndBackDelivery, "timestamp">,
+        color: string,
+        onTopOf?: Exclude<keyof PowerSourcesAndBackDelivery, "timestamp">
+    ) {
         selection
-            .select("g.values")
+            .select(`g.values-${field}`)
             .selectAll("rect")
-            .data(store.data)
+            .data(data)
             .join("rect")
-            .attr("x", (el) => calculateBarXPosition(el.timestamp))
-            .attr("y", (el) => scaleY(el.value))
-            .attr("height", (el) => scaleY(0) - scaleY(el.value))
+            .attr("x", (el) => {
+                return calculateBarXPosition(el.timestamp);
+            })
+            .attr("y", (el) =>
+                onTopOf ? scaleY(el[onTopOf]) - (scaleY(0) - scaleY(el[field])) : scaleY(Math.max(0, el[field]))
+            )
+            .attr("height", (el) => Math.abs(scaleY(el[field]) - scaleY(0)))
             .attr("width", scaleX.bandwidth())
-            .attr("fill", store.barColor)
-            .attr("data-value", (el) => el.value)
+            .attr("fill", color)
+            .attr("data-value", (el) => el[field])
+            .attr("data-pos", onTopOf ?? "")
             .on("click", (_event: any, d) => {
                 const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
                 store.onValueClick(clickedPeriod);
@@ -171,8 +211,8 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
     }
 
     const api = {
-        data(data: ValueWithTimestamp[]) {
-            store.data = data;
+        data(data: Data) {
+            store.data = prepareForBars(consolidateData(data));
 
             return api;
         },
@@ -191,10 +231,28 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
                 tip = d3tip()
                     .attr("class", "d3-tip")
                     .offset([-10, 0])
-                    .html((_event: unknown, d: ValueWithTimestamp) => {
+                    .html((_event: unknown, d: PowerSourcesAndBackDelivery) => {
                         const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
 
-                        const contents = `${dateString}<br />value: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
+                        const rows = [`<dt>Grid</dt><dd><b>${d3.format(".2f")(d.gridSource)}</b> ${store.unit}</dd>`];
+
+                        if (Math.abs(d.solarSource) > 0.01) {
+                            rows.push(
+                                `<dt>Panelen</dt><dd><b>${d3.format(".2f")(d.solarSource)}</b> ${store.unit}</dd>`
+                            );
+                        }
+
+                        if (Math.abs(d.backDelivery) > 0.01) {
+                            rows.push(
+                                `<dt>Geleverd: </dt><dd><b>${d3.format(".2f")(-d.backDelivery)}</b> ${store.unit}</dd>`
+                            );
+                        }
+
+                        const contents = `${dateString}<br />
+                            <dl>
+                            ${rows.join("")}
+                            </dl>
+                        `;
 
                         return contents;
                     });
@@ -205,105 +263,60 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
             updateScales(selection);
 
-            drawBars(selection);
+            drawBars(selection, store.data, "solarSource", "#55ff10");
+            drawBars(selection, store.data, "gridSource", graphDescription.barColor, "solarSource");
+            drawBars(selection, store.data, "backDelivery", "#55ff10");
         }
     };
 
     return api;
-    // brushSvg.call(brush);
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["gridLines", "additionalInfo", "values", "xAxis", "yAxis"].forEach((name) => {
+    [
+        "gridLines",
+        "additionalInfo",
+        "values-solarSource",
+        "values-backDelivery",
+        "values-gridSource",
+        "xAxis",
+        "yAxis"
+    ].forEach((name) => {
         selection.append("g").attr("class", name);
     });
 }
 
-// protected onValueClick = (_event: unknown, value: ValueWithTimestamp) => {
-// this.props.onBarClick(value.timestamp);
-// };
+function consolidateData(input: Data): ConsolidatedData[] {
+    const getDates = (input: MeasurementEntry[]) => input.map((el) => el.timestamp);
+    const dataFields: (keyof Data)[] = ["consumption", "generation", "backDelivery"];
+    const timestamps = d3.sort(d3.union(dataFields.flatMap((field) => getDates(input[field]))));
 
-// private buildTooltipContentsForSingleMeasurement(valueWithTimestamp: ValueWithTimestamp) {
-// const formattedValue = d3.format(this.props.graphDescription.tooltipValueFormat)(valueWithTimestamp.value);
+    const result: ConsolidatedData[] = [];
 
-// return `${this.props.periodDescription
-// .atIndex(valueWithTimestamp.timestamp)
-// .toShortTitle()}:<br />${formattedValue} ${this.props.graphDescription.displayableUnit}`;
-// }
+    for (const ts of timestamps) {
+        const row = {
+            consumption: input.consumption.find((el) => isEqual(el.timestamp, ts))?.value ?? 0,
+            generation: input.generation.find((el) => isEqual(el.timestamp, ts))?.value ?? 0,
+            backDelivery: input.backDelivery.find((el) => isEqual(el.timestamp, ts))?.value ?? 0,
+            timestamp: ts
+        };
+        result.push(row);
+    }
 
-// private buildTooltipContentsForRange(values: ValueWithTimestamp[]) {
-// const total = d3.sum(values.map((value) => value.value));
+    return result;
+}
 
-// const formattedValue = d3.format(this.props.graphDescription.tooltipValueFormat)(total);
+function prepareForBars(input: ConsolidatedData[]): PowerSourcesAndBackDelivery[] {
+    const result: PowerSourcesAndBackDelivery[] = [];
 
-// const startTimestamp = this.props.periodDescription.atIndex(values[0].timestamp).toShortTitle();
-// const endTimestamp = this.props.periodDescription.atIndex(values[values.length - 1].timestamp).toShortTitle();
-// return `${startTimestamp}-${endTimestamp}:<br />${formattedValue} ${this.props.graphDescription.displayableUnit}`;
-// }
+    for (const entry of input) {
+        result.push({
+            gridSource: entry.consumption,
+            solarSource: entry.generation + entry.backDelivery,
+            backDelivery: entry.backDelivery,
+            timestamp: entry.timestamp
+        } as PowerSourcesAndBackDelivery);
+    }
 
-// mouseover = () => {
-// this.svg!.select("g.crosshairs").attr("opacity", 1);
-// };
-
-// // Example from https://d3-graph-gallery.com/graph/line_cursor.html
-// mousemove = (event: any) => {
-// // This allows to find the closest X index of the mouse:
-// var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
-
-// const pointerX = d3.pointer(event)[0];
-// const pointerDate = this.scaleXForInversion.invert(pointerX);
-
-// var closestIndex = bisect(this.props.series, pointerDate, 1) - 1;
-
-// // Find all y-values to highlight
-// const hoveredEntry = this.props.series[closestIndex];
-
-// if (!hoveredEntry) {
-// return;
-// }
-
-// // Use `scaleXForInversion` because ScaleBand does not return anything,
-// // possibly due to imprecise matches.
-// const x =
-// this.scaleX(this.props.periodDescription.normalize(hoveredEntry.timestamp))! + this.scaleX.bandwidth() / 2;
-// const y = this.scaleY(hoveredEntry.value);
-
-// this.svg!.select("g.crosshairs g.horizontal")
-// .selectAll("path.value")
-// .data([y])
-// .join("path")
-// .attr("class", "value")
-// .attr("stroke", "black")
-// .attr("stroke-width", 1)
-// .attr("d", (y) => `M${this.padding.left + this.axisWidth},${y} H ${this.width - this.padding.right}`);
-
-// this.svg!.select("g.crosshairs path.vertical")
-// .attr("stroke", "black")
-// .attr("stroke-width", 1)
-// .attr("d", `M${x},${this.padding.top} V ${this.height - this.padding.bottom}`);
-
-// const left = event.pageX + 20 + "px";
-// const top = event.pageY - 58 + "px";
-
-// this.showTooltip(this.buildTooltipContentsForSingleMeasurement(hoveredEntry), left, top);
-// };
-
-// mouseout = () => {
-// this.svg!.select("g.crosshairs").attr("opacity", 0);
-// console.log("mouseout");
-// this.hideTooltip();
-// };
-
-// showTooltip(text: string, left: string, top: string) {
-// const tooltip = d3.select("#tooltip");
-// tooltip.html(text).style("left", left).style("top", top).style("display", "block");
-// }
-
-// hideTooltip() {
-// const tooltip = d3.select("#tooltip");
-
-// tooltip.style("display", "none");
-// }
-// }
-// }
-// }
+    return result;
+}

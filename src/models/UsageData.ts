@@ -3,7 +3,9 @@ export type UsageData = {
     label: number;
     gas: number;
     stroom: number;
+    generation: number;
+    back_delivery: number;
     water: number;
 };
 
-export type UsageField = keyof Omit<UsageData, "time_stamp" | "label">;
+export type UsageField = Exclude<keyof UsageData, "time_stamp" | "label">;

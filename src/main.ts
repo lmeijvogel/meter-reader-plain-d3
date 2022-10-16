@@ -22,6 +22,8 @@ import {
 import { lineChart } from "./charts/lineChart";
 import { initializeNavigation } from "./navigation";
 import { getDate, getDay, subHours } from "date-fns";
+import { addAbortSignal } from "stream";
+import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 
 defineWebComponents();
 
@@ -43,9 +45,9 @@ function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
         fieldName: UsageField,
         periodDescription: PeriodDescription
     ): Promise<MeasurementEntry[]> {
-        const url = periodDescription.toUrl();
+        const url = `/api/${fieldName}${periodDescription.toUrl()}`;
 
-        const response = await fetch(`/api/${fieldName}${url}`);
+        const response = await fetch(url);
         const json = await response.json();
         const data = json.map(responseRowToMeasurementEntry);
         const paddedData = padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
@@ -63,16 +65,6 @@ function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
         api.call(periodGasContainer);
     });
 
-    fetchPeriodData("stroom", periodDescription).then((values) => {
-        const graphDescription = new StroomGraphDescription(periodDescription);
-        const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
-
-        const cardTitle = createPeriodDataCardTitle(values, "stroom", graphDescription, periodDescription);
-        setCardTitle("js-period-stroom-title", cardTitle);
-
-        api.call(periodStroomContainer);
-    });
-
     fetchPeriodData("water", periodDescription).then((values) => {
         const graphDescription = new WaterGraphDescription(periodDescription);
         const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
@@ -81,6 +73,29 @@ function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
         setCardTitle("js-period-water-title", cardTitle);
 
         api.call(periodWaterContainer);
+    });
+
+    Promise.all<MeasurementEntry[]>([
+        fetchPeriodData("stroom", periodDescription),
+        fetchPeriodData("generation", periodDescription),
+        fetchPeriodData("back_delivery", periodDescription)
+    ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
+        const graphDescription = new StroomGraphDescription(periodDescription);
+
+        const equalizedData = {
+            consumption: stroomValues,
+            generation: generationValues.map((el) => ({ value: el.value / 1000, timestamp: el.timestamp })),
+            backDelivery: backDeliveryValues.map((el) => ({ value: -el.value, timestamp: el.timestamp }))
+        };
+
+        const api = usageAndGenerationBarChart(periodDescription, graphDescription)
+            .onClick(retrieveAndDrawPeriodCharts)
+            .data(equalizedData);
+
+        const cardTitle = createPeriodDataCardTitle(stroomValues, "stroom", graphDescription, periodDescription);
+        setCardTitle("js-period-stroom-title", cardTitle);
+
+        api.call(periodStroomContainer);
     });
 
     async function fetchTemperatureData(
@@ -297,7 +312,7 @@ function drawPowerUsage(fieldsKW: CurrentFields) {
     recentCurrentContainer.call(recentCurrentGraph.call);
 }
 
-retrieveAndDrawPeriodCharts(MonthDescription.thisMonth());
+retrieveAndDrawPeriodCharts(DayDescription.today());
 retrieveAndDrawPowerUsageInBatches();
 
 async function retrieveAndDrawPowerUsageInBatches() {
