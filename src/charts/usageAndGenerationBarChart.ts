@@ -284,6 +284,8 @@ function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLEleme
     ].forEach((name) => {
         selection.append("g").attr("class", name);
     });
+
+    selection.attr("viewBox", "0 0 480 240");
 }
 
 function consolidateData(input: Data): ConsolidatedData[] {

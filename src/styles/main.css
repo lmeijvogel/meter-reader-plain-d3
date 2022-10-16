@@ -10,9 +10,19 @@ body {
     justify-content: center;
 }
 
+.chart {
+    width: 480;
+    height: 240;
+}
+
 @media screen and (max-width: 575px) {
     .row {
         flex-direction: column;
+    }
+
+    .chart {
+        width: 340px;
+        height: 180px;
     }
 }
 

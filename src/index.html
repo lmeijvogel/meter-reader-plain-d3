@@ -2,6 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Energie</title>
         <script type="module" src="main.ts"></script>
         <link rel="stylesheet" href="./styles/d3-tip.css" />
@@ -22,58 +23,66 @@
             <div class="row">
                 <viz-card>
                     <h3 slot="title" class="js-period-gas-title">Gas</h3>
-                    <svg id="gas_period_data" width=480 height=250></svg>
+                    <svg id="gas_period_data" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title" class="js-period-stroom-title">Stroom</h3>
-                    <svg id="stroom_period_data" width=480 height=250></svg>
+                    <svg id="stroom_period_data" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title" class="js-period-water-title">Water</h3>
-                    <svg id="water_period_data" width=480 height=250></svg>
+                    <svg id="water_period_data" class="chart"></svg>
                 </viz-card>
             </div>
             <div class="row">
                 <viz-card>
                     <h3 slot="title">Recente energie (W)</h3>
-                    <svg id="recent_current" width=480 height=250></svg>
+                    <svg id="recent_current" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title">Huidige energie (W)</h3>
-                    <svg id="current_power_gauge" width=480 height=250></svg>
+                    <svg id="current_power_gauge" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title">Temperatuur</h3>
-                    <svg id="temperature_line_chart" width=480 height=250></svg>
+                    <svg id="temperature_line_chart" class="chart"></svg>
                 </viz-card>
             </div>
 
             <div class="row">
                 <viz-card>
                     <h3 slot="title">Gas (laatste jaar)</h3>
-                    <svg id="gas_heatmap_yearly" width=480 height=250></svg>
+                    <svg id="gas_heatmap_yearly" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title">Stroom (laatste jaar)</h3>
-                    <svg id="stroom_heatmap_yearly" width=480 height=250></svg>
+                    <svg id="stroom_heatmap_yearly" class="chart"></svg>
+                </viz-card>
+                <viz-card>
+                    <h3 slot="title">Opwekking (laatste jaar)</h3>
+                    <svg id="opwekking_heatmap_yearly" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title">Water (laatste jaar)</h3>
-                    <svg id="water_heatmap_yearly" width=480 height=250></svg>
+                    <svg id="water_heatmap_yearly" class="chart"></svg>
                 </viz-card>
             </div>
             <div class="row">
                 <viz-card>
                     <h3 slot="title">Gas (30 dagen)</h3>
-                    <svg id="gas_heatmap_monthly" width=480 height=250></svg>
+                    <svg id="gas_heatmap_monthly" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title">Stroom (30 dagen)</h3>
-                    <svg id="stroom_heatmap_monthly" width=480 height=250></svg>
+                    <svg id="stroom_heatmap_monthly" class="chart"></svg>
+                </viz-card>
+                <viz-card>
+                    <h3 slot="title">Opwekking (30 dagen)</h3>
+                    <svg id="opwekking_heatmap_monthly" class="chart"></svg>
                 </viz-card>
                 <viz-card>
                     <h3 slot="title">Water (30 dagen)</h3>
-                    <svg id="water_heatmap_monthly" width=480 height=250></svg>
+                    <svg id="water_heatmap_monthly" class="chart"></svg>
                 </viz-card>
             </div>
             <div class="sideButtonsContainer forwardButtons js-buttons-right">

@@ -138,6 +138,8 @@ export function heatMap(graphType: GraphType) {
         },
 
         draw: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+            selection.attr("viewBox", "0 0 480 240");
+
             ["values", "xAxis", "yAxis"].forEach((className) => addContainerIfNotExists(selection, className));
 
             /* Initialize tooltip */
