@@ -10,7 +10,7 @@ import { formatMonthNames, heatMap } from "./charts/heatMap";
 import { gauge } from "./charts/gauge";
 
 import { defineWebComponents } from "./customElements/VizCard";
-import { DayDescription, LastHourDescription, MonthDescription, PeriodDescription } from "./models/PeriodDescription";
+import { DayDescription, LastHourDescription, PeriodDescription } from "./models/PeriodDescription";
 import { padData } from "./helpers/padData";
 import { barChart } from "./charts/barChart";
 import {
@@ -21,8 +21,7 @@ import {
 } from "./models/GraphDescription";
 import { lineChart } from "./charts/lineChart";
 import { initializeNavigation } from "./navigation";
-import { getDate, getDay, subHours } from "date-fns";
-import { addAbortSignal } from "stream";
+import { getDate, subHours } from "date-fns";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 
 defineWebComponents();
@@ -174,6 +173,18 @@ loadData("stroom", "last_year").then((result) => {
         .draw(chartContainer);
 });
 
+loadData("generation", "last_year").then((result) => {
+    const chartContainer = d3.select("#opwekking_heatmap_yearly");
+
+    heatMap("year")
+        .colors("#ffffff", "#f0ad4e", "#784805")
+        .data(result)
+        .unit("kWh")
+        .tickFormat(formatMonthNames)
+        .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
+        .draw(chartContainer);
+});
+
 loadData("water", "last_year").then((result) => {
     const chartContainer = d3.select("#water_heatmap_yearly");
 
@@ -199,6 +210,18 @@ loadData("gas", "last_30_days").then((result) => {
 
 loadData("stroom", "last_30_days").then((result) => {
     const chartContainer = d3.select("#stroom_heatmap_monthly");
+
+    heatMap("30_days")
+        .colors("#ffffff", "#f0ad4e", "#784805")
+        .min(0.1)
+        .data(result)
+        .unit("kWh")
+        .tickFormat((value: Date) => getDate(value).toString())
+        .draw(chartContainer);
+});
+
+loadData("generation", "last_30_days").then((result) => {
+    const chartContainer = d3.select("#opwekking_heatmap_monthly");
 
     heatMap("30_days")
         .colors("#ffffff", "#f0ad4e", "#784805")
