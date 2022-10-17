@@ -9,7 +9,7 @@
     "scripts": {
         "dev": "concurrently -n react,api \"npm:start\" \"npm:start-api\"",
         "start": "parcel",
-        "start-api": "cd ../api ; ruby app.rb",
+        "start-api": "cd ../energie-api ; ruby app.rb",
         "build": "parcel build"
     },
     "devDependencies": {
