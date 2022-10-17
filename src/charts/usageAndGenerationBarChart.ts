@@ -210,6 +210,28 @@ export function usageAndGenerationBarChart(
         return graphDescription.xLabelHeight;
     }
 
+    function buildTooltip(d: PowerSourcesAndBackDelivery) {
+        const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
+
+        const rows = [`<dt>Grid</dt><dd><b>${d3.format(".2f")(d.gridSource)}</b> ${store.unit}</dd>`];
+
+        if (Math.abs(d.solarSource) > 0.01) {
+            rows.push(`<dt>Panelen</dt><dd><b>${d3.format(".2f")(d.solarSource)}</b> ${store.unit}</dd>`);
+        }
+
+        if (Math.abs(d.backDelivery) > 0.01) {
+            rows.push(`<dt>Geleverd: </dt><dd><b>${d3.format(".2f")(-d.backDelivery)}</b> ${store.unit}</dd>`);
+        }
+
+        const contents = `${dateString}<br />
+                            <dl>
+                            ${rows.join("")}
+                            </dl>
+                        `;
+
+        return contents;
+    }
+
     const api = {
         data(data: Data) {
             store.data = prepareForBars(consolidateData(data));
@@ -231,31 +253,8 @@ export function usageAndGenerationBarChart(
                 tip = d3tip()
                     .attr("class", "d3-tip")
                     .offset([-10, 0])
-                    .html((_event: unknown, d: PowerSourcesAndBackDelivery) => {
-                        const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
+                    .html((_event: unknown, d: PowerSourcesAndBackDelivery) => buildTooltip(d));
 
-                        const rows = [`<dt>Grid</dt><dd><b>${d3.format(".2f")(d.gridSource)}</b> ${store.unit}</dd>`];
-
-                        if (Math.abs(d.solarSource) > 0.01) {
-                            rows.push(
-                                `<dt>Panelen</dt><dd><b>${d3.format(".2f")(d.solarSource)}</b> ${store.unit}</dd>`
-                            );
-                        }
-
-                        if (Math.abs(d.backDelivery) > 0.01) {
-                            rows.push(
-                                `<dt>Geleverd: </dt><dd><b>${d3.format(".2f")(-d.backDelivery)}</b> ${store.unit}</dd>`
-                            );
-                        }
-
-                        const contents = `${dateString}<br />
-                            <dl>
-                            ${rows.join("")}
-                            </dl>
-                        `;
-
-                        return contents;
-                    });
                 selection.call(tip);
 
                 firstDrawCall = false;
