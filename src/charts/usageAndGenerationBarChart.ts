@@ -263,8 +263,8 @@ export function usageAndGenerationBarChart(
 
             updateScales(selection);
 
-            drawBars(selection, store.data, "solarSource", "#55ff10");
-            drawBars(selection, store.data, "gridSource", graphDescription.barColor, "solarSource");
+            drawBars(selection, store.data, "solarSource", "#55ff10", "gridSource");
+            drawBars(selection, store.data, "gridSource", graphDescription.barColor);
             drawBars(selection, store.data, "backDelivery", "#55ff10");
         }
     };
