@@ -307,11 +307,31 @@ async function updatePowerUsage(page = 0) {
 }
 
 function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
-    const addedValues = newValues.filter((newValue) => !existing.some((m) => m.timestamp === newValue.timestamp));
+    const result: MeasurementEntry[] = [];
 
     const tooOld = subHours(new Date(), 1);
 
-    const result = [...existing, ...addedValues].filter((m) => m.timestamp >= tooOld);
+    const maxValue = d3.max(existing, (v) => v.timestamp);
+
+    /* In practice, this might lead to more entries being added than
+     * removed: The earlier retrievals can have fewer readings
+     * (< 1 per second), while we can poll more frequently.
+     *
+     * I don't think this is a problem.
+     */
+    for (const existingValue of existing) {
+        if (existingValue.timestamp > tooOld) {
+            result.push(existingValue);
+        }
+    }
+
+    for (const newValue of newValues) {
+        if (newValue.timestamp > maxValue!) {
+            result.push(newValue);
+        }
+    }
+
+    result.sort();
 
     return result;
 }
