@@ -200,9 +200,7 @@ export function lineChart(periodDescription: PeriodDescription) {
     ) {
         const lineGenerator = d3
             .line<ValueWithTimestamp>()
-            .x((d) => {
-                return scaleX(d.timestamp);
-            })
+            .x((d) => scaleX(d.timestamp))
             .y((d) => scaleY(d.value));
 
         selection
@@ -214,7 +212,6 @@ export function lineChart(periodDescription: PeriodDescription) {
             .attr("stroke", lineColor)
             .attr("stroke-width", 2)
             .attr("d", lineGenerator);
-
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
