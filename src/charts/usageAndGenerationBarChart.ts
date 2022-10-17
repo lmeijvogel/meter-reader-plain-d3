@@ -136,10 +136,10 @@ export function usageAndGenerationBarChart(
     };
 
     const getRelativeDomain = (): number[] => {
-        const minY = store.data.reduce((min, el) => Math.min(el.backDelivery, min), 0);
-        const maxY = store.data.reduce((max, el) => Math.max(el.gridSource + el.solarSource, max), 0);
+        const minY = d3.min(store.data, (el) => el.backDelivery) ?? 0;
+        const maxY = d3.max(store.data, (el) => el.gridSource + el.solarSource) ?? 0;
 
-        return [minY, maxY];
+        return [minY * 1.1, maxY * 1.1];
     };
 
     const updateScales = (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
