@@ -5,6 +5,7 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { format } from "date-fns";
 import { getWindowWidth } from "../lib/getWindowWidth";
+import { assertNever } from "../lib/assertNever";
 
 type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string }>;
 
@@ -12,7 +13,7 @@ type Store = {
     fillArea?: boolean;
     lineColors?: Map<string, string>;
     defaultLineColor: string;
-    relativeMinMax: boolean;
+    minMaxCalculation: "explicit" | "minMax" | "quantile";
     tooltipDateFormat: string;
     tooltipValueFormat: string;
     tooltipDisplayableUnit: string;
@@ -40,7 +41,7 @@ export function lineChart(periodDescription: PeriodDescription) {
         tooltipDateFormat: "eee yyyy-MM-dd HH:mm",
         tooltipValueFormat: "%d",
         tooltipDisplayableUnit: "",
-        relativeMinMax: false,
+        minMaxCalculation: "explicit",
         seriesCollection: new Map()
     };
 
@@ -71,6 +72,13 @@ export function lineChart(periodDescription: PeriodDescription) {
 
         domain(domain: [number, number]) {
             store.domain = domain;
+            store.minMaxCalculation = "explicit";
+
+            return api;
+        },
+
+        minMaxCalculation: (method: "explicit" | "minMax" | "quantile") => {
+            store.minMaxCalculation = method;
 
             return api;
         },
@@ -230,12 +238,27 @@ export function lineChart(periodDescription: PeriodDescription) {
     }
 
     function getDomainY(): number[] {
+        if (store.minMaxCalculation === "explicit") {
+            return store.domain!;
+        }
+
         const allValues = Array.from(store.seriesCollection.values()).flatMap((series) =>
             series.series.map((s) => s.value)
         );
-        const min = Math.min(...allValues) * 0.95;
-        const max = Math.max(...allValues) * 1.05;
-        return [min, max];
+
+        if (store.minMaxCalculation === "quantile") {
+            const min = Math.min(...allValues) * 0.95;
+            const max = d3.quantile(allValues, 0.95)! * 1.5;
+
+            return [min, max];
+        } else if (store.minMaxCalculation === "minMax") {
+            const min = Math.min(...allValues) * 0.95;
+            const max = Math.max(...allValues) * 1.1;
+
+            return [min, max];
+        } else {
+            assertNever(store.minMaxCalculation);
+        }
     }
 
     return api;

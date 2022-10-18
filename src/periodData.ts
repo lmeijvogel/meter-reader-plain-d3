@@ -106,7 +106,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     fetchTemperatureData(periodDescription).then((result) => {
         const chartContainer = d3.select("#temperature_line_chart");
-        const temperatureChart = lineChart(periodDescription).tooltipValueFormat(".1f").tooltipDisplayableUnit("°C");
+        const temperatureChart = lineChart(periodDescription)
+            .tooltipValueFormat(".1f")
+            .tooltipDisplayableUnit("°C")
+            .minMaxCalculation("minMax");
 
         [
             ["huiskamer", "#ff0000"],
