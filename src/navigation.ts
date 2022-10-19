@@ -22,6 +22,11 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
     const swipe = new VanillaSwipe({
         element: swipeArea!,
         onSwiped: (_event: any, touchEvent: EventData) => {
+            // Do not treat as period change if swipe was vertical
+            if (Math.abs(touchEvent.deltaX) < Math.abs(touchEvent.deltaY)) {
+                return;
+            }
+
             if (touchEvent.duration < 200) {
                 switch (touchEvent.directionX) {
                     case "RIGHT":
