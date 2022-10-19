@@ -60,7 +60,7 @@ loadData("generation", "last_year").then((result) => {
     heatMap("year")
         .colors("#ffffff", "#f0ad4e", "#784805")
         .data(result)
-        .unit("kWh")
+        .unit("Wh")
         .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
         .draw(chartContainer);
@@ -108,7 +108,7 @@ loadData("generation", "last_30_days").then((result) => {
         .colors("#ffffff", "#f0ad4e", "#784805")
         .min(0.1)
         .data(result)
-        .unit("kWh")
+        .unit("Wh")
         .tickFormat((value: Date) => getDate(value).toString())
         .draw(chartContainer);
 });
