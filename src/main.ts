@@ -5,12 +5,10 @@ import { MeasurementEntry } from "./models/MeasurementEntry";
 import { UsageField } from "./models/UsageData";
 
 import { formatMonthNames, heatMap } from "./charts/heatMap";
-import { gauge } from "./charts/gauge";
 
 import { defineWebComponents } from "./customElements/VizCard";
 import { DayDescription, LastHourDescription, PeriodDescription } from "./models/PeriodDescription";
-import { lineChart } from "./charts/lineChart";
-import { getDate, subHours } from "date-fns";
+import { getDate } from "date-fns";
 import { retrieveAndDrawPeriodCharts } from "./periodData";
 import { initializeCurrentCharts } from "./currentCharts";
 
