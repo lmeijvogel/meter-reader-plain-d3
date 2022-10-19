@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { isDefined } from "../lib/isDefined";
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
@@ -102,6 +101,15 @@ export function lineChart(periodDescription: PeriodDescription) {
         },
 
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+            const brush = d3.brushX();
+            brush.extent([
+                [minimumX, minimumY],
+                [maximumX, maximumY]
+            ]);
+
+            brush.on("brush", showBrushTooltip);
+
+            selection.select(".brush").call(brush as any);
             selection.attr("viewBox", `0 0 ${width} ${height}`);
 
             selection.on("mouseover", () => {
@@ -152,10 +160,10 @@ export function lineChart(periodDescription: PeriodDescription) {
 
                         const valueLines = ys
                             .map(({ name, value }) => {
-                                return `<tr><td>${name}:</td>
-                                    <td class="tableValue">${d3.format(store.tooltipValueFormat)(value)} ${
-                                    store.tooltipDisplayableUnit
-                                }</td></tr>`;
+                                return `<tr>
+                                            <td>${name}:</td>
+                                            <td class="tableValue">${renderDisplayValue(value)}</td>
+                                        </tr>`;
                             })
                             .join("");
                         return `<b>${dateString}</b><table><tbody>${valueLines}</tbody></table>`;
@@ -223,7 +231,7 @@ export function lineChart(periodDescription: PeriodDescription) {
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        ["gridLines", "additionalInfo", "values", "xAxis", "yAxis"].forEach((className) => {
+        ["gridLines", "additionalInfo", "values", "xAxis", "yAxis", "brush"].forEach((className) => {
             const g = selection.append("g");
 
             g.attr("class", className);
@@ -259,6 +267,69 @@ export function lineChart(periodDescription: PeriodDescription) {
         } else {
             assertNever(store.minMaxCalculation);
         }
+    }
+
+    function showBrushTooltip(event: any) {
+        const sourceEvent = event.sourceEvent;
+
+        const tooltipWidth = 250; // Matches the CSS value
+        const tooltipX = sourceEvent.pageX + 20;
+        const fitsOnRight = tooltipX + tooltipWidth < windowWidth;
+        const left = fitsOnRight ? sourceEvent.pageX + 20 + "px" : sourceEvent.pageX - tooltipWidth - 80 + "px";
+
+        const tooltipSelector = d3.select("#tooltip");
+        tooltipSelector
+            .style("top", sourceEvent.pageY - 170 + "px")
+            .style("left", left)
+            .html(() => {
+                // This allows to find the closest X index of the mouse:
+                var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
+
+                const pointerStartDate = scaleX.invert(event.selection[0]);
+                const pointerEndDate = scaleX.invert(event.selection[1]);
+
+                const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
+
+                for (const series of Array.from(store.seriesCollection.entries())) {
+                    const startIndex = bisect(series[1].series, pointerStartDate, 1) - 1;
+                    const endIndex = bisect(series[1].series, pointerEndDate, 1) - 1;
+
+                    const relevantEntries = series[1].series.slice(startIndex, endIndex);
+
+                    displayValues.set(series[0], {
+                        max: d3.max(relevantEntries, (v) => v.value) ?? 0,
+                        min: d3.min(relevantEntries, (v) => v.value) ?? 0,
+                        mean: d3.mean(relevantEntries, (v) => v.value) ?? 0
+                    });
+                }
+
+                const startDateString = format(pointerStartDate, store.tooltipDateFormat);
+                const endDateString = format(pointerEndDate, store.tooltipDateFormat);
+
+                return `${startDateString} - ${endDateString}<br>
+                <dl>${renderDisplayValues(displayValues).join("")}</dl>
+                `;
+            });
+    }
+    function renderDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
+        let result: string[] = [];
+
+        for (const [name, values] of Array.from(displayValues)) {
+            result.push(`<dt>${name}:</dt>`);
+            result.push(
+                `<dd>
+                    Min: <b>${renderDisplayValue(values.min)}</b><br>
+                    Gem.: <b>${renderDisplayValue(values.mean)}</b><br>
+                    Max: <b>${renderDisplayValue(values.max)}</b>
+                 </dd>`
+            );
+        }
+
+        return result;
+    }
+
+    function renderDisplayValue(value: number) {
+        return `${d3.format(store.tooltipValueFormat)(value)} ${store.tooltipDisplayableUnit}`;
     }
 
     return api;
