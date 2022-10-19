@@ -27,23 +27,27 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
                 return;
             }
 
-            if (touchEvent.duration < 200) {
-                switch (touchEvent.directionX) {
-                    case "RIGHT":
-                        const previous = periodDescription?.previous();
+            // If swipe took too long, it was probably some intentional
+            // move.
+            if (touchEvent.duration >= 200) {
+                return;
+            }
 
-                        if (previous && !previous.beforeFirstMeasurement()) {
-                            onPeriodChange(previous);
-                        }
-                        break;
-                    case "LEFT":
-                        const next = periodDescription?.next();
+            switch (touchEvent.directionX) {
+                case "RIGHT":
+                    const previous = periodDescription?.previous();
 
-                        if (next && !next.isInFuture()) {
-                            onPeriodChange(next);
-                        }
-                        break;
-                }
+                    if (previous && !previous.beforeFirstMeasurement()) {
+                        onPeriodChange(previous);
+                    }
+                    break;
+                case "LEFT":
+                    const next = periodDescription?.next();
+
+                    if (next && !next.isInFuture()) {
+                        onPeriodChange(next);
+                    }
+                    break;
             }
         },
         delta: 50
