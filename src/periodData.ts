@@ -22,7 +22,6 @@ const periodStroomContainer = d3.select("#stroom_period_data");
 const periodWaterContainer = d3.select("#water_period_data");
 
 const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
-
 export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
     navigation.setPeriodDescription(periodDescription);
 

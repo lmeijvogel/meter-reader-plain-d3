@@ -1,14 +1,74 @@
-import { getWindowWidth } from "./lib/getWindowWidth";
-
 import { DayDescription, PeriodDescription, YearDescription } from "./models/PeriodDescription";
+
+import VanillaSwipe, { EventData } from "vanilla-swipe";
+import { getWindowWidth } from "./lib/getWindowWidth";
+import { differenceInMilliseconds, differenceInSeconds } from "date-fns";
 
 const displayThresholdInPx = 60;
 
 let windowWidth = getWindowWidth();
 
-export function initializeNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
-    let periodDescription: PeriodDescription | undefined;
+let periodDescription: PeriodDescription | undefined;
 
+export function initializeNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    return isMobileDevice ? initializeMobileNavigation(onPeriodChange) : initializeDesktopNavigation(onPeriodChange);
+}
+
+function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
+    const swipeArea = document.getElementById("js-navigate-overlay");
+
+    const swipe = new VanillaSwipe({
+        element: swipeArea!,
+        onSwiped: (_event: any, touchEvent: EventData) => {
+            if (touchEvent.duration < 200) {
+                switch (touchEvent.directionX) {
+                    case "RIGHT":
+                        const previous = periodDescription?.previous();
+
+                        if (previous && !previous.beforeFirstMeasurement()) {
+                            onPeriodChange(previous);
+                        }
+                        break;
+                    case "LEFT":
+                        const next = periodDescription?.next();
+
+                        if (next && !next.isInFuture()) {
+                            onPeriodChange(next);
+                        }
+                        break;
+                }
+            }
+        },
+        delta: 50
+    });
+
+    swipe.init();
+
+    const pageTitleElement = document.getElementsByClassName("js-page-title")[0];
+
+    pageTitleElement.addEventListener("click", () => {
+        const up = periodDescription?.up();
+        if (!!up) {
+            onPeriodChange(up);
+        }
+    });
+
+    const api = {
+        setPeriodDescription: (newPeriodDescription: PeriodDescription) => {
+            periodDescription = newPeriodDescription;
+
+            setPageTitle(periodDescription.toTitle());
+
+            return api;
+        }
+    };
+
+    return api;
+}
+
+function initializeDesktopNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
     function enableOrDisableNavigation() {
         if (!periodDescription) return;
 
