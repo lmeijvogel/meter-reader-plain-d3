@@ -303,10 +303,12 @@ export function lineChart(periodDescription: PeriodDescription) {
 
             const relevantEntries = series[1].series.slice(startIndex, endIndex);
 
+            const [min, max] = d3.extent(relevantEntries, (v) => v.value);
+
             displayValues.set(series[0], {
-                max: d3.max(relevantEntries, (v) => v.value) ?? 0,
-                min: d3.min(relevantEntries, (v) => v.value) ?? 0,
-                mean: d3.mean(relevantEntries, (v) => v.value) ?? 0
+                min: min ?? 0,
+                mean: d3.mean(relevantEntries, (v) => v.value) ?? 0,
+                max: max ?? 0
             });
         }
 
@@ -318,7 +320,6 @@ export function lineChart(periodDescription: PeriodDescription) {
                 `;
     }
 
-
     function renderDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
         let result: string[] = [];
 
@@ -326,9 +327,13 @@ export function lineChart(periodDescription: PeriodDescription) {
             result.push(`<dt>${name}:</dt>`);
             result.push(
                 `<dd>
-                    Min: <b>${renderDisplayValue(values.min)}</b><br>
-                    Gem.: <b>${renderDisplayValue(values.mean)}</b><br>
-                    Max: <b>${renderDisplayValue(values.max)}</b>
+                <table>
+                  <tbody>
+                    <tr><td>Min:</td><td class="tableValue"><b>${renderDisplayValue(values.min)}</b></td></tr>
+                    <tr><td>Gem.:</td><td class="tableValue"><b>${renderDisplayValue(values.mean)}</b></td></tr>
+                    <tr><td>Max:</td><td class="tableValue"><b>${renderDisplayValue(values.max)}</b></td></tr>
+                  </tbody>
+                </table>
                  </dd>`
             );
         }
