@@ -140,33 +140,7 @@ export function lineChart(periodDescription: PeriodDescription) {
 
                     .html(() => {
                         // This allows to find the closest X index of the mouse:
-                        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
-
-                        const pointerX = d3.pointer(event)[0];
-                        const pointerDate = scaleX.invert(pointerX);
-
-                        const ys = Array.from(store.seriesCollection.keys()).map((key) => {
-                            const series = store.seriesCollection.get(key)!;
-
-                            var closestIndex = bisect(series.series, pointerDate, 1) - 1;
-
-                            return {
-                                name: key,
-                                value: series.series[closestIndex]?.value
-                            };
-                        });
-
-                        const dateString = format(pointerDate, store.tooltipDateFormat);
-
-                        const valueLines = ys
-                            .map(({ name, value }) => {
-                                return `<tr>
-                                            <td>${name}:</td>
-                                            <td class="tableValue">${renderDisplayValue(value)}</td>
-                                        </tr>`;
-                            })
-                            .join("");
-                        return `<b>${dateString}</b><table><tbody>${valueLines}</tbody></table>`;
+                        return getHoverTooltipContents(event);
                     });
             });
 
@@ -281,36 +255,70 @@ export function lineChart(periodDescription: PeriodDescription) {
         tooltipSelector
             .style("top", sourceEvent.pageY - 170 + "px")
             .style("left", left)
-            .html(() => {
-                // This allows to find the closest X index of the mouse:
-                var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
+            .html(() => getBrushTooltipContents(event));
+    }
 
-                const pointerStartDate = scaleX.invert(event.selection[0]);
-                const pointerEndDate = scaleX.invert(event.selection[1]);
+    function getHoverTooltipContents(event: any): string {
+        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
 
-                const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
+        const pointerX = d3.pointer(event)[0];
+        const pointerDate = scaleX.invert(pointerX);
 
-                for (const series of Array.from(store.seriesCollection.entries())) {
-                    const startIndex = bisect(series[1].series, pointerStartDate, 1) - 1;
-                    const endIndex = bisect(series[1].series, pointerEndDate, 1) - 1;
+        const ys = Array.from(store.seriesCollection.keys()).map((key) => {
+            const series = store.seriesCollection.get(key)!;
 
-                    const relevantEntries = series[1].series.slice(startIndex, endIndex);
+            var closestIndex = bisect(series.series, pointerDate, 1) - 1;
 
-                    displayValues.set(series[0], {
-                        max: d3.max(relevantEntries, (v) => v.value) ?? 0,
-                        min: d3.min(relevantEntries, (v) => v.value) ?? 0,
-                        mean: d3.mean(relevantEntries, (v) => v.value) ?? 0
-                    });
-                }
+            return {
+                name: key,
+                value: series.series[closestIndex]?.value
+            };
+        });
 
-                const startDateString = format(pointerStartDate, store.tooltipDateFormat);
-                const endDateString = format(pointerEndDate, store.tooltipDateFormat);
+        const dateString = format(pointerDate, store.tooltipDateFormat);
 
-                return `${startDateString} - ${endDateString}<br>
+        const valueLines = ys
+            .map(({ name, value }) => {
+                return `<tr>
+                                            <td>${name}:</td>
+                                            <td class="tableValue">${renderDisplayValue(value)}</td>
+                                        </tr>`;
+            })
+            .join("");
+        return `<b>${dateString}</b><table><tbody>${valueLines}</tbody></table>`;
+    }
+
+    function getBrushTooltipContents(event: any): string {
+        // This allows to find the closest X index of the mouse:
+        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
+
+        const pointerStartDate = scaleX.invert(event.selection[0]);
+        const pointerEndDate = scaleX.invert(event.selection[1]);
+
+        const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
+
+        for (const series of Array.from(store.seriesCollection.entries())) {
+            const startIndex = bisect(series[1].series, pointerStartDate, 1) - 1;
+            const endIndex = bisect(series[1].series, pointerEndDate, 1) - 1;
+
+            const relevantEntries = series[1].series.slice(startIndex, endIndex);
+
+            displayValues.set(series[0], {
+                max: d3.max(relevantEntries, (v) => v.value) ?? 0,
+                min: d3.min(relevantEntries, (v) => v.value) ?? 0,
+                mean: d3.mean(relevantEntries, (v) => v.value) ?? 0
+            });
+        }
+
+        const startDateString = format(pointerStartDate, store.tooltipDateFormat);
+        const endDateString = format(pointerEndDate, store.tooltipDateFormat);
+
+        return `${startDateString} - ${endDateString}<br>
                 <dl>${renderDisplayValues(displayValues).join("")}</dl>
                 `;
-            });
     }
+
+
     function renderDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
         let result: string[] = [];
 
