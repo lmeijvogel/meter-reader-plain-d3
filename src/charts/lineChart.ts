@@ -77,7 +77,7 @@ export function lineChart(periodDescription: PeriodDescription) {
             return api;
         },
 
-        minMaxCalculation: (method: "explicit" | "minMax" | "quantile") => {
+        minMaxCalculation: (method: "minMax" | "quantile") => {
             store.minMaxCalculation = method;
 
             return api;
