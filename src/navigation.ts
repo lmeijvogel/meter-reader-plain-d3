@@ -11,9 +11,9 @@ let windowWidth = getWindowWidth();
 let periodDescription: PeriodDescription | undefined;
 
 export function initializeNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    return isMobileDevice ? initializeMobileNavigation(onPeriodChange) : initializeDesktopNavigation(onPeriodChange);
+    return VanillaSwipe.isTouchEventsSupported()
+        ? initializeMobileNavigation(onPeriodChange)
+        : initializeDesktopNavigation(onPeriodChange);
 }
 
 function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
