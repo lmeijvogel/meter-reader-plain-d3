@@ -11,7 +11,9 @@ import { DayDescription, LastHourDescription, PeriodDescription } from "./models
 import { getDate } from "date-fns";
 import { retrieveAndDrawPeriodCharts } from "./periodData";
 import { initializeCurrentCharts } from "./currentCharts";
+import { initIcons } from "./icons";
 
+initIcons();
 defineWebComponents();
 
 function selectPeriod(periodDescription: PeriodDescription) {

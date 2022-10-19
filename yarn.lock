@@ -1809,6 +1809,11 @@ lodash@^4.17.21:
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
+lucide@^0.92.0:
+  version "0.92.0"
+  resolved "https://registry.yarnpkg.com/lucide/-/lucide-0.92.0.tgz#24922c2fce1d2488ad575c110803f9b2044f37d2"
+  integrity sha512-pv4L8OD4mBWngwA5uCiE0svjnZVm2UqRLm3VWjbvFFszkiwgf93g9PKOPReXcXnqfr+6h86y6/V+hENBXJ28dQ==
+
 mdn-data@2.0.14:
   version "2.0.14"
   resolved "https://registry.yarnpkg.com/mdn-data/-/mdn-data-2.0.14.tgz#7113fc4281917d63ce29b43446f701e68c25ba50"
