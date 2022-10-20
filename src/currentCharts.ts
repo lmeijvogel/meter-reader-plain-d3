@@ -14,17 +14,17 @@ const recentCurrentGraph = lineChart(new LastHourDescription())
     .minMaxCalculation("quantile")
     .tooltipDateFormat("HH:mm")
     .tooltipValueFormat("d")
-    .tooltipDisplayableUnit("W");
+    .tooltipDisplayableUnit("W")
+    .fill("#f0ad4e", "#adf04e");
 
-type CurrentFields = { current: MeasurementEntry[]; generation: MeasurementEntry[] };
+type CurrentFields = { current: MeasurementEntry[] };
 
 async function retrievePowerUsage(page = 0) {
     return fetch(`/api/stroom/recent?page=${page}`)
         .then((response) => response.json())
         .then((json) => {
             const fieldsKW: CurrentFields = {
-                current: json["current"].map(responseRowToMeasurementEntry),
-                generation: json["generation"].map(responseRowToMeasurementEntry)
+                current: json["current"].map(responseRowToMeasurementEntry)
             };
 
             return fieldsKW;
@@ -32,15 +32,13 @@ async function retrievePowerUsage(page = 0) {
 }
 
 const powerUsage: CurrentFields = {
-    current: [],
-    generation: []
+    current: []
 };
 
 async function updatePowerUsage(page = 0) {
     const newValues = await retrievePowerUsage(page);
 
     powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
-    powerUsage.generation = addAndReplaceValues(powerUsage.generation, newValues.generation);
 
     drawPowerUsage(powerUsage);
 }
@@ -77,19 +75,14 @@ function addAndReplaceValues(existing: MeasurementEntry[], newValues: Measuremen
 
 function drawPowerUsage(fieldsKW: CurrentFields) {
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
-    const generationInW = fieldsKW.generation.map((entry) => ({ ...entry, value: entry.value * -1000 }));
 
     const lastCurrent = currentInW[currentInW.length - 1]?.value ?? 0;
-    const lastGeneration = generationInW[generationInW.length - 1]?.value ?? 0;
 
-    const newValue = lastCurrent + lastGeneration;
-
-    powerUsageGauge.value(newValue);
+    powerUsageGauge.value(lastCurrent);
 
     gaugeContainer.call(powerUsageGauge.call);
 
-    recentCurrentGraph.setSeries("current", currentInW, "#f0ad4e");
-    recentCurrentGraph.setSeries("generation", generationInW, "#adf04e");
+    recentCurrentGraph.setSeries("current", currentInW, "black");
 
     recentCurrentContainer.call(recentCurrentGraph.call);
 }
@@ -106,7 +99,6 @@ async function retrieveAndDrawPowerUsageInBatches() {
         const batch = await retrievePowerUsage(i);
 
         powerUsage.current = sortByTimestamp([...batch.current, ...powerUsage.current]);
-        powerUsage.generation = sortByTimestamp([...batch.generation, ...powerUsage.generation]);
 
         drawPowerUsage(powerUsage);
     }
