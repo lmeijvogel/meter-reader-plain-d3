@@ -18,6 +18,7 @@ type Store = {
     tooltipDisplayableUnit: string;
     seriesCollection: SeriesCollection;
     domain?: [number, number];
+    fill?: { positive: string; negative: string };
 };
 
 const padding = {
@@ -72,6 +73,12 @@ export function lineChart(periodDescription: PeriodDescription) {
         domain(domain: [number, number]) {
             store.domain = domain;
             store.minMaxCalculation = "explicit";
+
+            return api;
+        },
+
+        fill(positiveColor: string, negativeColor: string) {
+            store.fill = { positive: positiveColor, negative: negativeColor };
 
             return api;
         },
@@ -170,7 +177,7 @@ export function lineChart(periodDescription: PeriodDescription) {
                 let g = selection.select<SVGGElement>(`.${seriesGClassName}`);
 
                 if (!g.node()) {
-                    g = selection.append("g");
+                    g = selection.insert("g", "g.xAxis");
                     g.attr("class", seriesGClassName).attr("width", width).attr("height", height);
                 }
 
@@ -200,6 +207,37 @@ export function lineChart(periodDescription: PeriodDescription) {
             .attr("stroke", lineColor)
             .attr("stroke-width", 2)
             .attr("d", lineGenerator);
+
+        if (!!store.fill) {
+            const areaPositive = d3
+                .area<ValueWithTimestamp>()
+                .x((d) => scaleX(d.timestamp))
+                .y0(scaleY(-1.0))
+                .y1((d) => scaleY(Math.max(0.0, d.value)));
+
+            const areaNegative = d3
+                .area<ValueWithTimestamp>()
+                .curve(d3.curveStep)
+                .x((d) => scaleX(d.timestamp))
+                .y0(scaleY(0.0))
+                .y1((d) => scaleY(Math.min(0.0, d.value)));
+
+            selection
+                .selectAll(`path.areaPositive`)
+                .data([series])
+                .join("path")
+                .attr("class", "areaPositive")
+                .attr("d", areaPositive)
+                .attr("fill", store.fill.positive);
+
+            selection
+                .selectAll(`path.areaNegative`)
+                .data([series])
+                .join("path")
+                .attr("class", "areaNegative")
+                .attr("d", areaNegative)
+                .attr("fill", store.fill.negative);
+        }
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
