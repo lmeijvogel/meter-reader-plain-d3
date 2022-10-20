@@ -108,13 +108,14 @@ export function lineChart(periodDescription: PeriodDescription) {
             ]);
 
             brush.on("brush", showBrushTooltip);
-
             selection.select(".brush").call(brush as any);
+
             selection.attr("viewBox", `0 0 ${width} ${height}`);
 
             selection.on("mouseover", () => {
                 d3.select("#tooltip").style("display", "flex");
             });
+
             selection.on("mouseout", () => {
                 d3.select("#tooltip").style("display", "none");
             });
@@ -125,18 +126,15 @@ export function lineChart(periodDescription: PeriodDescription) {
                 }
 
                 const tooltipWidth = 250; // Matches the CSS value
-                const tooltipX = event.pageX + 20;
+                const tooltipX = event.pageX;
 
                 const tooltipSelector = d3.select("#tooltip");
 
-                const fitsOnRight = tooltipX + tooltipWidth < windowWidth;
-
-                // Show the tooltip to the left if it doesn't fit to the right of the cursor
-                const left = fitsOnRight ? event.pageX + 20 + "px" : event.pageX - tooltipWidth - 80 + "px";
+                const left = clamp(tooltipX, 0, windowWidth - tooltipWidth);
 
                 tooltipSelector
                     .style("top", event.pageY - 170 + "px")
-                    .style("left", left)
+                    .style("left", left + "px")
 
                     .html(() => {
                         // This allows to find the closest X index of the mouse:
@@ -244,17 +242,20 @@ export function lineChart(periodDescription: PeriodDescription) {
     }
 
     function showBrushTooltip(event: any) {
+        d3.select("#tooltip").style("display", "flex");
+
         const sourceEvent = event.sourceEvent;
 
         const tooltipWidth = 250; // Matches the CSS value
-        const tooltipX = sourceEvent.pageX + 20;
-        const fitsOnRight = tooltipX + tooltipWidth < windowWidth;
-        const left = fitsOnRight ? sourceEvent.pageX + 20 + "px" : sourceEvent.pageX - tooltipWidth - 80 + "px";
+
+        const tooltipLeft = sourceEvent.pageX + 20;
+
+        const left = clamp(0, tooltipLeft, windowWidth - tooltipWidth);
 
         const tooltipSelector = d3.select("#tooltip");
         tooltipSelector
             .style("top", sourceEvent.pageY - 170 + "px")
-            .style("left", left)
+            .style("left", left + "px")
             .html(() => getBrushTooltipContents(event));
     }
 
@@ -316,11 +317,11 @@ export function lineChart(periodDescription: PeriodDescription) {
         const endDateString = format(pointerEndDate, store.tooltipDateFormat);
 
         return `${startDateString} - ${endDateString}<br>
-                <dl>${renderDisplayValues(displayValues).join("")}</dl>
+                <dl>${renderBrushTooltipDisplayValues(displayValues).join("")}</dl>
                 `;
     }
 
-    function renderDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
+    function renderBrushTooltipDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
         let result: string[] = [];
 
         for (const [name, values] of Array.from(displayValues)) {
@@ -346,4 +347,16 @@ export function lineChart(periodDescription: PeriodDescription) {
     }
 
     return api;
+}
+
+function clamp(n: number, min: number, max: number): number {
+    if (n < min) {
+        return min;
+    }
+
+    if (n > max) {
+        return max;
+    }
+
+    return n;
 }
