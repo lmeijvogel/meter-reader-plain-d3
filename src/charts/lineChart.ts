@@ -265,10 +265,20 @@ export function lineChart(periodDescription: PeriodDescription) {
         );
 
         if (store.minMaxCalculation === "quantile") {
-            const min = Math.min(...allValues) * 0.95;
-            const max = d3.quantile(allValues, 0.95)! * 1.5;
+            let min = d3.quantile(allValues, 0.05)!;
+            let max = d3.quantile(allValues, 0.95)!;
 
-            return [min, max];
+            // Make sure x axis is visible
+            if (max < 0) {
+                max = -min / 3;
+            }
+
+            if (min > 0) {
+                min = -max / 3;
+            }
+
+            // Always show a bit of margin around the range
+            return [min - Math.abs(min * 0.1), max + Math.abs(max * 1.0)];
         } else if (store.minMaxCalculation === "minMax") {
             const min = Math.min(...allValues) * 0.95;
             const max = Math.max(...allValues) * 1.1;
