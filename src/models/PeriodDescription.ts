@@ -64,7 +64,7 @@ export abstract class PeriodDescription {
         return this.relevantDateParts(this.toDate()) < this.relevantDateParts(firstMeasurementDate);
     }
 
-    abstract relevantDateParts(date: Date): Date;
+    protected abstract relevantDateParts(date: Date): Date;
 
     isInFuture(): boolean {
         return this.toDate() > new Date();
@@ -119,7 +119,7 @@ export class YearDescription extends PeriodDescription {
         return new Date(this.year, 0, 1);
     }
 
-    relevantDateParts(date: Date): Date {
+    protected relevantDateParts(date: Date): Date {
         return new Date(date.getFullYear(), 0, 0);
     }
 
@@ -203,7 +203,7 @@ export class MonthDescription extends PeriodDescription {
         return new Date(this.year, this.month, 1);
     }
 
-    relevantDateParts(date: Date): Date {
+    protected relevantDateParts(date: Date): Date {
         return new Date(date.getFullYear(), date.getMonth(), 0);
     }
 
@@ -292,7 +292,7 @@ export class DayDescription extends PeriodDescription {
         return `${this.day} ${FULL_MONTH_NAMES[this.month]} ${this.year}`;
     }
 
-    relevantDateParts(date: Date): Date {
+    protected relevantDateParts(date: Date): Date {
         return date;
     }
 
@@ -395,7 +395,7 @@ export class HourDescription extends PeriodDescription {
         return this.relevantDateParts(this.toDate()) < this.relevantDateParts(firstMeasurementDate);
     }
 
-    relevantDateParts(date: Date): Date {
+    protected relevantDateParts(date: Date): Date {
         return date;
     }
 
@@ -504,7 +504,7 @@ export class MinuteDescription extends PeriodDescription {
     shiftHalfTick(date: Date): Date {
         throw new Error("Method not implemented.");
     }
-    relevantDateParts(date: Date): Date {
+    protected relevantDateParts(date: Date): Date {
         throw new Error("Method not implemented.");
     }
     startOfPeriod(): Date {
