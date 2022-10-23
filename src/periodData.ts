@@ -28,16 +28,22 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     // PeriodUsage
     async function fetchPeriodData(
         fieldName: UsageField,
-        periodDescription: PeriodDescription
+        periodDescription: PeriodDescription,
+        shouldPadData: boolean = true
     ): Promise<MeasurementEntry[]> {
         const url = `/api/${fieldName}${periodDescription.toUrl()}`;
 
         const response = await fetch(url);
         const json = await response.json();
         const data = json.map(responseRowToMeasurementEntry);
-        const paddedData = padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
 
-        return paddedData;
+        if (shouldPadData) {
+            const paddedData = padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
+
+            return paddedData;
+        }
+
+        return data;
     }
 
     fetchPeriodData("gas", periodDescription).then((values) => {
