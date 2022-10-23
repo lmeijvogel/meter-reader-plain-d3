@@ -87,6 +87,31 @@ export class StroomGraphDescription extends GraphDescription {
     }
 }
 
+export class GenerationGraphDescription extends GraphDescription {
+    readonly barColor = "#55ff10";
+    readonly lightColor = "#88ff28";
+    readonly darkColor = "#22aa08";
+    readonly fieldName = "generation";
+    readonly displayableUnit = "kWh";
+
+    get minY() {
+        return -this.maxY;
+    }
+
+    get maxY() {
+        switch (this.periodSize) {
+            case "year":
+                return 600;
+            case "month":
+                return 20;
+            case "day":
+                return 1;
+            default:
+                return assertNever(this.periodSize);
+        }
+    }
+}
+
 export class WaterGraphDescription extends GraphDescription {
     readonly barColor = "#428bca";
     readonly lightColor = "#428bca";

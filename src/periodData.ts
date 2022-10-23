@@ -10,7 +10,8 @@ import {
     GasGraphDescription,
     WaterGraphDescription,
     StroomGraphDescription,
-    GraphDescription
+    GraphDescription,
+    GenerationGraphDescription
 } from "./models/GraphDescription";
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { PeriodDescription } from "./models/PeriodDescription";
@@ -20,6 +21,7 @@ import { initializeNavigation } from "./navigation";
 const periodGasContainer = d3.select("#gas_period_data");
 const periodStroomContainer = d3.select("#stroom_period_data");
 const periodWaterContainer = d3.select("#water_period_data");
+const periodGenerationContainer = d3.select("#generation_period_data");
 
 const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
 export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
@@ -64,6 +66,21 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         setCardTitle("js-period-water-title", cardTitle);
 
         api.call(periodWaterContainer);
+    });
+
+    fetchPeriodData("generation", periodDescription, false).then((values) => {
+        const graphDescription = new GenerationGraphDescription(periodDescription);
+        const api = lineChart(periodDescription)
+            .minMaxCalculation("quantile")
+            .tooltipDateFormat("HH:mm")
+            .tooltipValueFormat("d")
+            .tooltipDisplayableUnit("W")
+            .setSeries("opwekking", values, graphDescription.darkColor)
+            .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
+
+        setCardTitle("js-period-generation-title", "Opwekking");
+
+        api.call(periodGenerationContainer);
     });
 
     Promise.all<MeasurementEntry[]>([
