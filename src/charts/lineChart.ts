@@ -195,6 +195,7 @@ export function lineChart(periodDescription: PeriodDescription) {
     ) {
         const lineGenerator = d3
             .line<ValueWithTimestamp>()
+            .curve(d3.curveBasis)
             .x((d) => scaleX(d.timestamp))
             .y((d) => scaleY(d.value));
 
@@ -211,6 +212,7 @@ export function lineChart(periodDescription: PeriodDescription) {
         if (!!store.fill) {
             const areaPositive = d3
                 .area<ValueWithTimestamp>()
+                .curve(d3.curveBasis)
                 .x((d) => scaleX(d.timestamp))
                 .y0(scaleY(-1.0))
                 .y1((d) => scaleY(Math.max(0.0, d.value)));
