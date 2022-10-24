@@ -82,7 +82,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         const ticks = periodDescription.getChartTicks();
         const xAxis = d3
             .axisBottom(scaleXForXAxis)
-            .ticks(ticks, d3.timeFormat(periodDescription.timeFormatString()))
+            .ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()))
             .tickSizeOuter(0);
 
         const renderedXAxisLabels = xAxisBase

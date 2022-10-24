@@ -252,7 +252,7 @@ export function lineChart(periodDescription: PeriodDescription) {
 
     function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         const ticks = periodDescription.getChartTicks();
-        const xAxis = d3.axisBottom(scaleX as any).ticks(ticks, d3.timeFormat(periodDescription.timeFormatString()));
+        const xAxis = d3.axisBottom(scaleX as any).ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()));
 
         xAxisBase.attr("transform", `translate(0, ${scaleY(0)})`).call(xAxis as any);
     }
@@ -315,10 +315,13 @@ export function lineChart(periodDescription: PeriodDescription) {
         const pointerX = d3.pointer(event)[0];
         const pointerDate = scaleX.invert(pointerX);
 
+        let closestDate = new Date();
+
         const ys = Array.from(store.seriesCollection.keys()).map((key) => {
             const series = store.seriesCollection.get(key)!;
 
             var closestIndex = bisect(series.series, pointerDate, 1) - 1;
+            closestDate = series.series[closestIndex].timestamp;
 
             return {
                 name: key,
@@ -326,7 +329,7 @@ export function lineChart(periodDescription: PeriodDescription) {
             };
         });
 
-        const dateString = format(pointerDate, store.tooltipDateFormat);
+        const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
 
         const valueLines = ys
             .map(({ name, value }) => {

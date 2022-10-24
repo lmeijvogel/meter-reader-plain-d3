@@ -12,7 +12,7 @@ const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).
 
 const recentCurrentGraph = lineChart(new LastHourDescription())
     .minMaxCalculation("quantile")
-    .tooltipDateFormat("HH:mm")
+    .tooltipDateFormat("%H:%M")
     .tooltipValueFormat("d")
     .tooltipDisplayableUnit("W")
     .fill("#f0ad4e", "#adf04e");

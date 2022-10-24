@@ -52,6 +52,7 @@ export abstract class PeriodDescription {
     abstract getExpectedDomainValues(): d3.TimeInterval;
     abstract normalize(date: Date): Date;
 
+    abstract tickFormatString(): string;
     abstract timeFormatString(): string;
 
     abstract shiftHalfTick(date: Date): Date;
@@ -131,10 +132,13 @@ export class YearDescription extends PeriodDescription {
         return endOfYear(this.startOfPeriod());
     }
 
-    timeFormatString() {
+    tickFormatString() {
         return "%m";
     }
 
+    timeFormatString() {
+        return "%Y";
+    }
     getExpectedDomainValues() {
         return d3.timeMonth;
     }
@@ -227,8 +231,12 @@ export class MonthDescription extends PeriodDescription {
         return addHours(date, -12);
     }
 
-    timeFormatString() {
+    tickFormatString() {
         return "%-d";
+    }
+
+    timeFormatString(): string {
+        return "%M %Y";
     }
 
     atIndex(date: Date): DayDescription {
@@ -310,8 +318,12 @@ export class DayDescription extends PeriodDescription {
         return endOfDay(this.startOfPeriod());
     }
 
-    timeFormatString() {
+    tickFormatString() {
         return "%-H";
+    }
+
+    timeFormatString(): string {
+        return "%H:%M";
     }
 
     getExpectedDomainValues() {
@@ -371,8 +383,12 @@ export class HourDescription extends PeriodDescription {
         return new DayDescription(this.year, this.month, this.day);
     }
 
-    timeFormatString() {
+    tickFormatString() {
         return "%M";
+    }
+
+    timeFormatString() {
+        return "%a %Y-%M-%d %H:%m";
     }
 
     getExpectedDomainValues(): d3.TimeInterval {
@@ -495,16 +511,21 @@ export class MinuteDescription extends PeriodDescription {
     getExpectedDomainValues(): d3.TimeInterval {
         throw new Error("Method not implemented.");
     }
-    normalize(date: Date): Date {
+    normalize(_date: Date): Date {
+        throw new Error("Method not implemented.");
+    }
+
+    tickFormatString(): string {
         throw new Error("Method not implemented.");
     }
     timeFormatString(): string {
         throw new Error("Method not implemented.");
     }
-    shiftHalfTick(date: Date): Date {
+
+    shiftHalfTick(_date: Date): Date {
         throw new Error("Method not implemented.");
     }
-    protected relevantDateParts(date: Date): Date {
+    protected relevantDateParts(_date: Date): Date {
         throw new Error("Method not implemented.");
     }
     startOfPeriod(): Date {
@@ -513,7 +534,7 @@ export class MinuteDescription extends PeriodDescription {
     endOfPeriod(): Date {
         throw new Error("Method not implemented.");
     }
-    atIndex(date: Date): PeriodDescription {
+    atIndex(_date: Date): PeriodDescription {
         throw new Error("Method not implemented.");
     }
 

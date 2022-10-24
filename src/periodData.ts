@@ -14,7 +14,7 @@ import {
     GenerationGraphDescription
 } from "./models/GraphDescription";
 import { MeasurementEntry } from "./models/MeasurementEntry";
-import { PeriodDescription } from "./models/PeriodDescription";
+import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { initializeNavigation } from "./navigation";
 
@@ -70,9 +70,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     fetchPeriodData("generation", periodDescription, false).then((values) => {
         const graphDescription = new GenerationGraphDescription(periodDescription);
+
         const api = lineChart(periodDescription)
             .minMaxCalculation("quantile")
-            .tooltipDateFormat("HH:mm")
+            .tooltipDateFormat("%H:%M")
             .tooltipValueFormat("d")
             .tooltipDisplayableUnit("W")
             .setSeries("opwekking", values, graphDescription.darkColor)
@@ -129,6 +130,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     fetchTemperatureData(periodDescription).then((result) => {
         const chartContainer = d3.select("#temperature_line_chart");
         const temperatureChart = lineChart(periodDescription)
+            .tooltipDateFormat(periodDescription.timeFormatString())
             .tooltipValueFormat(".1f")
             .tooltipDisplayableUnit("°C")
             .minMaxCalculation("minMax");
