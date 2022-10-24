@@ -95,7 +95,7 @@ export class GenerationGraphDescription extends GraphDescription {
     readonly displayableUnit = "kWh";
 
     get minY() {
-        return -this.maxY;
+        return 0;
     }
 
     get maxY() {
