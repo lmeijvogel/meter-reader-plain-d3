@@ -195,31 +195,21 @@ export function lineChart(periodDescription: PeriodDescription) {
     ) {
         const lineGenerator = d3
             .line<ValueWithTimestamp>()
-            .curve(d3.curveBasis)
+            .curve(d3.curveNatural)
             .x((d) => scaleX(d.timestamp))
             .y((d) => scaleY(d.value));
-
-        selection
-            .selectAll(`path.line`)
-            .data([series])
-            .join("path")
-            .attr("class", `line`)
-            .attr("fill", "none")
-            .attr("stroke", lineColor)
-            .attr("stroke-width", 2)
-            .attr("d", lineGenerator);
 
         if (!!store.fill) {
             const areaPositive = d3
                 .area<ValueWithTimestamp>()
-                .curve(d3.curveBasis)
+                .curve(d3.curveNatural)
                 .x((d) => scaleX(d.timestamp))
                 .y0(scaleY(-1.0))
                 .y1((d) => scaleY(Math.max(0.0, d.value)));
 
             const areaNegative = d3
                 .area<ValueWithTimestamp>()
-                .curve(d3.curveStep)
+                .curve(d3.curveNatural)
                 .x((d) => scaleX(d.timestamp))
                 .y0(scaleY(0.0))
                 .y1((d) => scaleY(Math.min(0.0, d.value)));
@@ -240,6 +230,16 @@ export function lineChart(periodDescription: PeriodDescription) {
                 .attr("d", areaNegative)
                 .attr("fill", store.fill.negative);
         }
+
+        selection
+            .selectAll(`path.line`)
+            .data([series])
+            .join("path")
+            .attr("class", `line`)
+            .attr("fill", "none")
+            .attr("stroke", lineColor)
+            .attr("stroke-width", store.fill ? 1 : 2)
+            .attr("d", lineGenerator);
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
