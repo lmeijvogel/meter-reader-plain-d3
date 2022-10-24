@@ -60,7 +60,7 @@ loadData("generation", "last_year").then((result) => {
     const chartContainer = d3.select("#opwekking_heatmap_yearly");
 
     heatMap("year")
-        .colors("#ffffff", "#f0ad4e", "#784805")
+        .colors("#ffffff", "#88ff28", "#22aa08")
         .data(result)
         .unit("Wh")
         .tickFormat(formatMonthNames)
@@ -107,7 +107,7 @@ loadData("generation", "last_30_days").then((result) => {
     const chartContainer = d3.select("#opwekking_heatmap_monthly");
 
     heatMap("30_days")
-        .colors("#ffffff", "#f0ad4e", "#784805")
+        .colors("#ffffff", "#88ff28", "#22aa08")
         .min(0.1)
         .data(result)
         .unit("Wh")
