@@ -77,13 +77,25 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     fetchPeriodData("generation", periodDescription, false).then((values) => {
         const graphDescription = new GenerationGraphDescription(periodDescription);
 
-        const api = lineChart(periodDescription)
-            .minMaxCalculation("quantile")
-            .tooltipDateFormat("%H:%M")
-            .tooltipValueFormat("d")
-            .tooltipDisplayableUnit("W")
-            .setSeries("opwekking", values, graphDescription.darkColor)
-            .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
+        // The API returns Wh. I prefer to show the "average wattage"show.
+        // When the periodSize === "day", values for every 15m are returned.
+        // To convert these to kWh, we need to multiply by 4 (15m => 1h)
+        // in addition to dividing by 1000.
+        const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
+        const valuesInKWh = values.map((value) => ({ ...value, value: value.value / kWMultiplicationFactor }));
+
+        let api: any;
+        if (periodDescription instanceof DayDescription) {
+            api = lineChart(periodDescription)
+                .minMaxCalculation("quantile")
+                .tooltipDateFormat("%H:%M")
+                .tooltipValueFormat(".3f")
+                .tooltipDisplayableUnit("kW")
+                .setSeries("opwekking", valuesInKWh, graphDescription.darkColor)
+                .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
+        } else {
+            api = barChart(periodDescription, graphDescription).data(valuesInKWh).onClick(retrieveAndDrawPeriodCharts);
+        }
 
         api.clearCanvas(shouldClearCanvas);
 
