@@ -275,6 +275,24 @@ export function lineChart(periodDescription: PeriodDescription) {
         }
     }
 
+    function showHoverTooltip(event: any) {
+        const tooltipWidth = 250; // Matches the CSS value
+        const tooltipX = event.pageX;
+
+        const tooltipSelector = d3.select("#tooltip");
+
+        const left = clamp(tooltipX, 0, windowWidth - tooltipWidth);
+
+        tooltipSelector
+            .style("top", event.pageY - 170 + "px")
+            .style("left", left + "px")
+
+            .html(() => {
+                // This allows to find the closest X index of the mouse:
+                return getHoverTooltipContents(event);
+            });
+    }
+
     function showBrushTooltip(event: any) {
         d3.select("#tooltip").style("display", "flex");
 
@@ -403,21 +421,7 @@ export function lineChart(periodDescription: PeriodDescription) {
                 return;
             }
 
-            const tooltipWidth = 250; // Matches the CSS value
-            const tooltipX = event.pageX;
-
-            const tooltipSelector = d3.select("#tooltip");
-
-            const left = clamp(tooltipX, 0, windowWidth - tooltipWidth);
-
-            tooltipSelector
-                .style("top", event.pageY - 170 + "px")
-                .style("left", left + "px")
-
-                .html(() => {
-                    // This allows to find the closest X index of the mouse:
-                    return getHoverTooltipContents(event);
-                });
+            showHoverTooltip(event);
         });
     }
 }
