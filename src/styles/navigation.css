@@ -19,6 +19,16 @@
     border-bottom: 1px solid #ddd;
 }
 
+h1 {
+    font-size: x-large;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: large;
+    font-weight: bold;
+}
+
 .rows {
     margin: 60px;
 }
