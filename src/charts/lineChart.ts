@@ -2,7 +2,6 @@ import * as d3 from "d3";
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
-import { format } from "date-fns";
 import { getWindowWidth } from "../lib/getWindowWidth";
 import { assertNever } from "../lib/assertNever";
 
@@ -368,8 +367,8 @@ export function lineChart(periodDescription: PeriodDescription) {
             });
         }
 
-        const startDateString = format(pointerStartDate, store.tooltipDateFormat);
-        const endDateString = format(pointerEndDate, store.tooltipDateFormat);
+        const startDateString = d3.timeFormat(store.tooltipDateFormat)(pointerStartDate);
+        const endDateString = d3.timeFormat(store.tooltipDateFormat)(pointerEndDate);
 
         return `${startDateString} - ${endDateString}<br>
                 <dl>${renderBrushTooltipDisplayValues(displayValues).join("")}</dl>
