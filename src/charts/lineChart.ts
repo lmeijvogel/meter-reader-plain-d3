@@ -137,10 +137,10 @@ export function lineChart(periodDescription: PeriodDescription) {
 
             scaleX.domain(domainX);
 
-            const domain = store.domain ?? getDomainY();
+            const domainY = store.domain ?? getDomainY();
 
             const xAxisHeight = 20;
-            scaleY.domain(domain).range([height - padding.bottom - xAxisHeight, padding.top]);
+            scaleY.domain(domainY).range([height - padding.bottom - xAxisHeight, padding.top]);
 
             if (firstDrawCall) {
                 firstDrawCall = false;
