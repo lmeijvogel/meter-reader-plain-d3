@@ -316,12 +316,12 @@ export function lineChart(periodDescription: PeriodDescription) {
         const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
 
         const valueLines = ys
-            .map(({ name, value }) => {
-                return `<tr>
+            .map(
+                ({ name, value }) => `<tr>
                                             <td>${name}:</td>
                                             <td class="tableValue">${renderDisplayValue(value)}</td>
-                                        </tr>`;
-            })
+                                        </tr>`
+            )
             .join("");
         return `<b>${dateString}</b><table><tbody>${valueLines}</tbody></table>`;
     }
