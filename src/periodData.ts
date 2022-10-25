@@ -24,10 +24,14 @@ const periodWaterContainer = d3.select("#water_period_data");
 const periodGenerationContainer = d3.select("#generation_period_data");
 
 const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
+
+let previousPeriod: PeriodDescription | null = null;
+
 export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
     navigation.setPeriodDescription(periodDescription);
 
-    // PeriodUsage
+    const shouldClearCanvas = previousPeriod?.periodSize !== periodDescription.periodSize;
+
     async function fetchPeriodData(
         fieldName: UsageField,
         periodDescription: PeriodDescription,
@@ -62,6 +66,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         const graphDescription = new WaterGraphDescription(periodDescription);
         const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
+        api.clearCanvas(shouldClearCanvas);
+
         const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
         setCardTitle("js-period-water-title", cardTitle);
 
@@ -78,6 +84,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             .tooltipDisplayableUnit("W")
             .setSeries("opwekking", values, graphDescription.darkColor)
             .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
+
+        api.clearCanvas(shouldClearCanvas);
 
         setCardTitle("js-period-generation-title", "Opwekking");
 
@@ -100,6 +108,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         const api = usageAndGenerationBarChart(periodDescription, graphDescription)
             .onClick(retrieveAndDrawPeriodCharts)
             .data(equalizedData);
+
+        api.clearCanvas(shouldClearCanvas);
 
         const cardTitle = createPeriodDataCardTitle(stroomValues, "stroom", graphDescription, periodDescription);
         setCardTitle("js-period-stroom-title", cardTitle);
@@ -135,6 +145,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             .tooltipDisplayableUnit("°C")
             .minMaxCalculation("minMax");
 
+        temperatureChart.clearCanvas(shouldClearCanvas);
+
         [
             ["huiskamer", "#ff0000"],
             ["zolder", "#0000ff"],
@@ -149,6 +161,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         });
         chartContainer.call(temperatureChart.call);
     });
+
+    previousPeriod = periodDescription;
 }
 
 function createPeriodDataCardTitle(

@@ -35,6 +35,7 @@ type Store = {
     graphTickPositions: "on_value" | "between_values";
     unit: string;
     onValueClick: (periodDescription: PeriodDescription) => void;
+    clearCanvas: boolean;
 };
 
 const width = 480;
@@ -65,7 +66,8 @@ export function usageAndGenerationBarChart(
         relativeMinMax: true,
         data: [],
         unit: graphDescription.displayableUnit,
-        onValueClick: () => {}
+        onValueClick: () => {},
+        clearCanvas: false
     };
 
     const scaleX = d3.scaleBand<Date>().padding(0.15);
@@ -245,7 +247,15 @@ export function usageAndGenerationBarChart(
             return api;
         },
 
+        clearCanvas: (value: boolean) => {
+            store.clearCanvas = value;
+        },
+
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+            if (store.clearCanvas) {
+                selection.selectAll("*").remove();
+            }
+
             if (firstDrawCall) {
                 addSvgChildTags(selection);
 

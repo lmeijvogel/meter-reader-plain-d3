@@ -19,6 +19,7 @@ type Store = {
     seriesCollection: SeriesCollection;
     domain?: [number, number];
     fill?: { positive: string; negative: string };
+    clearCanvas: boolean;
 };
 
 const padding = {
@@ -42,7 +43,8 @@ export function lineChart(periodDescription: PeriodDescription) {
         tooltipValueFormat: "%d",
         tooltipDisplayableUnit: "",
         minMaxCalculation: "explicit",
-        seriesCollection: new Map()
+        seriesCollection: new Map(),
+        clearCanvas: false
     };
 
     let firstDrawCall = true;
@@ -107,7 +109,17 @@ export function lineChart(periodDescription: PeriodDescription) {
             return api;
         },
 
+        clearCanvas: (value: boolean) => {
+            store.clearCanvas = value;
+
+            return api;
+        },
+
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+            if (store.clearCanvas) {
+                selection.selectAll("*").remove();
+            }
+
             const brush = d3.brushX();
             brush.extent([
                 [minimumX, minimumY],
