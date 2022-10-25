@@ -119,35 +119,7 @@ export function lineChart(periodDescription: PeriodDescription) {
 
             selection.attr("viewBox", `0 0 ${width} ${height}`);
 
-            selection.on("mouseover", () => {
-                d3.select("#tooltip").style("display", "flex");
-            });
-
-            selection.on("mouseout", () => {
-                d3.select("#tooltip").style("display", "none");
-            });
-
-            selection.on("mousemove", (event) => {
-                if (store.seriesCollection.size === 0) {
-                    return;
-                }
-
-                const tooltipWidth = 250; // Matches the CSS value
-                const tooltipX = event.pageX;
-
-                const tooltipSelector = d3.select("#tooltip");
-
-                const left = clamp(tooltipX, 0, windowWidth - tooltipWidth);
-
-                tooltipSelector
-                    .style("top", event.pageY - 170 + "px")
-                    .style("left", left + "px")
-
-                    .html(() => {
-                        // This allows to find the closest X index of the mouse:
-                        return getHoverTooltipContents(event);
-                    });
-            });
+            registerEventHandlers(selection);
 
             const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
 
@@ -400,6 +372,42 @@ export function lineChart(periodDescription: PeriodDescription) {
     }
 
     return api;
+
+    function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        selection.on("mouseover", null);
+        selection.on("mouseout", null);
+        selection.on("mousemove", null);
+
+        selection.on("mouseover", () => {
+            d3.select("#tooltip").style("display", "flex");
+        });
+
+        selection.on("mouseout", () => {
+            d3.select("#tooltip").style("display", "none");
+        });
+
+        selection.on("mousemove", (event) => {
+            if (store.seriesCollection.size === 0) {
+                return;
+            }
+
+            const tooltipWidth = 250; // Matches the CSS value
+            const tooltipX = event.pageX;
+
+            const tooltipSelector = d3.select("#tooltip");
+
+            const left = clamp(tooltipX, 0, windowWidth - tooltipWidth);
+
+            tooltipSelector
+                .style("top", event.pageY - 170 + "px")
+                .style("left", left + "px")
+
+                .html(() => {
+                    // This allows to find the closest X index of the mouse:
+                    return getHoverTooltipContents(event);
+                });
+        });
+    }
 }
 
 function clamp(n: number, min: number, max: number): number {
