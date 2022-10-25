@@ -120,7 +120,7 @@ function initializeDesktopNavigation(onPeriodChange: (periodDescription: PeriodD
     window.addEventListener("resize", onResize);
 
     const onMouseMove = (event: any) => {
-        setMouseCoords(event.clientX, event.pageY);
+        setMouseCoords(event.clientX, event.clientY);
     };
     window.addEventListener("mousemove", onMouseMove);
 

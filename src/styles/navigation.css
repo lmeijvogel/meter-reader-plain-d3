@@ -2,6 +2,27 @@
     height: 100%;
 }
 
+.title-container {
+    position: fixed;
+
+    top: 0;
+    width: 100%;
+    height: 60px;
+
+    /* Flex display is for aligning the title inside */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+
+    background: white;
+    border-bottom: 1px solid #ddd;
+}
+
+.rows {
+    margin: 60px;
+}
+
 .pageTitle {
     text-align: center;
     cursor: pointer;
@@ -27,9 +48,11 @@
     cursor: pointer;
 
     transition: top 100ms;
+    z-index: 100; /* Above the page title */
 }
 
 .upButtonsContainer.visible {
+    position: fixed;
     top: 0px;
 }
 
