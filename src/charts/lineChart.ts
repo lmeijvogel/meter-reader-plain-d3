@@ -352,7 +352,7 @@ export function lineChart(periodDescription: PeriodDescription) {
 
         const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
 
-        for (const series of Array.from(store.seriesCollection.entries())) {
+        for (const series of store.seriesCollection.entries()) {
             const startIndex = bisect(series[1].series, pointerStartDate, 1) - 1;
             const endIndex = bisect(series[1].series, pointerEndDate, 1) - 1;
 
@@ -378,7 +378,7 @@ export function lineChart(periodDescription: PeriodDescription) {
     function renderBrushTooltipDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
         let result: string[] = [];
 
-        for (const [name, values] of Array.from(displayValues)) {
+        for (const [name, values] of displayValues) {
             result.push(`<dt>${name}:</dt>`);
             result.push(
                 `<dd>

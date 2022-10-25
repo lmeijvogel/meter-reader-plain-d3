@@ -139,7 +139,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
         const result = new Map();
 
-        Array.from(Object.entries(json)).forEach((keyAndSeries) => {
+        Object.entries(json).forEach((keyAndSeries) => {
             const [key, rawSeries] = keyAndSeries;
             const series = rawSeries.map(responseRowToMeasurementEntry);
 
