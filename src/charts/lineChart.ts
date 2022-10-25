@@ -125,7 +125,8 @@ export function lineChart(periodDescription: PeriodDescription) {
                 [maximumX, maximumY]
             ]);
 
-            brush.on("brush", showBrushTooltip);
+            brush.on("brush", (event) => showTooltip(event.sourceEvent, () => getBrushTooltipContents(event)));
+
             selection.select(".brush").call(brush as any);
 
             selection.attr("viewBox", `0 0 ${width} ${height}`);
@@ -274,40 +275,17 @@ export function lineChart(periodDescription: PeriodDescription) {
         }
     }
 
-    function showHoverTooltip(event: any) {
+    function showTooltip(event: any, htmlProvider: () => string) {
         const tooltipWidth = 250; // Matches the CSS value
-        const tooltipX = event.pageX;
+        const tooltipLeft = event.pageX + 20;
+
+        const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
 
         const tooltipSelector = d3.select("#tooltip");
-
-        const left = clamp(tooltipX, 0, windowWidth - tooltipWidth);
-
         tooltipSelector
             .style("top", event.pageY - 170 + "px")
             .style("left", left + "px")
-
-            .html(() => {
-                // This allows to find the closest X index of the mouse:
-                return getHoverTooltipContents(event);
-            });
-    }
-
-    function showBrushTooltip(event: any) {
-        d3.select("#tooltip").style("display", "flex");
-
-        const sourceEvent = event.sourceEvent;
-
-        const tooltipWidth = 250; // Matches the CSS value
-
-        const tooltipLeft = sourceEvent.pageX + 20;
-
-        const left = clamp(0, tooltipLeft, windowWidth - tooltipWidth);
-
-        const tooltipSelector = d3.select("#tooltip");
-        tooltipSelector
-            .style("top", sourceEvent.pageY - 170 + "px")
-            .style("left", left + "px")
-            .html(() => getBrushTooltipContents(event));
+            .html(htmlProvider);
     }
 
     function getHoverTooltipContents(event: any): string {
@@ -420,7 +398,7 @@ export function lineChart(periodDescription: PeriodDescription) {
                 return;
             }
 
-            showHoverTooltip(event);
+            showTooltip(event, () => getHoverTooltipContents(event));
         });
     }
 }
