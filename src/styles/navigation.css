@@ -1,12 +1,20 @@
 .navigationOverlay {
+    display: flex;
+
+    justify-content: center;
+
     height: 100%;
+    width: 100vw;
+
+    position: absolute;
 }
 
 .title-container {
     position: fixed;
 
     top: 0;
-    width: 100%;
+    right: 0;
+    width: 100vw;
     height: 60px;
 
     /* Flex display is for aligning the title inside */
