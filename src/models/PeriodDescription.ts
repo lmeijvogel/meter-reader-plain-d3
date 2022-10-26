@@ -236,7 +236,7 @@ export class MonthDescription extends PeriodDescription {
     }
 
     timeFormatString(): string {
-        return "%M %Y";
+        return "%a %d-%m-%Y";
     }
 
     atIndex(date: Date): DayDescription {
@@ -388,7 +388,7 @@ export class HourDescription extends PeriodDescription {
     }
 
     timeFormatString() {
-        return "%a %Y-%M-%d %H:%m";
+        return "%a %Y-%m-%d %H:%M";
     }
 
     getExpectedDomainValues(): d3.TimeInterval {
@@ -459,6 +459,10 @@ export class LastHourDescription extends HourDescription {
 
     override startOfPeriod() {
         return sub(this.endOfPeriod(), { hours: 1 });
+    }
+
+    timeFormatString() {
+        return "%H:%M";
     }
 
     toShortTitle() {

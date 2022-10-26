@@ -154,7 +154,7 @@ export class CurrentPowerUsageGraphDescription extends GraphDescription {
     }
 }
 
-export class BinnenTemperatuurGraphDescription extends GraphDescription {
+export class TemperatuurGraphDescription extends GraphDescription {
     readonly barColor = "#428bca";
     readonly lightColor = "#ffddad";
     readonly darkColor = "#428bca";

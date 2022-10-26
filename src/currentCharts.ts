@@ -3,6 +3,7 @@ import { subHours } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
+import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
 
@@ -10,11 +11,9 @@ const gaugeContainer = d3.select("#current_power_gauge");
 const recentCurrentContainer = d3.select("#recent_current");
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
-const recentCurrentGraph = lineChart(new LastHourDescription())
+const lastHourDescription = new LastHourDescription();
+const recentCurrentGraph = lineChart(lastHourDescription, new CurrentPowerUsageGraphDescription(lastHourDescription))
     .minMaxCalculation("quantile")
-    .tooltipDateFormat("%H:%M")
-    .tooltipValueFormat("d")
-    .tooltipDisplayableUnit("W")
     .fill("#f0ad4e", "#adf04e");
 
 type CurrentFields = { current: MeasurementEntry[] };

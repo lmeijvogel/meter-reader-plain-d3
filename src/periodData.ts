@@ -11,7 +11,8 @@ import {
     WaterGraphDescription,
     StroomGraphDescription,
     GraphDescription,
-    GenerationGraphDescription
+    GenerationGraphDescription,
+    TemperatuurGraphDescription
 } from "./models/GraphDescription";
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
@@ -97,11 +98,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
         let api: any;
         if (periodDescription instanceof DayDescription) {
-            api = lineChart(periodDescription)
+            api = lineChart(periodDescription, graphDescription)
                 .minMaxCalculation("quantile")
-                .tooltipDateFormat("%H:%M")
-                .tooltipValueFormat(".3f")
-                .tooltipDisplayableUnit("kW")
                 .setSeries("opwekking", valuesInKWh, graphDescription.darkColor)
                 .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
         } else {
@@ -162,11 +160,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     fetchTemperatureData(periodDescription).then((result) => {
         const chartContainer = d3.select("#temperature_line_chart");
-        const temperatureChart = lineChart(periodDescription)
-            .tooltipDateFormat(periodDescription.timeFormatString())
-            .tooltipValueFormat(".1f")
-            .tooltipDisplayableUnit("°C")
-            .minMaxCalculation("minMax");
+        const temperatureChart = lineChart(
+            periodDescription,
+            new TemperatuurGraphDescription(periodDescription)
+        ).minMaxCalculation("minMax");
 
         temperatureChart.clearCanvas(shouldClearCanvas);
 

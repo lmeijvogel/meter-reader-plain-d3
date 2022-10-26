@@ -3,12 +3,16 @@ import { GraphDescription } from "../models/GraphDescription";
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
-import { tip as d3tip } from "d3-v6-tip";
 import { format } from "date-fns";
+import { clamp } from "../helpers/clamp";
+import { getWindowWidth } from "../lib/getWindowWidth";
 
 type Store = {
     periodDescription: PeriodDescription;
     barColor: string;
+    tooltipDateFormat: string;
+    tooltipValueFormat: string;
+    tooltipDisplayableUnit: string;
     hasTextLabels: boolean;
     data: ValueWithTimestamp[];
     relativeMinMax: boolean;
@@ -31,12 +35,13 @@ const padding = {
 const axisWidth = 50;
 
 export function barChart(initialPeriodDescription: PeriodDescription, graphDescription: GraphDescription) {
-    let tip: any;
-
     let firstDrawCall = true;
 
     const store: Store = {
         periodDescription: initialPeriodDescription,
+        tooltipDateFormat: initialPeriodDescription.timeFormatString(),
+        tooltipValueFormat: graphDescription.tooltipValueFormat,
+        tooltipDisplayableUnit: graphDescription.displayableUnit,
         hasTextLabels: true,
         barColor: graphDescription.barColor,
         graphTickPositions: "on_value",
@@ -46,6 +51,12 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         onValueClick: () => {},
         clearCanvas: false
     };
+
+    let windowWidth = getWindowWidth();
+
+    window.addEventListener("resize", () => {
+        windowWidth = getWindowWidth();
+    });
 
     const scaleX = d3.scaleBand<Date>().padding(0.15);
     const scaleXForInversion = d3.scaleTime();
@@ -161,10 +172,6 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
                 const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
-            .on("mouseover", (event, d) => {
-                tip.show(event, d);
-            })
-            .on("mouseout", tip.hide)
             .attr("index", (_d: any, i: number) => i);
     }
 
@@ -172,9 +179,88 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         return graphDescription.xLabelHeight;
     }
 
+    function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        selection.on("mouseover", null);
+        selection.on("mouseout", null);
+        selection.on("mousemove", null);
+
+        selection.on("mouseover", () => {
+            d3.select("#tooltip").style("display", "flex");
+        });
+
+        selection.on("mouseout", () => {
+            d3.select("#tooltip").style("display", "none");
+        });
+
+        selection.on("mousemove", (event) => {
+            showTooltip(event, () => getHoverTooltipContents(event));
+        });
+    }
+
+    function showTooltip(event: any, htmlProvider: () => string) {
+        const tooltipWidth = 250; // Matches the CSS value
+        const tooltipLeft = event.pageX + 20;
+
+        const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
+
+        const tooltipSelector = d3.select("#tooltip");
+        tooltipSelector
+            .style("top", event.pageY - 170 + "px")
+            .style("left", left + "px")
+            .html(htmlProvider);
+    }
+
+    function getHoverTooltipContents(event: any): string {
+        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
+
+        const pointerX = d3.pointer(event)[0];
+        const pointerDate = scaleXForInversion.invert(pointerX);
+
+        let closestDate = new Date();
+
+        const data = store.data;
+
+        var closestIndex = bisect(data, pointerDate, 1) - 1;
+        closestDate = data[closestIndex].timestamp;
+
+        console.log({ data, closestIndex });
+        const value = data[closestIndex].value;
+
+        const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
+
+        const valueLine = `<tr>
+                                            <td>${graphDescription.fieldName}:</td>
+                                            <td class="tableValue">${renderDisplayValue(value)}</td>
+                                        </tr>`;
+
+        return `<b>${dateString}</b><table><tbody>${valueLine}</tbody></table>`;
+    }
+
+    function renderDisplayValue(value: number) {
+        return `${d3.format(store.tooltipValueFormat)(value)} ${store.tooltipDisplayableUnit}`;
+    }
+
     const api = {
         data(data: ValueWithTimestamp[]) {
             store.data = data;
+
+            return api;
+        },
+
+        tooltipDateFormat: (format: string) => {
+            store.tooltipDateFormat = format;
+
+            return api;
+        },
+
+        tooltipDisplayableUnit: (unit: string) => {
+            store.tooltipDisplayableUnit = unit;
+
+            return api;
+        },
+
+        tooltipValueFormat: (format: string) => {
+            store.tooltipValueFormat = format;
 
             return api;
         },
@@ -202,23 +288,9 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
             if (firstDrawCall) {
                 addSvgChildTags(selection);
-
-                /* Initialize tooltip */
-                tip = d3tip()
-                    .attr("class", "d3-tip")
-                    .offset([-10, 0])
-                    .html((_event: unknown, d: ValueWithTimestamp) => {
-                        const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
-
-                        const contents = `${dateString}<br />value: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
-
-                        return contents;
-                    });
-                selection.call(tip);
-
-                firstDrawCall = false;
             }
 
+            registerEventHandlers(selection);
             updateScales(selection);
 
             drawBars(selection);

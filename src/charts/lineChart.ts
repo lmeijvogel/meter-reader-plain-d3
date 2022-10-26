@@ -4,6 +4,8 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { getWindowWidth } from "../lib/getWindowWidth";
 import { assertNever } from "../lib/assertNever";
+import { clamp } from "../helpers/clamp";
+import { GraphDescription } from "../models/GraphDescription";
 
 type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string }>;
 
@@ -33,14 +35,14 @@ const height = 240;
 
 const axisWidth = 50;
 
-export function lineChart(periodDescription: PeriodDescription) {
+export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
     const store: Store = {
         fillArea: false,
         lineColors: new Map(),
         defaultLineColor: "black",
-        tooltipDateFormat: "eee yyyy-MM-dd HH:mm",
-        tooltipValueFormat: "%d",
-        tooltipDisplayableUnit: "",
+        tooltipDateFormat: periodDescription.timeFormatString(),
+        tooltipValueFormat: graphDescription.tooltipValueFormat,
+        tooltipDisplayableUnit: graphDescription.displayableUnit,
         minMaxCalculation: "explicit",
         seriesCollection: new Map(),
         clearCanvas: false
@@ -401,16 +403,4 @@ export function lineChart(periodDescription: PeriodDescription) {
             showTooltip(event, () => getHoverTooltipContents(event));
         });
     }
-}
-
-function clamp(n: number, min: number, max: number): number {
-    if (n < min) {
-        return min;
-    }
-
-    if (n > max) {
-        return max;
-    }
-
-    return n;
 }
