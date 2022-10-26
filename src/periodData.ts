@@ -113,8 +113,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
         const equalizedData = {
             consumption: stroomValues,
-            generation: generationValues.map((el) => ({ value: el.value / 1000, timestamp: el.timestamp })),
-            backDelivery: backDeliveryValues.map((el) => ({ value: -el.value, timestamp: el.timestamp }))
+            generation: generationValues.map((el) => ({ ...el, value: el.value / 1000 })),
+            backDelivery: backDeliveryValues.map((el) => ({ ...el, value: -el.value }))
         };
 
         const api = usageAndGenerationBarChart(periodDescription, graphDescription)
