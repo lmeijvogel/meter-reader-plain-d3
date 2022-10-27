@@ -149,7 +149,7 @@ export function heatMap(graphType: GraphType) {
                 .html((_event: unknown, d: MeasurementEntry) => {
                     const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
 
-                    const contents = `${dateString}<br />value: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
+                    const contents = `${dateString}<br />Waarde: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
 
                     return contents;
                 });
