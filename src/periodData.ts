@@ -6,6 +6,7 @@ import { setCardTitle } from "./customElements/VizCard";
 import { padData } from "./helpers/padData";
 import { costsFor, PriceCategory } from "./helpers/PriceCalculator";
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
+import { assertNever } from "./lib/assertNever";
 import {
     GasGraphDescription,
     WaterGraphDescription,
@@ -94,21 +95,27 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         // To convert these to kWh, we need to multiply by 4 (15m => 1h)
         // in addition to dividing by 1000.
         const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
-        const valuesInKWh = values.map((value) => ({ ...value, value: value.value / kWMultiplicationFactor }));
+        const valuesInKW = values.map((value) => ({ ...value, value: value.value / 1000 }));
+
+        const valuesInKWhPer15m = values.map((value) => ({ ...value, value: value.value / kWMultiplicationFactor }));
 
         let api: any;
         if (periodDescription instanceof DayDescription) {
             api = lineChart(periodDescription, graphDescription)
                 .minMaxCalculation("quantile")
-                .setSeries("opwekking", valuesInKWh, graphDescription.darkColor)
+                .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor)
                 .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
         } else {
-            api = barChart(periodDescription, graphDescription).data(valuesInKWh).onClick(retrieveAndDrawPeriodCharts);
+            api = barChart(periodDescription, graphDescription)
+                .data(valuesInKWhPer15m)
+                .onClick(retrieveAndDrawPeriodCharts);
         }
 
         api.clearCanvas(shouldClearCanvas);
 
-        setCardTitle("js-period-generation-title", "Opwekking");
+        const cardTitle = createPeriodDataCardTitle(valuesInKW, "generation", graphDescription, periodDescription);
+
+        setCardTitle("js-period-generation-title", cardTitle);
 
         api.call(periodGenerationContainer);
     });
@@ -187,16 +194,46 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
 function createPeriodDataCardTitle(
     values: MeasurementEntry[],
-    priceCategory: PriceCategory,
+    priceCategory: PriceCategory | "generation",
     graphDescription: GraphDescription,
     periodDescription: PeriodDescription
 ): string {
-    const usage = values.map((v) => v.value).reduce((acc: number, el: number) => acc + el, 0);
-    const costs = costsFor(usage, priceCategory, periodDescription.startOfPeriod());
+    const usage = d3.sum(values, (v) => v.value);
 
-    const categoryName = priceCategory === "gas" ? "Gas" : priceCategory === "stroom" ? "Stroom" : "Water";
+    const categoryName = titleForCategory(priceCategory);
 
-    return `${categoryName}: ${d3.format(graphDescription.tooltipValueFormat)(usage)} ${
-        graphDescription.displayableUnit
-    } (${costs})`;
+    const formattedAmount = d3.format(graphDescription.tooltipValueFormat)(usage);
+
+    let result = `${categoryName}: ${formattedAmount} ${graphDescription.displayableUnit}`;
+
+    /* Use "stroom" for generation price as long as we have "saldering" */
+    const costs = costsFor(
+        usage,
+        priceCategory === "generation" ? "stroom" : priceCategory,
+        periodDescription.startOfPeriod()
+    );
+
+    return result + ` (${costs})`;
+}
+
+function titleForCategory(priceCategory: PriceCategory | "generation"): string {
+    let categoryName: string;
+
+    switch (priceCategory) {
+        case "gas":
+            categoryName = "Gas";
+            break;
+        case "stroom":
+            categoryName = "Stroom";
+            break;
+        case "water":
+            categoryName = "Water";
+            break;
+        case "generation":
+            categoryName = "Opwekking";
+            break;
+        default:
+            assertNever(priceCategory);
+    }
+    return categoryName;
 }
