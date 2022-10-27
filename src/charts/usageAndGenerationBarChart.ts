@@ -3,8 +3,9 @@ import { GraphDescription } from "../models/GraphDescription";
 import { MeasurementEntry } from "../models/MeasurementEntry";
 import { PeriodDescription } from "../models/PeriodDescription";
 
-import { tip as d3tip } from "d3-v6-tip";
 import { format, isEqual } from "date-fns";
+import { clamp } from "../helpers/clamp";
+import { getWindowWidth } from "../lib/getWindowWidth";
 
 type Data = {
     consumption: MeasurementEntry[];
@@ -29,6 +30,9 @@ type PowerSourcesAndBackDelivery = {
 type Store = {
     periodDescription: PeriodDescription;
     barColor: string;
+    tooltipDateFormat: string;
+    tooltipValueFormat: string;
+    tooltipDisplayableUnit: string;
     hasTextLabels: boolean;
     data: PowerSourcesAndBackDelivery[];
     relativeMinMax: boolean;
@@ -54,14 +58,15 @@ export function usageAndGenerationBarChart(
     initialPeriodDescription: PeriodDescription,
     graphDescription: GraphDescription
 ) {
-    let tip: any;
-
     let firstDrawCall = true;
 
     const store: Store = {
         periodDescription: initialPeriodDescription,
         hasTextLabels: true,
         barColor: graphDescription.barColor,
+        tooltipDateFormat: initialPeriodDescription.timeFormatString(),
+        tooltipValueFormat: graphDescription.tooltipValueFormat,
+        tooltipDisplayableUnit: graphDescription.displayableUnit,
         graphTickPositions: "on_value",
         relativeMinMax: true,
         data: [],
@@ -69,6 +74,12 @@ export function usageAndGenerationBarChart(
         onValueClick: () => {},
         clearCanvas: false
     };
+
+    let windowWidth = getWindowWidth();
+
+    window.addEventListener("resize", () => {
+        windowWidth = getWindowWidth();
+    });
 
     const scaleX = d3.scaleBand<Date>().padding(0.15);
     const scaleXForInversion = d3.scaleTime();
@@ -201,10 +212,6 @@ export function usageAndGenerationBarChart(
                 const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
-            .on("mouseover", (event, d) => {
-                tip.show(event, d);
-            })
-            .on("mouseout", tip.hide)
             .attr("index", (_d: any, i: number) => i);
     }
 
@@ -212,26 +219,82 @@ export function usageAndGenerationBarChart(
         return graphDescription.xLabelHeight;
     }
 
-    function buildTooltip(d: PowerSourcesAndBackDelivery) {
-        const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
+    function buildTooltip(event: any) {
+        var bisect = d3.bisector((d: PowerSourcesAndBackDelivery) => d.timestamp).right;
 
-        const rows = [`<dt>Grid</dt><dd><b>${d3.format(".2f")(d.gridSource)}</b> ${store.unit}</dd>`];
+        const pointerX = d3.pointer(event)[0];
+        const pointerDate = scaleXForInversion.invert(pointerX);
+
+        const data = store.data;
+
+        var closestIndex = bisect(data, pointerDate, 1) - 1;
+
+        const d = data[closestIndex];
+
+        const dateString = d3.timeFormat(initialPeriodDescription.timeFormatString())(d.timestamp);
+
+        const rows = [
+            `<tr><td class="category">Grid</td><td class="tableValue">${d3.format(".2f")(d.gridSource)} ${
+                store.unit
+            }</td></tr>`
+        ];
 
         if (Math.abs(d.solarSource) > 0.01) {
-            rows.push(`<dt>Panelen</dt><dd><b>${d3.format(".2f")(d.solarSource)}</b> ${store.unit}</dd>`);
+            rows.push(
+                `<tr><td class="category">Panelen</td><td class="tableValue">${d3.format(".2f")(d.solarSource)} ${
+                    store.unit
+                }</td></tr>`
+            );
         }
 
         if (Math.abs(d.backDelivery) > 0.01) {
-            rows.push(`<dt>Geleverd: </dt><dd><b>${d3.format(".2f")(-d.backDelivery)}</b> ${store.unit}</dd>`);
+            rows.push(
+                `<tr><td class="category">Geleverd: </td><td class="tableValue">${d3.format(".2f")(-d.backDelivery)} ${
+                    store.unit
+                }</td></tr>`
+            );
         }
 
         const contents = `${dateString}<br />
-                            <dl>
-                            ${rows.join("")}
-                            </dl>
+                            <table class="usageAndGenerationTooltip">
+                            <tbody>
+                                ${rows.join("")}
+                            </tbody>
+                            </table>
                         `;
 
         return contents;
+    }
+
+    function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        selection.on("mouseover", null);
+        selection.on("mouseout", null);
+        selection.on("mousemove", null);
+
+        selection.on("mouseover", () => {
+            d3.select("#tooltip").style("display", "flex");
+        });
+
+        selection.on("mouseout", () => {
+            d3.select("#tooltip").style("display", "none");
+        });
+
+        selection.on("mousemove", (event) => {
+            showTooltip(event, () => buildTooltip(event));
+        });
+    }
+
+    function showTooltip(event: any, htmlProvider: () => string) {
+        const tooltipWidth = 250; // Matches the CSS value
+        const tooltipLeft = event.pageX + 20;
+
+        const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
+
+        const tooltipSelector = d3.select("#tooltip");
+        tooltipSelector
+            .style("top", event.pageY - 170 + "px")
+            .style("left", left + "px")
+            .html(htmlProvider);
     }
 
     const api = {
@@ -259,17 +322,10 @@ export function usageAndGenerationBarChart(
             if (firstDrawCall) {
                 addSvgChildTags(selection);
 
-                /* Initialize tooltip */
-                tip = d3tip()
-                    .attr("class", "d3-tip")
-                    .offset([-10, 0])
-                    .html((_event: unknown, d: PowerSourcesAndBackDelivery) => buildTooltip(d));
-
-                selection.call(tip);
-
                 firstDrawCall = false;
             }
 
+            registerEventHandlers(selection);
             updateScales(selection);
 
             drawBars(selection, store.data, "solarSource", "#55ff10", "gridSource");

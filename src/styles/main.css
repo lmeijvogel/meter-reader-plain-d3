@@ -51,4 +51,8 @@ body {
 
 #tooltip .tableValue {
     text-align: right;
+    font-weight: bold;
+}
+.usageAndGenerationTooltip .category {
+    padding: 10px;
 }
