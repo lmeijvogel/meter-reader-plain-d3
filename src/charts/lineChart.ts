@@ -6,6 +6,7 @@ import { getWindowWidth } from "../lib/getWindowWidth";
 import { assertNever } from "../lib/assertNever";
 import { clamp } from "../helpers/clamp";
 import { GraphDescription } from "../models/GraphDescription";
+import { getClosestIndex } from "../lib/getClosestIndex";
 
 type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string }>;
 
@@ -291,17 +292,12 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function getHoverTooltipContents(event: any): string {
-        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
-
-        const pointerX = d3.pointer(event)[0];
-        const pointerDate = scaleX.invert(pointerX);
-
         let closestDate = new Date();
 
         const ys = Array.from(store.seriesCollection.keys()).map((key) => {
             const series = store.seriesCollection.get(key)!;
 
-            var closestIndex = bisect(series.series, pointerDate, 1) - 1;
+            var closestIndex = getClosestIndex(event, scaleX, series.series);
             closestDate = series.series[closestIndex].timestamp;
 
             return {
@@ -324,17 +320,14 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function getBrushTooltipContents(event: any): string {
-        // This allows to find the closest X index of the mouse:
-        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
-
         const pointerStartDate = scaleX.invert(event.selection[0]);
         const pointerEndDate = scaleX.invert(event.selection[1]);
 
         const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
 
         for (const series of store.seriesCollection.entries()) {
-            const startIndex = bisect(series[1].series, pointerStartDate, 1) - 1;
-            const endIndex = bisect(series[1].series, pointerEndDate, 1) - 1;
+            const startIndex = getClosestIndex(event.selection[0], scaleX, series[1].series);
+            const endIndex = getClosestIndex(event.selection[1], scaleX, series[1].series);
 
             const relevantEntries = series[1].series.slice(startIndex, endIndex);
 

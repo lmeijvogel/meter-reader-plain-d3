@@ -6,6 +6,7 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { format } from "date-fns";
 import { clamp } from "../helpers/clamp";
 import { getWindowWidth } from "../lib/getWindowWidth";
+import { getClosestIndex } from "../lib/getClosestIndex";
 
 type Store = {
     periodDescription: PeriodDescription;
@@ -211,19 +212,11 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
     }
 
     function getHoverTooltipContents(event: any): string {
-        var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
-
-        const pointerX = d3.pointer(event)[0];
-        const pointerDate = scaleXForInversion.invert(pointerX);
-
-        let closestDate = new Date();
-
         const data = store.data;
 
-        var closestIndex = bisect(data, pointerDate, 1) - 1;
-        closestDate = data[closestIndex].timestamp;
+        var closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        console.log({ data, closestIndex });
+        const closestDate = data[closestIndex].timestamp;
         const value = data[closestIndex].value;
 
         const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
