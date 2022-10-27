@@ -3,7 +3,7 @@ import { GraphDescription } from "../models/GraphDescription";
 import { MeasurementEntry } from "../models/MeasurementEntry";
 import { PeriodDescription } from "../models/PeriodDescription";
 
-import { format, isEqual } from "date-fns";
+import { isEqual } from "date-fns";
 import { clamp } from "../helpers/clamp";
 import { getWindowWidth } from "../lib/getWindowWidth";
 

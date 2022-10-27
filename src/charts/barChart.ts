@@ -3,7 +3,6 @@ import { GraphDescription } from "../models/GraphDescription";
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
-import { format } from "date-fns";
 import { clamp } from "../helpers/clamp";
 import { getWindowWidth } from "../lib/getWindowWidth";
 import { getClosestIndex } from "../lib/getClosestIndex";
