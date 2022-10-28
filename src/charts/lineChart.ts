@@ -122,6 +122,12 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 selection.selectAll("*").remove();
             }
 
+            if (firstDrawCall) {
+                firstDrawCall = false;
+
+                addSvgChildTags(selection);
+            }
+
             const brush = d3.brushX();
             brush.extent([
                 [minimumX, minimumY],
@@ -144,12 +150,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
             const xAxisHeight = 20;
             scaleY.domain(domainY).range([height - padding.bottom - xAxisHeight, padding.top]);
-
-            if (firstDrawCall) {
-                firstDrawCall = false;
-
-                addSvgChildTags(selection);
-            }
 
             renderXAxis(selection.select(".xAxis"));
             selection
