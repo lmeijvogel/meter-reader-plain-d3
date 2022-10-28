@@ -67,6 +67,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
     const yAxis = d3.axisLeft(scaleY);
 
+    let isBrushVisible = false;
+
     const api = {
         setSeries(name: string, series: ValueWithTimestamp[], lineColor: string) {
             store.seriesCollection.set(name, { series, lineColor });
@@ -134,7 +136,17 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 [maximumX, maximumY]
             ]);
 
+            brush.on("start", () => {
+                isBrushVisible = true;
+            });
+
             brush.on("brush", (event) => showTooltip(event.sourceEvent, () => getBrushTooltipContents(event)));
+
+            brush.on("end", (event) => {
+                if (!event.selection) {
+                    isBrushVisible = false;
+                }
+            });
 
             selection.select(".brush").call(brush as any);
 
@@ -389,6 +401,10 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         });
 
         selection.on("mousemove", (event) => {
+            if (isBrushVisible) {
+                return;
+            }
+
             if (store.seriesCollection.size === 0) {
                 return;
             }
