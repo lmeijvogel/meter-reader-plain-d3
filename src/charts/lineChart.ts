@@ -338,8 +338,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
 
         for (const series of store.seriesCollection.entries()) {
-            const startIndex = getClosestIndex(event.selection[0], scaleX, series[1].series);
-            const endIndex = getClosestIndex(event.selection[1], scaleX, series[1].series);
+            const startIndex = getClosestIndex(event.selection[0], scaleX, series[1].series, event.selection[0]);
+            const endIndex = getClosestIndex(event.selection[1], scaleX, series[1].series, event.selection[1]);
 
             const relevantEntries = series[1].series.slice(startIndex, endIndex);
 
