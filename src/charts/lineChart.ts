@@ -141,9 +141,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 isBrushVisible = true;
             });
 
-            brush.on("brush", (event) =>
-                showTooltip(selection, event.sourceEvent, () => getBrushTooltipContents(event))
-            );
+            brush.on("brush", (event) => showTooltip(event.sourceEvent, () => getBrushTooltipContents(event)));
 
             brush.on("end", (event) => {
                 if (!event.selection) {
@@ -318,11 +316,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         }
     }
 
-    function showTooltip(
-        selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-        event: any,
-        htmlProvider: () => string
-    ) {
+    function showTooltip(event: any, htmlProvider: () => string) {
         const tooltipWidth = 300; // Matches the CSS value
         const tooltipLeft = event.pageX + 20;
 
@@ -474,7 +468,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 return;
             }
 
-            showTooltip(selection, event, () => getHoverTooltipContents(event));
+            showTooltip(event, () => getHoverTooltipContents(event));
 
             /* Draw a vertical line as a visual aid */
             drawTooltipLine(selection, event);
