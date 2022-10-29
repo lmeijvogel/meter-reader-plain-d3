@@ -450,8 +450,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         return `${d3.format(store.tooltipValueFormat)(value)} ${store.tooltipDisplayableUnit}`;
     }
 
-    return api;
-
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         selection.on("mouseover", null);
         selection.on("mouseout", null);
@@ -482,4 +480,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             drawTooltipLine(selection, event);
         });
     }
+
+    return api;
 }
