@@ -355,29 +355,29 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         const startDateString = d3.timeFormat(store.tooltipDateFormat)(pointerStartDate);
         const endDateString = d3.timeFormat(store.tooltipDateFormat)(pointerEndDate);
 
-        return `${startDateString} - ${endDateString}<br>
-                <dl>${renderBrushTooltipDisplayValues(displayValues).join("")}</dl>
-                `;
+        return `<table class="lineChartBrush">
+                    <caption>${startDateString} - ${endDateString}</caption>
+                    ${renderBrushTooltipDisplayValues(displayValues).join("")}
+                </table>`;
     }
 
     function renderBrushTooltipDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
         let result: string[] = [];
 
-        for (const [name, values] of displayValues) {
-            result.push(`<dt>${name}:</dt>`);
-            result.push(
-                `<dd>
-                <table>
-                  <tbody>
-                    <tr><td>Min:</td><td class="tableValue"><b>${renderDisplayValue(values.min)}</b></td></tr>
-                    <tr><td>Gem.:</td><td class="tableValue"><b>${renderDisplayValue(values.mean)}</b></td></tr>
-                    <tr><td>Max:</td><td class="tableValue"><b>${renderDisplayValue(values.max)}</b></td></tr>
-                  </tbody>
-                </table>
-                 </dd>`
-            );
-        }
+        const headers = ["min", "gem.", "max"];
 
+        result.push('<thead><tr><th scope="col"></th>');
+        result.push(...headers.map((h) => `<th scope="col">${h}</th>`));
+        result.push("</tr></thead>");
+
+        result.push("<tbody>");
+        for (const [name, values] of displayValues) {
+            result.push(`<tr><th scope="row">${name}</th>`);
+            result.push(`<td class="tableValue">${d3.format(store.tooltipValueFormat)(values.min)}</td>
+                    <td class="tableValue">${d3.format(store.tooltipValueFormat)(values.mean)}</td>
+                    <td class="tableValue">${d3.format(store.tooltipValueFormat)(values.max)}</td></tr>`);
+        }
+        result.push("</tbody>");
         return result;
     }
 

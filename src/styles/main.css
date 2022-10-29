@@ -41,7 +41,7 @@ body {
     align-items: center;
     justify-content: center;
 
-    width: 250px;
+    width: 300px;
 
     background-color: white;
     border: 1px solid #cccccc;
@@ -51,8 +51,22 @@ body {
 
 #tooltip .tableValue {
     text-align: right;
-    font-weight: bold;
 }
 .usageAndGenerationTooltip .category {
     padding: 10px;
+}
+
+.lineChartBrush {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lineChartBrush th,
+.lineChartBrush td {
+    padding: 5px;
+}
+
+.lineChartBrush caption {
+    font-weight: bold;
+    text-align: center;
 }
