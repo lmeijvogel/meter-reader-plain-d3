@@ -29,6 +29,14 @@ const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
 
 let previousPeriod: PeriodDescription | null = null;
 
+const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")[] = [
+    "gas",
+    "stroom",
+    "water",
+    "temperature",
+    "generation"
+];
+
 export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
     navigation.setPeriodDescription(periodDescription);
 
@@ -65,85 +73,96 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         return json.map(responseRowToMeasurementEntry);
     }
 
-    fetchBarChartData("gas", periodDescription).then((values) => {
-        const graphDescription = new GasGraphDescription(periodDescription);
-        const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
+    if (enabledGraphs.includes("gas")) {
+        fetchBarChartData("gas", periodDescription).then((values) => {
+            const graphDescription = new GasGraphDescription(periodDescription);
+            const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
-        const cardTitle = createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
-        setCardTitle("js-period-gas-title", cardTitle);
+            const cardTitle = createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
+            setCardTitle("js-period-gas-title", cardTitle);
 
-        api.call(periodGasContainer);
-    });
+            api.call(periodGasContainer);
+        });
+    }
 
-    fetchBarChartData("water", periodDescription).then((values) => {
-        const graphDescription = new WaterGraphDescription(periodDescription);
-        const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
+    if (enabledGraphs.includes("water")) {
+        fetchBarChartData("water", periodDescription).then((values) => {
+            const graphDescription = new WaterGraphDescription(periodDescription);
+            const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
-        api.clearCanvas(shouldClearCanvas);
+            api.clearCanvas(shouldClearCanvas);
 
-        const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
-        setCardTitle("js-period-water-title", cardTitle);
+            const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
+            setCardTitle("js-period-water-title", cardTitle);
 
-        api.call(periodWaterContainer);
-    });
+            api.call(periodWaterContainer);
+        });
+    }
 
-    fetchLineChartData("generation", periodDescription).then((values) => {
-        const graphDescription = new GenerationGraphDescription(periodDescription);
+    if (enabledGraphs.includes("generation")) {
+        fetchLineChartData("generation", periodDescription).then((values) => {
+            const graphDescription = new GenerationGraphDescription(periodDescription);
 
-        // The API returns Wh. I prefer to show the "average wattage"show.
-        // When the periodSize === "day", values for every 15m are returned.
-        // To convert these to kWh, we need to multiply by 4 (15m => 1h)
-        // in addition to dividing by 1000.
-        const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
-        const valuesInKW = values.map((value) => ({ ...value, value: value.value / 1000 }));
+            // The API returns Wh. I prefer to show the "average wattage"show.
+            // When the periodSize === "day", values for every 15m are returned.
+            // To convert these to kWh, we need to multiply by 4 (15m => 1h)
+            // in addition to dividing by 1000.
+            const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
+            const valuesInKW = values.map((value) => ({ ...value, value: value.value / 1000 }));
 
-        const valuesInKWhPer15m = values.map((value) => ({ ...value, value: value.value / kWMultiplicationFactor }));
+            const valuesInKWhPer15m = values.map((value) => ({
+                ...value,
+                value: value.value / kWMultiplicationFactor
+            }));
 
-        let api: any;
-        if (periodDescription instanceof DayDescription) {
-            api = lineChart(periodDescription, graphDescription)
-                .minMaxCalculation("quantile")
-                .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor)
-                .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
-        } else {
-            api = barChart(periodDescription, graphDescription)
-                .data(valuesInKWhPer15m)
-                .onClick(retrieveAndDrawPeriodCharts);
-        }
+            let api: any;
+            if (periodDescription instanceof DayDescription) {
+                api = lineChart(periodDescription, graphDescription)
+                    .minMaxCalculation("quantile")
+                    .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor)
+                    .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
+            } else {
+                api = barChart(periodDescription, graphDescription)
+                    .data(valuesInKWhPer15m)
+                    .onClick(retrieveAndDrawPeriodCharts);
+            }
 
-        api.clearCanvas(shouldClearCanvas);
+            api.clearCanvas(shouldClearCanvas);
 
-        const cardTitle = createPeriodDataCardTitle(valuesInKW, "generation", graphDescription, periodDescription);
+            const cardTitle = createPeriodDataCardTitle(valuesInKW, "generation", graphDescription, periodDescription);
 
-        setCardTitle("js-period-generation-title", cardTitle);
+            setCardTitle("js-period-generation-title", cardTitle);
 
-        api.call(periodGenerationContainer);
-    });
+            api.call(periodGenerationContainer);
+        });
+    }
 
-    Promise.all<MeasurementEntry[]>([
-        fetchBarChartData("stroom", periodDescription),
-        fetchBarChartData("generation", periodDescription),
-        fetchBarChartData("back_delivery", periodDescription)
-    ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
-        const graphDescription = new StroomGraphDescription(periodDescription);
+    if (enabledGraphs.includes("stroom")) {
+        Promise.all<MeasurementEntry[]>([
+            fetchBarChartData("stroom", periodDescription),
+            fetchBarChartData("generation", periodDescription),
+            fetchBarChartData("back_delivery", periodDescription)
+        ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
+            const graphDescription = new StroomGraphDescription(periodDescription);
 
-        const equalizedData = {
-            consumption: stroomValues,
-            generation: generationValues.map((el) => ({ ...el, value: el.value / 1000 })),
-            backDelivery: backDeliveryValues.map((el) => ({ ...el, value: -el.value }))
-        };
+            const equalizedData = {
+                consumption: stroomValues,
+                generation: generationValues.map((el) => ({ ...el, value: el.value / 1000 })),
+                backDelivery: backDeliveryValues.map((el) => ({ ...el, value: -el.value }))
+            };
 
-        const api = usageAndGenerationBarChart(periodDescription, graphDescription)
-            .onClick(retrieveAndDrawPeriodCharts)
-            .data(equalizedData);
+            const api = usageAndGenerationBarChart(periodDescription, graphDescription)
+                .onClick(retrieveAndDrawPeriodCharts)
+                .data(equalizedData);
 
-        api.clearCanvas(shouldClearCanvas);
+            api.clearCanvas(shouldClearCanvas);
 
-        const cardTitle = createPeriodDataCardTitle(stroomValues, "stroom", graphDescription, periodDescription);
-        setCardTitle("js-period-stroom-title", cardTitle);
+            const cardTitle = createPeriodDataCardTitle(stroomValues, "stroom", graphDescription, periodDescription);
+            setCardTitle("js-period-stroom-title", cardTitle);
 
-        api.call(periodStroomContainer);
-    });
+            api.call(periodStroomContainer);
+        });
+    }
 
     async function fetchTemperatureData(
         periodDescription: PeriodDescription
@@ -165,29 +184,31 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         return result;
     }
 
-    fetchTemperatureData(periodDescription).then((result) => {
-        const chartContainer = d3.select("#temperature_line_chart");
-        const temperatureChart = lineChart(
-            periodDescription,
-            new TemperatuurGraphDescription(periodDescription)
-        ).minMaxCalculation("minMax");
+    if (enabledGraphs.includes("temperature")) {
+        fetchTemperatureData(periodDescription).then((result) => {
+            const chartContainer = d3.select("#temperature_line_chart");
+            const temperatureChart = lineChart(
+                periodDescription,
+                new TemperatuurGraphDescription(periodDescription)
+            ).minMaxCalculation("minMax");
 
-        temperatureChart.clearCanvas(shouldClearCanvas);
+            temperatureChart.clearCanvas(shouldClearCanvas);
 
-        [
-            ["huiskamer", "#ff0000"],
-            ["zolder", "#0000ff"],
-            ["tuinkamer", "#00ff00"]
-        ].forEach((set) => {
-            const [key, color] = set;
-            const series = result.get(key);
+            [
+                ["huiskamer", "#ff0000"],
+                ["zolder", "#0000ff"],
+                ["tuinkamer", "#00ff00"]
+            ].forEach((set) => {
+                const [key, color] = set;
+                const series = result.get(key);
 
-            if (!!series) {
-                temperatureChart.setSeries(key, series, color);
-            }
+                if (!!series) {
+                    temperatureChart.setSeries(key, series, color);
+                }
+            });
+            chartContainer.call(temperatureChart.call);
         });
-        chartContainer.call(temperatureChart.call);
-    });
+    }
 
     previousPeriod = periodDescription;
 }
