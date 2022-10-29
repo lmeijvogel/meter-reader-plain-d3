@@ -141,7 +141,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 isBrushVisible = true;
             });
 
-            brush.on("brush", (event) => showTooltip(event.sourceEvent, () => getBrushTooltipContents(event)));
+            brush.on("brush", (event) =>
+                showTooltip(selection, event.sourceEvent, () => getBrushTooltipContents(event))
+            );
 
             brush.on("end", (event) => {
                 if (!event.selection) {
@@ -268,7 +270,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        ["gridLines", "additionalInfo", "values", "xAxis", "yAxis", "brush"].forEach((className) => {
+        ["gridLines", "values", "xAxis", "yAxis", "tooltipLine", "brush"].forEach((className) => {
             const g = selection.append("g");
 
             g.attr("class", className);
@@ -316,7 +318,11 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         }
     }
 
-    function showTooltip(event: any, htmlProvider: () => string) {
+    function showTooltip(
+        selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+        event: any,
+        htmlProvider: () => string
+    ) {
         const tooltipWidth = 250; // Matches the CSS value
         const tooltipLeft = event.pageX + 20;
 
@@ -327,6 +333,39 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .style("top", event.pageY - 170 + "px")
             .style("left", left + "px")
             .html(htmlProvider);
+    }
+
+    function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
+        const tooltipLineSelector = selection.select(".tooltipLine");
+
+        const seriesCollectionValues = Array.from(store.seriesCollection.values());
+        const firstSeries = seriesCollectionValues[0].series;
+        const closestIndex = getClosestIndex(event, scaleX, firstSeries);
+
+        const x = scaleX(firstSeries[closestIndex].timestamp);
+
+        tooltipLineSelector
+            .selectAll("line")
+            .data([x])
+            .join("line")
+            .attr("x1", (x) => x)
+            .attr("x2", (x) => x)
+            .attr("y1", minimumY)
+            .attr("y2", maximumY)
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1);
+
+        /* Draw a circle on all matching lines */
+        const yValues = seriesCollectionValues.map((series) => series.series[closestIndex].value);
+        tooltipLineSelector
+            .selectAll("circle")
+            .data(yValues)
+            .join("circle")
+            .attr("stroke", "black")
+            .attr("fill", "white")
+            .attr("r", 4)
+            .attr("cx", x)
+            .attr("cy", (d) => scaleY(d));
     }
 
     function getHoverTooltipContents(event: any): string {
@@ -420,10 +459,12 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
         selection.on("mouseover", () => {
             d3.select("#tooltip").style("display", "flex");
+            selection.select(".tooltipLine").style("display", "block");
         });
 
         selection.on("mouseout", () => {
             d3.select("#tooltip").style("display", "none");
+            selection.select(".tooltipLine").style("display", "none");
         });
 
         selection.on("mousemove", (event) => {
@@ -435,7 +476,10 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 return;
             }
 
-            showTooltip(event, () => getHoverTooltipContents(event));
+            showTooltip(selection, event, () => getHoverTooltipContents(event));
+
+            /* Draw a vertical line as a visual aid */
+            drawTooltipLine(selection, event);
         });
     }
 }
