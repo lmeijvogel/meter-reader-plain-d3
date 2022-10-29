@@ -290,7 +290,6 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
     };
 
     return api;
-    // brushSvg.call(brush);
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
@@ -300,92 +299,3 @@ function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLEleme
 
     selection.attr("viewBox", "0 0 480 240");
 }
-
-// protected onValueClick = (_event: unknown, value: ValueWithTimestamp) => {
-// this.props.onBarClick(value.timestamp);
-// };
-
-// private buildTooltipContentsForSingleMeasurement(valueWithTimestamp: ValueWithTimestamp) {
-// const formattedValue = d3.format(this.props.graphDescription.tooltipValueFormat)(valueWithTimestamp.value);
-
-// return `${this.props.periodDescription
-// .atIndex(valueWithTimestamp.timestamp)
-// .toShortTitle()}:<br />${formattedValue} ${this.props.graphDescription.displayableUnit}`;
-// }
-
-// private buildTooltipContentsForRange(values: ValueWithTimestamp[]) {
-// const total = d3.sum(values.map((value) => value.value));
-
-// const formattedValue = d3.format(this.props.graphDescription.tooltipValueFormat)(total);
-
-// const startTimestamp = this.props.periodDescription.atIndex(values[0].timestamp).toShortTitle();
-// const endTimestamp = this.props.periodDescription.atIndex(values[values.length - 1].timestamp).toShortTitle();
-// return `${startTimestamp}-${endTimestamp}:<br />${formattedValue} ${this.props.graphDescription.displayableUnit}`;
-// }
-
-// mouseover = () => {
-// this.svg!.select("g.crosshairs").attr("opacity", 1);
-// };
-
-// // Example from https://d3-graph-gallery.com/graph/line_cursor.html
-// mousemove = (event: any) => {
-// // This allows to find the closest X index of the mouse:
-// var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
-
-// const pointerX = d3.pointer(event)[0];
-// const pointerDate = this.scaleXForInversion.invert(pointerX);
-
-// var closestIndex = bisect(this.props.series, pointerDate, 1) - 1;
-
-// // Find all y-values to highlight
-// const hoveredEntry = this.props.series[closestIndex];
-
-// if (!hoveredEntry) {
-// return;
-// }
-
-// // Use `scaleXForInversion` because ScaleBand does not return anything,
-// // possibly due to imprecise matches.
-// const x =
-// this.scaleX(this.props.periodDescription.normalize(hoveredEntry.timestamp))! + this.scaleX.bandwidth() / 2;
-// const y = this.scaleY(hoveredEntry.value);
-
-// this.svg!.select("g.crosshairs g.horizontal")
-// .selectAll("path.value")
-// .data([y])
-// .join("path")
-// .attr("class", "value")
-// .attr("stroke", "black")
-// .attr("stroke-width", 1)
-// .attr("d", (y) => `M${this.padding.left + this.axisWidth},${y} H ${this.width - this.padding.right}`);
-
-// this.svg!.select("g.crosshairs path.vertical")
-// .attr("stroke", "black")
-// .attr("stroke-width", 1)
-// .attr("d", `M${x},${this.padding.top} V ${this.height - this.padding.bottom}`);
-
-// const left = event.pageX + 20 + "px";
-// const top = event.pageY - 58 + "px";
-
-// this.showTooltip(this.buildTooltipContentsForSingleMeasurement(hoveredEntry), left, top);
-// };
-
-// mouseout = () => {
-// this.svg!.select("g.crosshairs").attr("opacity", 0);
-// console.log("mouseout");
-// this.hideTooltip();
-// };
-
-// showTooltip(text: string, left: string, top: string) {
-// const tooltip = d3.select("#tooltip");
-// tooltip.html(text).style("left", left).style("top", top).style("display", "block");
-// }
-
-// hideTooltip() {
-// const tooltip = d3.select("#tooltip");
-
-// tooltip.style("display", "none");
-// }
-// }
-// }
-// }
