@@ -198,7 +198,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
     }
 
     function showTooltip(event: any, htmlProvider: () => string) {
-        const tooltipWidth = 250; // Matches the CSS value
+        const tooltipWidth = 300; // Matches the CSS value
         const tooltipLeft = event.pageX + 20;
 
         const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
