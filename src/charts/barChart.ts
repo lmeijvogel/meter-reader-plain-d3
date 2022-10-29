@@ -194,6 +194,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
         selection.on("mousemove", (event) => {
             showTooltip(event, () => getHoverTooltipContents(event));
+            highlightActiveBar(selection, event);
         });
     }
 
@@ -230,6 +231,15 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
     function renderDisplayValue(value: number) {
         return `${d3.format(store.tooltipValueFormat)(value)} ${store.tooltipDisplayableUnit}`;
+    }
+
+    function highlightActiveBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
+        const closestIndex = getClosestIndex(event, scaleXForInversion, store.data);
+
+        selection
+            .select(".values")
+            .selectAll("rect")
+            .style("fill", (_d, i) => (i === closestIndex ? graphDescription.lightColor : graphDescription.barColor));
     }
 
     const api = {
