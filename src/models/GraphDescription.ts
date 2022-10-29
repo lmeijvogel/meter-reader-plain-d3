@@ -41,7 +41,7 @@ export abstract class GraphDescription {
 
 export class GasGraphDescription extends GraphDescription {
     readonly barColor = "#e73710";
-    readonly lightColor = "#e73710";
+    readonly lightColor = "#e7846e";
     readonly darkColor = "#791d09";
 
     readonly fieldName = "gas";
@@ -114,7 +114,7 @@ export class GenerationGraphDescription extends GraphDescription {
 
 export class WaterGraphDescription extends GraphDescription {
     readonly barColor = "#428bca";
-    readonly lightColor = "#428bca";
+    readonly lightColor = "#7ea7ca";
     readonly darkColor = "#224767";
     readonly fieldName = "water";
 
