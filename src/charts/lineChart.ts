@@ -34,6 +34,7 @@ const padding = {
 const width = 480;
 const height = 240;
 
+const xAxisHeight = 20;
 const axisWidth = 50;
 
 export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
@@ -60,7 +61,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     const minimumX = padding.left + axisWidth;
     const maximumX = width - padding.right;
     const minimumY = padding.top;
-    const maximumY = height - padding.bottom;
+    const maximumY = height - padding.bottom - xAxisHeight;
 
     const scaleX = d3.scaleTime().range([minimumX, maximumX]);
     const scaleY = d3.scaleLinear().range([minimumY, maximumY]).clamp(true);
@@ -160,13 +161,12 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
             const domainY = store.domain ?? getDomainY();
 
-            const xAxisHeight = 20;
-            scaleY.domain(domainY).range([height - padding.bottom - xAxisHeight, padding.top]);
+            scaleY.domain(domainY).range([maximumY, minimumY]);
 
             renderXAxis(selection.select(".xAxis"));
             selection
                 .select(".yAxis")
-                .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
+                .attr("transform", `translate(${minimumX}, 0)`)
                 .style("font-size", "13pt")
                 .call(yAxis as any);
 
