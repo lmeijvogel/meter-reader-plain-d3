@@ -213,13 +213,39 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .y0(scaleY(0.0))
                 .y1((d) => scaleY(Math.min(0.0, d.value)));
 
+            const positiveGradientId = `areaGradientPositive${graphDescription.fieldName}`;
+            const negativeGradientId = `areaGradientNegative${graphDescription.fieldName}`;
+            const areaGradientPositive = selection
+                .append("defs")
+                .append("linearGradient")
+                .attr("id", positiveGradientId)
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "0%")
+                .attr("y2", "100%");
+
+            areaGradientPositive.append("stop").attr("offset", "40%").attr("stop-color", store.fill.positive);
+            areaGradientPositive.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
+
+            const areaGradientNegative = selection
+                .append("defs")
+                .append("linearGradient")
+                .attr("id", negativeGradientId)
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "0%")
+                .attr("y2", "100%");
+
+            areaGradientNegative.append("stop").attr("offset", "0%").attr("stop-color", "#fff");
+            areaGradientNegative.append("stop").attr("offset", "60%").attr("stop-color", store.fill.negative);
+
             selection
                 .selectAll(`path.areaPositive`)
                 .data([series])
                 .join("path")
                 .attr("class", "areaPositive")
-                .attr("d", areaPositive)
-                .attr("fill", store.fill.positive);
+                .attr("fill", `url(#${positiveGradientId})`)
+                .attr("d", areaPositive);
 
             selection
                 .selectAll(`path.areaNegative`)
@@ -227,7 +253,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .join("path")
                 .attr("class", "areaNegative")
                 .attr("d", areaNegative)
-                .attr("fill", store.fill.negative);
+                .attr("fill", `url(#${negativeGradientId})`);
         }
 
         selection
