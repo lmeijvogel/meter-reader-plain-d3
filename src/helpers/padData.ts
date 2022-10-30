@@ -1,4 +1,4 @@
-import { addDays, addHours, getDaysInMonth, isSameDay } from "date-fns";
+import { addDays, addHours, getDaysInMonth, isBefore, isSameDay } from "date-fns";
 import { MeasurementEntry } from "../models/MeasurementEntry";
 
 /* This name is not really correct. On the one hand, it pads the data, but it also
@@ -12,11 +12,20 @@ export function padData(
     const result: MeasurementEntry[] = [];
 
     if (periodSize === "day") {
-        for (let hour = 0; hour < 24; hour++) {
-            const currentDate = addHours(startDate, hour);
+        let currentDate: Date = startDate;
 
+        /* This seems like a roundabout way of iterating over the hours in the day,
+         * but it's better to do it like this (keep adding hours) instead of just going
+         * over hour 0 to 23 because of Daylight Savings Time: The boundary dates have
+         * 1 fewer or 1 more hour.
+         */
+        const dateAfter = addDays(startDate, 1);
+        do {
             const existingElement = data.find(
-                (element) => element.timestamp.getHours() === hour && isSameDay(element.timestamp, startDate)
+                (element) =>
+                    element.timestamp.getHours() === currentDate.getHours() &&
+                    element.timestamp.getTimezoneOffset() === currentDate.getTimezoneOffset() &&
+                    isSameDay(element.timestamp, startDate)
             );
 
             if (existingElement) {
@@ -24,7 +33,10 @@ export function padData(
             } else {
                 result.push({ timestamp: currentDate, value: 0 });
             }
-        }
+
+            currentDate = addHours(currentDate, 1);
+        } while (isBefore(currentDate, dateAfter));
+
         return result;
     }
 
