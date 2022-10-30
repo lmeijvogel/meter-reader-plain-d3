@@ -9,7 +9,6 @@ import {
     endOfMonth,
     endOfYear,
     startOfDay,
-    startOfHour,
     startOfMinute,
     startOfMonth,
     sub
@@ -342,8 +341,14 @@ export class DayDescription extends PeriodDescription {
         return this; // HourDescription is not fully supported.
     }
 
-    normalize(date: Date) {
-        return startOfHour(date);
+    normalize(date: Date): Date {
+        /* Using utcDate preserves the timezone of the current time. There
+         * are two 02:00s after the last day of Daylight Savings Time, and they
+         * should not be mapped to the same hour.
+         */
+        const utcDate = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours());
+
+        return new Date(utcDate);
     }
 }
 
