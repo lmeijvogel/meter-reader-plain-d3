@@ -243,6 +243,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .selectAll(`path.areaPositive`)
                 .data([series])
                 .join("path")
+                .transition()
+                .duration(firstDrawCall ? 0 : 200)
+
                 .attr("class", "areaPositive")
                 .attr("fill", `url(#${positiveGradientId})`)
                 .attr("d", areaPositive);
@@ -251,6 +254,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .selectAll(`path.areaNegative`)
                 .data([series])
                 .join("path")
+                .transition()
+                .duration(firstDrawCall ? 0 : 200)
                 .attr("class", "areaNegative")
                 .attr("d", areaNegative)
                 .attr("fill", `url(#${negativeGradientId})`);
@@ -260,6 +265,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .selectAll(`path.line`)
             .data([series])
             .join("path")
+            .transition()
+            .duration(firstDrawCall ? 0 : 200)
             .attr("class", `line`)
             .attr("fill", "none")
             .attr("stroke", lineColor)
