@@ -30,6 +30,18 @@ async function retrievePowerUsage(page = 0) {
         });
 }
 
+async function retrieveLatestPowerUsage() {
+    return fetch("/api/stroom/last")
+        .then((response) => response.json())
+        .then((json) => {
+            const fieldsKW: CurrentFields = {
+                current: json["current"].map(responseRowToMeasurementEntry)
+            };
+
+            return fieldsKW;
+        });
+}
+
 const powerUsage: CurrentFields = {
     current: []
 };
@@ -40,6 +52,14 @@ async function updatePowerUsage(page = 0) {
     powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
 
     drawPowerUsage(powerUsage);
+}
+
+async function getLatestPowerUsage() {
+    const newValues = await retrieveLatestPowerUsage();
+
+    const currentValueInW = newValues.current[0].value * 1000;
+
+    updateCurrentUsageGauge(currentValueInW);
 }
 
 function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
@@ -75,20 +95,20 @@ function addAndReplaceValues(existing: MeasurementEntry[], newValues: Measuremen
 function drawPowerUsage(fieldsKW: CurrentFields) {
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
-    const lastCurrent = currentInW[currentInW.length - 1]?.value ?? 0;
+    recentCurrentGraph.setSeries("current", currentInW, "black");
+    recentCurrentContainer.call(recentCurrentGraph.call);
+}
 
-    powerUsageGauge.value(lastCurrent);
+function updateCurrentUsageGauge(valueInW: number) {
+    powerUsageGauge.value(valueInW);
 
     gaugeContainer.call(powerUsageGauge.call);
-
-    recentCurrentGraph.setSeries("current", currentInW, "black");
-
-    recentCurrentContainer.call(recentCurrentGraph.call);
 }
 
 export async function initializeCurrentCharts() {
     await retrieveAndDrawPowerUsageInBatches();
 
+    setInterval(getLatestPowerUsage, 1000);
     // Done with the batches: Only set interval now, now that we're in a known state.
     setInterval(updatePowerUsage, 5000);
 }
