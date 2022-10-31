@@ -34,9 +34,9 @@ const padding = {
 
 const axisWidth = 50;
 
-export function barChart(initialPeriodDescription: PeriodDescription, graphDescription: GraphDescription) {
-    let firstDrawCall = true;
+let firstDrawCall = true;
 
+export function barChart(initialPeriodDescription: PeriodDescription, graphDescription: GraphDescription) {
     const store: Store = {
         periodDescription: initialPeriodDescription,
         tooltipDateFormat: initialPeriodDescription.timeFormatString(),
@@ -147,12 +147,16 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .attr("class", "xAxis")
             .attr("transform", `translate(0, ${scaleY(0)})`);
 
+        xAxisBase.transition().duration(firstDrawCall ? 0 : 200);
+
         renderXAxis(xAxisBase);
 
         selection
             .select(".yAxis")
             .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
             .style("font-size", "13pt")
+            .transition()
+            .duration(firstDrawCall ? 0 : 200)
             .call(yAxis as any);
     };
 
@@ -161,17 +165,19 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .select("g.values")
             .selectAll("rect")
             .data(store.data)
+            .on("click", (_event: any, d) => {
+                const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
+                store.onValueClick(clickedPeriod);
+            })
             .join("rect")
+            .transition()
+            .duration(firstDrawCall ? 0 : 200)
             .attr("x", (el) => calculateBarXPosition(el.timestamp))
             .attr("y", (el) => scaleY(el.value))
             .attr("height", (el) => scaleY(0) - scaleY(el.value))
             .attr("width", scaleX.bandwidth())
             .attr("fill", store.barColor)
             .attr("data-value", (el) => el.value)
-            .on("click", (_event: any, d) => {
-                const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
-                store.onValueClick(clickedPeriod);
-            })
             .attr("index", (_d: any, i: number) => i);
     }
 
@@ -306,6 +312,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             if (store.clearCanvas) {
                 selection.selectAll("*").remove();
+                firstDrawCall = true;
             }
 
             selection.on("mouseover", null);
@@ -320,6 +327,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             updateScales(selection);
 
             drawBars(selection);
+            firstDrawCall = false;
         }
     };
 
@@ -328,7 +336,9 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
     ["tooltipLine", "gridLines", "additionalInfo", "values", "xAxis", "yAxis"].forEach((name) => {
-        selection.append("g").attr("class", name);
+        if (!selection.select(`g.${name}`).node()) {
+            selection.append("g").attr("class", name);
+        }
     });
 
     selection.attr("viewBox", "0 0 480 240");
