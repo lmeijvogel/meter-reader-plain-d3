@@ -7,10 +7,10 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 export function getClosestIndex(
     event: any,
     scaleX: d3.ScaleTime<number, number, never>,
-    series: ValueWithTimestamp[],
+    series: { timestamp: Date }[],
     pointerX: number = d3.pointer(event)[0]
 ): number {
-    var bisect = d3.bisector((d: ValueWithTimestamp) => d.timestamp).right;
+    var bisect = d3.bisector((d: { timestamp: Date }) => d.timestamp).right;
 
     const pointerDate = scaleX.invert(pointerX);
 

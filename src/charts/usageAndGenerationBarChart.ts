@@ -6,6 +6,7 @@ import { PeriodDescription } from "../models/PeriodDescription";
 import { isEqual } from "date-fns";
 import { clamp } from "../helpers/clamp";
 import { getWindowWidth } from "../lib/getWindowWidth";
+import { getClosestIndex } from "../lib/getClosestIndex";
 
 type Data = {
     consumption: MeasurementEntry[];
@@ -266,6 +267,26 @@ export function usageAndGenerationBarChart(
         return contents;
     }
 
+    function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
+        const tooltipLineSelector = selection.select(".tooltipLine");
+
+        const data = store.data;
+        const closestIndex = getClosestIndex(event, scaleXForInversion, data);
+
+        const x = scaleX(initialPeriodDescription.normalize(data[closestIndex].timestamp))!;
+
+        tooltipLineSelector
+            .selectAll("line")
+            .data([x])
+            .join("line")
+            .attr("x1", (x) => x + scaleX.bandwidth() / 2)
+            .attr("x2", (x) => x + scaleX.bandwidth() / 2)
+            .attr("y1", padding.top)
+            .attr("y2", height - padding.bottom - xAxisHeight())
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1);
+    }
+
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         selection.on("mouseover", null);
         selection.on("mouseout", null);
@@ -273,14 +294,18 @@ export function usageAndGenerationBarChart(
 
         selection.on("mouseover", () => {
             d3.select("#tooltip").style("display", "flex");
+            selection.select(".tooltipLine").style("display", "block");
         });
 
         selection.on("mouseout", () => {
             d3.select("#tooltip").style("display", "none");
+            selection.select(".tooltipLine").style("display", "none");
         });
 
         selection.on("mousemove", (event) => {
             showTooltip(event, () => buildTooltip(event));
+
+            drawTooltipLine(selection, event);
         });
     }
 
@@ -339,6 +364,7 @@ export function usageAndGenerationBarChart(
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
     [
+        "tooltipLine",
         "gridLines",
         "additionalInfo",
         "values-solarSource",
