@@ -55,12 +55,12 @@ const padding = {
 
 const axisWidth = 50;
 
+let firstDrawCall = true;
+
 export function usageAndGenerationBarChart(
     initialPeriodDescription: PeriodDescription,
     graphDescription: GraphDescription
 ) {
-    let firstDrawCall = true;
-
     const store: Store = {
         periodDescription: initialPeriodDescription,
         hasTextLabels: true,
@@ -172,9 +172,11 @@ export function usageAndGenerationBarChart(
             .domain([periodDescription.startOfPeriod(), periodDescription.endOfPeriod()])
             .range([axisWidth + padding.left, width - padding.right]);
 
-        const xAxisBase = selection
-            .select("g.xAxis")
-            .attr("class", "xAxis")
+        const xAxisBase = selection.select("g.xAxis").attr("class", "xAxis");
+
+        xAxisBase
+            .transition()
+            .duration(firstDrawCall ? 0 : 200)
             .attr("transform", `translate(0, ${scaleY(0)})`);
 
         renderXAxis(xAxisBase);
@@ -183,6 +185,8 @@ export function usageAndGenerationBarChart(
             .select(".yAxis")
             .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
             .style("font-size", "13pt")
+            .transition()
+            .duration(200)
             .call(yAxis as any);
     };
 
@@ -198,6 +202,12 @@ export function usageAndGenerationBarChart(
             .selectAll("rect")
             .data(data)
             .join("rect")
+            .on("click", (_event: any, d) => {
+                const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
+                store.onValueClick(clickedPeriod);
+            })
+            .transition()
+            .duration(firstDrawCall ? 0 : 200)
             .attr("x", (el) => {
                 return calculateBarXPosition(el.timestamp);
             })
@@ -209,10 +219,6 @@ export function usageAndGenerationBarChart(
             .attr("fill", color)
             .attr("data-value", (el) => el[field])
             .attr("data-pos", onTopOf ?? "")
-            .on("click", (_event: any, d) => {
-                const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
-                store.onValueClick(clickedPeriod);
-            })
             .attr("index", (_d: any, i: number) => i);
     }
 
@@ -341,14 +347,11 @@ export function usageAndGenerationBarChart(
 
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             if (store.clearCanvas) {
+                firstDrawCall = true;
                 selection.selectAll("*").remove();
             }
 
-            if (firstDrawCall) {
-                addSvgChildTags(selection);
-
-                firstDrawCall = false;
-            }
+            addSvgChildTags(selection);
 
             registerEventHandlers(selection);
             updateScales(selection);
@@ -356,6 +359,8 @@ export function usageAndGenerationBarChart(
             drawBars(selection, store.data, "solarSource", "#55ff10", "gridSource");
             drawBars(selection, store.data, "gridSource", graphDescription.barColor);
             drawBars(selection, store.data, "backDelivery", "#55ff10");
+
+            firstDrawCall = false;
         }
     };
 
@@ -373,7 +378,9 @@ function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLEleme
         "xAxis",
         "yAxis"
     ].forEach((name) => {
-        selection.append("g").attr("class", name);
+        if (!selection.select(`g.${name}`).node()) {
+            selection.append("g").attr("class", name);
+        }
     });
 
     selection.attr("viewBox", "0 0 480 240");
