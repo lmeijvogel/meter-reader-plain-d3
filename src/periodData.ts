@@ -42,39 +42,32 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     const shouldClearCanvas = previousPeriod?.periodSize !== periodDescription.periodSize;
 
-    async function fetchBarChartData(
+    async function fetchChartData(
         fieldName: UsageField,
-        periodDescription: PeriodDescription
+        periodDescription: PeriodDescription,
+        prefer15MinInterval = false
     ): Promise<MeasurementEntry[]> {
-        const url = `/api/${fieldName}${periodDescription.toUrl()}`;
+        let url: string;
+        url = `/api/${fieldName}${periodDescription.toUrl()}`;
+        if (prefer15MinInterval && periodDescription.periodSize === "day") {
+            url = `${url}/15m`;
+        }
 
         const response = await fetch(url);
         const json = await response.json();
         const data = json.map(responseRowToMeasurementEntry);
+
+        if (prefer15MinInterval) {
+            return data;
+        }
 
         const paddedData = padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
 
         return paddedData;
     }
 
-    /* Fetching the line chart data is a bit different, because I want to force it
-     * to use a 15m interval if the current period is a day. Copying and modifying it from above
-     * is probably the easiest way.
-     */
-    async function fetchLineChartData(
-        fieldName: UsageField,
-        periodDescription: PeriodDescription
-    ): Promise<MeasurementEntry[]> {
-        const customWindow = periodDescription.periodSize === "day" ? "/15m" : "";
-        const url = `/api/${fieldName}${periodDescription.toUrl()}${customWindow}`;
-
-        const response = await fetch(url);
-        const json = await response.json();
-        return json.map(responseRowToMeasurementEntry);
-    }
-
     if (enabledGraphs.includes("gas")) {
-        fetchBarChartData("gas", periodDescription).then((values) => {
+        fetchChartData("gas", periodDescription).then((values) => {
             const graphDescription = new GasGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
@@ -86,7 +79,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("water")) {
-        fetchBarChartData("water", periodDescription).then((values) => {
+        fetchChartData("water", periodDescription).then((values) => {
             const graphDescription = new WaterGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
@@ -100,7 +93,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("generation")) {
-        fetchLineChartData("generation", periodDescription).then((values) => {
+        fetchChartData("generation", periodDescription, true).then((values) => {
             const graphDescription = new GenerationGraphDescription(periodDescription);
 
             // The API returns Wh. I prefer to show the "average wattage"show.
@@ -139,9 +132,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     if (enabledGraphs.includes("stroom")) {
         Promise.all<MeasurementEntry[]>([
-            fetchBarChartData("stroom", periodDescription),
-            fetchBarChartData("generation", periodDescription),
-            fetchBarChartData("back_delivery", periodDescription)
+            fetchChartData("stroom", periodDescription),
+            fetchChartData("generation", periodDescription),
+            fetchChartData("back_delivery", periodDescription)
         ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
             const graphDescription = new StroomGraphDescription(periodDescription);
 
