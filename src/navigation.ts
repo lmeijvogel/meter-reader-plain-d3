@@ -2,7 +2,6 @@ import { DayDescription, PeriodDescription, YearDescription } from "./models/Per
 
 import VanillaSwipe, { EventData } from "vanilla-swipe";
 import { getWindowWidth } from "./lib/getWindowWidth";
-import { differenceInMilliseconds, differenceInSeconds } from "date-fns";
 
 const displayThresholdInPx = 60;
 
@@ -18,6 +17,12 @@ export function initializeNavigation(onPeriodChange: (periodDescription: PeriodD
 
 function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
     const swipeArea = document.getElementById("js-navigate-overlay");
+
+    const isIPad = navigator.userAgent.includes("iPad");
+
+    if (isIPad) {
+        initializeDesktopNavigation(onPeriodChange);
+    }
 
     const swipe = new VanillaSwipe({
         element: swipeArea!,
