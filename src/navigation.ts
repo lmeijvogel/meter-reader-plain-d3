@@ -34,7 +34,7 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
 
             // If swipe took too long, it was probably some intentional
             // move.
-            if (touchEvent.duration >= 200) {
+            if (touchEvent.duration >= 400) {
                 return;
             }
 
