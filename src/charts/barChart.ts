@@ -20,6 +20,7 @@ type Store = {
     unit: string;
     onValueClick: (periodDescription: PeriodDescription) => void;
     clearCanvas: boolean;
+    firstDrawCall: boolean;
 };
 
 const width = 480;
@@ -34,8 +35,6 @@ const padding = {
 
 const axisWidth = 50;
 
-let firstDrawCall = true;
-
 export function barChart(initialPeriodDescription: PeriodDescription, graphDescription: GraphDescription) {
     const store: Store = {
         periodDescription: initialPeriodDescription,
@@ -49,7 +48,8 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         data: [],
         unit: graphDescription.displayableUnit,
         onValueClick: () => {},
-        clearCanvas: false
+        clearCanvas: false,
+        firstDrawCall: true
     };
 
     let windowWidth = getWindowWidth();
@@ -147,7 +147,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .attr("class", "xAxis")
             .attr("transform", `translate(0, ${scaleY(0)})`);
 
-        xAxisBase.transition().duration(firstDrawCall ? 0 : 200);
+        xAxisBase.transition().duration(store.firstDrawCall ? 0 : 200);
 
         renderXAxis(xAxisBase);
 
@@ -156,7 +156,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
             .style("font-size", "13pt")
             .transition()
-            .duration(firstDrawCall ? 0 : 200)
+            .duration(store.firstDrawCall ? 0 : 200)
             .call(yAxis as any);
     };
 
@@ -171,7 +171,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             })
             .join("rect")
             .transition()
-            .duration(firstDrawCall ? 0 : 200)
+            .duration(store.firstDrawCall ? 0 : 200)
             .attr("x", (el) => calculateBarXPosition(el.timestamp))
             .attr("y", (el) => scaleY(el.value))
             .attr("height", (el) => scaleY(0) - scaleY(el.value))
@@ -312,14 +312,14 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             if (store.clearCanvas) {
                 selection.selectAll("*").remove();
-                firstDrawCall = true;
+                store.firstDrawCall = true;
             }
 
             selection.on("mouseover", null);
             selection.on("mouseout", null);
             selection.on("mousemove", null);
 
-            if (firstDrawCall) {
+            if (store.firstDrawCall) {
                 addSvgChildTags(selection);
             }
 
@@ -327,7 +327,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             updateScales(selection);
 
             drawBars(selection);
-            firstDrawCall = false;
+            store.firstDrawCall = false;
         }
     };
 
