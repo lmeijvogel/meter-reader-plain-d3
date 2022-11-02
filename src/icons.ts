@@ -1,7 +1,7 @@
-import { createIcons, ChevronLast ,ChevronLeft, ChevronRight, ChevronUp} from "lucide";
+import { createIcons, ChevronLast, ChevronLeft, ChevronRight, ChevronUp, Loader2 } from "lucide";
 
 export function initIcons() {
     createIcons({
-        icons: { ChevronLast,  ChevronLeft, ChevronRight, ChevronUp }
+        icons: { ChevronLast, ChevronLeft, ChevronRight, ChevronUp, Loader2 }
     });
 }

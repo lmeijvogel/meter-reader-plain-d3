@@ -9,6 +9,7 @@
         <link rel="stylesheet" href="./styles/d3-tip.css" />
         <link rel="stylesheet" href="./styles/main.css" />
         <link rel="stylesheet" href="./styles/navigation.css" />
+        <link rel="stylesheet" href="./styles/vizCard.css" />
     </head>
     <body>
         <div id="js-navigate-overlay" class="navigationOverlay js-navigate-overlay">
@@ -21,82 +22,7 @@
             <div class="sideButtonsContainer prevButton js-navigate-prev js-buttons-left">
                 <button class="label"><i icon-name="chevron-left"></i></button>
             </div>
-            <section class="rows">
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title" class="js-period-gas-title">Gas</h3>
-                        <svg id="gas_period_data" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title" class="js-period-stroom-title">Stroom</h3>
-                        <svg id="stroom_period_data" class="chart"></svg>
-                    </viz-card>
-                </div>
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title" class="js-period-water-title">Water</h3>
-                        <svg id="water_period_data" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title" class="js-period-generation-title">Opwekking</h3>
-                        <svg id="generation_period_data" class="chart"></svg>
-                    </viz-card>
-                </div>
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title">Levering / teruglevering dit uur (W)</h3>
-                        <svg id="recent_current" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title">Levering / teruglevering (W)</h3>
-                        <svg id="current_power_gauge" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title">Temperatuur</h3>
-                        <svg id="temperature_line_chart" class="chart"></svg>
-                    </viz-card>
-                </div>
-
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title">Gas (30 dagen)</h3>
-                        <svg id="gas_heatmap_monthly" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title">Gas (laatste jaar)</h3>
-                        <svg id="gas_heatmap_yearly" class="chart"></svg>
-                    </viz-card>
-                </div>
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title">Stroom (30 dagen)</h3>
-                        <svg id="stroom_heatmap_monthly" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title">Stroom (laatste jaar)</h3>
-                        <svg id="stroom_heatmap_yearly" class="chart"></svg>
-                    </viz-card>
-                </div>
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title">Opwekking (30 dagen)</h3>
-                        <svg id="opwekking_heatmap_monthly" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title">Opwekking (laatste jaar)</h3>
-                        <svg id="opwekking_heatmap_yearly" class="chart"></svg>
-                    </viz-card>
-                </div>
-                <div class="row">
-                    <viz-card>
-                        <h3 slot="title">Water (30 dagen)</h3>
-                        <svg id="water_heatmap_monthly" class="chart"></svg>
-                    </viz-card>
-                    <viz-card>
-                        <h3 slot="title">Water (laatste jaar)</h3>
-                        <svg id="water_heatmap_yearly" class="chart"></svg>
-                    </viz-card>
-                </div>
+            <section id="rows">
             </section>
             <div class="sideButtonsContainer forwardButtons js-buttons-right">
                 <div class="forwardButton nextButton js-navigate-next">
@@ -109,44 +35,4 @@
         </div>
         <div id="tooltip"></div>
     </body>
-
-    <template id="card-template">
-        <style>
-.card {
-    display: flex;
-    flex-direction: column;
-
-    background-color: #ffffff;
-
-    margin: 5px;
-
-    padding: 5px;
-    border: 0.5px solid #ddd;
-    border-radius: 3px;
-}
-    @media screen and (max-width: 575px) {
-        .card {
-            margin: 15px 5px;
-        }
-    }
-
-
-    .card-title {
-        margin: 5px;
-        padding: 0px;
-        text-align: center;
-
-        font-weight: 400;
-        font-style: italic;
-    }
-
-        </style>
-        <div class="card">
-            <div class="card-title"><slot name="title"></slot></div>
-            <slot></slot>
-        </div>
-
-    </template>
-
-
 </html>

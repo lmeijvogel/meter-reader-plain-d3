@@ -91,7 +91,7 @@ function addAndReplaceValues(existing: MeasurementEntry[], newValues: Measuremen
 }
 
 function drawPowerUsage(fieldsKW: CurrentFields) {
-    const recentCurrentContainer = d3.select("#recent_current");
+    const recentCurrentContainer = d3.select("#recent_current").select(".chart");
 
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
@@ -100,7 +100,7 @@ function drawPowerUsage(fieldsKW: CurrentFields) {
 }
 
 function updateCurrentUsageGauge(valueInW: number) {
-    const gaugeContainer = d3.select("#current_power_gauge");
+    const gaugeContainer = d3.select("#current_power_gauge").select(".chart");
     powerUsageGauge.value(valueInW);
 
     gaugeContainer.call(powerUsageGauge.call);

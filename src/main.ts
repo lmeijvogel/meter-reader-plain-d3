@@ -6,15 +6,26 @@ import { UsageField } from "./models/UsageData";
 
 import { formatMonthNames, heatMap } from "./charts/heatMap";
 
-import { defineWebComponents } from "./customElements/VizCard";
-import { DayDescription, LastHourDescription, PeriodDescription } from "./models/PeriodDescription";
+import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { getDate } from "date-fns";
 import { retrieveAndDrawPeriodCharts } from "./periodData";
 import { initializeCurrentCharts } from "./currentCharts";
 import { initIcons } from "./icons";
+import { addCards } from "./vizCard";
+
+const cardsPerRow = [
+    ["gas_period_data", "stroom_period_data"],
+    ["water_period_data", "generation_period_data"],
+    ["recent_current", "current_power_gauge", "temperature_line_chart"],
+    ["gas_heatmap_monthly", "gas_heatmap_yearly"],
+    ["stroom_heatmap_monthly", "stroom_heatmap_yearly"],
+    ["opwekking_heatmap_monthly", "opwekking_heatmap_yearly"],
+    ["water_heatmap_monthly", "water_heatmap_yearly"]
+];
+
+addCards(cardsPerRow, document.getElementById("rows")!);
 
 initIcons();
-defineWebComponents();
 
 function selectPeriod(periodDescription: PeriodDescription) {
     retrieveAndDrawPeriodCharts(periodDescription);
@@ -41,7 +52,7 @@ loadData("gas", "last_year").then((result) => {
         .unit("m³")
         .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("stroom", "last_year").then((result) => {
@@ -53,7 +64,7 @@ loadData("stroom", "last_year").then((result) => {
         .unit("kWh")
         .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("generation", "last_year").then((result) => {
@@ -65,7 +76,7 @@ loadData("generation", "last_year").then((result) => {
         .unit("Wh")
         .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("water", "last_year").then((result) => {
@@ -77,7 +88,7 @@ loadData("water", "last_year").then((result) => {
         .unit("L")
         .tickFormat(formatMonthNames)
         .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("gas", "last_30_days").then((result) => {
@@ -88,7 +99,7 @@ loadData("gas", "last_30_days").then((result) => {
         .data(result)
         .unit("m³")
         .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("stroom", "last_30_days").then((result) => {
@@ -100,7 +111,7 @@ loadData("stroom", "last_30_days").then((result) => {
         .data(result)
         .unit("kWh")
         .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("generation", "last_30_days").then((result) => {
@@ -112,7 +123,7 @@ loadData("generation", "last_30_days").then((result) => {
         .data(result)
         .unit("Wh")
         .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 loadData("water", "last_30_days").then((result) => {
@@ -123,7 +134,7 @@ loadData("water", "last_30_days").then((result) => {
         .data(result)
         .unit("L")
         .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer);
+        .draw(chartContainer.select(".chart"));
 });
 
 retrieveAndDrawPeriodCharts(DayDescription.today());

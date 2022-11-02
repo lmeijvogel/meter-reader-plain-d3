@@ -3,7 +3,6 @@ import { isEqual } from "date-fns";
 import { barChart } from "./charts/barChart";
 import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
-import { setCardTitle } from "./customElements/VizCard";
 import { padData } from "./helpers/padData";
 import { costsFor, PriceCategory } from "./helpers/PriceCalculator";
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
@@ -20,6 +19,7 @@ import { MeasurementEntry } from "./models/MeasurementEntry";
 import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { initializeNavigation } from "./navigation";
+import { setCardTitle } from "./vizCard";
 
 const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
 
@@ -45,38 +45,43 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     async function fetchChartData(
         fieldName: UsageField,
+        card: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
         prefer15MinInterval = false
     ): Promise<MeasurementEntry[] | "stale"> {
-        let url: string;
-        url = `/api/${fieldName}${periodDescription.toUrl()}`;
-        if (prefer15MinInterval && periodDescription.periodSize === "day") {
-            url = `${url}/15m`;
+        card.classed("loading", true);
+
+        try {
+            requestedStartOfPeriod = periodDescription.startOfPeriod();
+
+            let url = `/api/${fieldName}${periodDescription.toUrl()}`;
+
+            if (prefer15MinInterval && periodDescription.periodSize === "day") {
+                url = `${url}/15m`;
+            }
+
+            const response = await fetch(url);
+            const json = await response.json();
+
+            if (!isEqual(requestedStartOfPeriod, periodDescription.startOfPeriod())) {
+                return "stale";
+            }
+
+            const data = json.map(responseRowToMeasurementEntry);
+
+            if (prefer15MinInterval) {
+                return data;
+            }
+
+            return padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
+        } finally {
+            card.classed("loading", false);
         }
-
-        requestedStartOfPeriod = periodDescription.startOfPeriod();
-
-        const response = await fetch(url);
-        const json = await response.json();
-
-        if (!isEqual(requestedStartOfPeriod, periodDescription.startOfPeriod())) {
-            return "stale";
-        }
-
-        const data = json.map(responseRowToMeasurementEntry);
-
-        if (prefer15MinInterval) {
-            return data;
-        }
-
-        const paddedData = padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
-
-        return paddedData;
     }
 
     if (enabledGraphs.includes("gas")) {
         const periodGasContainer = d3.select("#gas_period_data");
 
-        fetchChartData("gas").then((values) => {
+        fetchChartData("gas", periodGasContainer).then((values) => {
             if (values === "stale") {
                 return;
             }
@@ -85,16 +90,16 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
             const cardTitle = createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
-            setCardTitle("js-period-gas-title", cardTitle);
+            setCardTitle(periodGasContainer, cardTitle);
 
-            api.call(periodGasContainer);
+            api.call(periodGasContainer.select(".chart"));
         });
     }
 
     if (enabledGraphs.includes("water")) {
         const periodWaterContainer = d3.select("#water_period_data");
 
-        fetchChartData("water").then((values) => {
+        fetchChartData("water", periodWaterContainer).then((values) => {
             if (values === "stale") {
                 return;
             }
@@ -105,16 +110,16 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             api.clearCanvas(shouldClearCanvas);
 
             const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
-            setCardTitle("js-period-water-title", cardTitle);
+            setCardTitle(periodWaterContainer, cardTitle);
 
-            api.call(periodWaterContainer);
+            api.call(periodWaterContainer.select(".chart"));
         });
     }
 
     if (enabledGraphs.includes("generation")) {
         const periodGenerationContainer = d3.select("#generation_period_data");
 
-        fetchChartData("generation").then((values) => {
+        fetchChartData("generation", periodGenerationContainer, true).then((values) => {
             if (values === "stale") {
                 return;
             }
@@ -149,9 +154,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
             const cardTitle = createPeriodDataCardTitle(valuesInKW, "generation", graphDescription, periodDescription);
 
-            setCardTitle("js-period-generation-title", cardTitle);
+            setCardTitle(periodGenerationContainer, cardTitle);
 
-            api.call(periodGenerationContainer);
+            api.call(periodGenerationContainer.select(".chart"));
         });
     }
 
@@ -159,9 +164,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         const periodStroomContainer = d3.select("#stroom_period_data");
 
         Promise.all<MeasurementEntry[] | "stale">([
-            fetchChartData("stroom"),
-            fetchChartData("generation"),
-            fetchChartData("back_delivery")
+            fetchChartData("stroom", periodStroomContainer),
+            fetchChartData("generation", periodStroomContainer),
+            fetchChartData("back_delivery", periodStroomContainer)
         ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
             if (stroomValues === "stale" || generationValues === "stale" || backDeliveryValues === "stale") {
                 return;
@@ -182,33 +187,44 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             api.clearCanvas(shouldClearCanvas);
 
             const cardTitle = createPeriodDataCardTitle(stroomValues, "stroom", graphDescription, periodDescription);
-            setCardTitle("js-period-stroom-title", cardTitle);
+            setCardTitle(periodStroomContainer, cardTitle);
 
-            api.call(periodStroomContainer);
+            api.call(periodStroomContainer.select(".chart"));
         });
     }
 
-    async function fetchTemperatureData(): Promise<Map<string, MeasurementEntry[]>> {
-        const url = periodDescription.toUrl();
+    async function fetchTemperatureData(
+        card: d3.Selection<d3.BaseType, unknown, HTMLElement, any>
+    ): Promise<Map<string, MeasurementEntry[]>> {
+        card.classed("loading", true);
 
-        const response = await fetch(`/api/temperature/living_room${url}`);
-        const json: { [key: string]: MeasurementEntry[] } = await response.json();
+        const url = periodDescription.toUrl();
 
         const result = new Map();
 
-        Object.entries(json).forEach((keyAndSeries) => {
-            const [key, rawSeries] = keyAndSeries;
-            const series = rawSeries.map(responseRowToMeasurementEntry);
+        try {
+            const response = await fetch(`/api/temperature/living_room${url}`);
+            const json: { [key: string]: MeasurementEntry[] } = await response.json();
 
-            result.set(key, series);
-        });
+            Object.entries(json).forEach((keyAndSeries) => {
+                const [key, rawSeries] = keyAndSeries;
+                const series = rawSeries.map(responseRowToMeasurementEntry);
+
+                result.set(key, series);
+            });
+        } finally {
+            card.classed("loading", false);
+        }
 
         return result;
     }
 
     if (enabledGraphs.includes("temperature")) {
-        fetchTemperatureData().then((result) => {
-            const chartContainer = d3.select("#temperature_line_chart");
+        const card = d3.select("#temperature_line_chart");
+
+        const chartContainer = card.select(".chart");
+
+        fetchTemperatureData(card).then((result) => {
             const temperatureChart = lineChart(
                 periodDescription,
                 new TemperatuurGraphDescription(periodDescription)
