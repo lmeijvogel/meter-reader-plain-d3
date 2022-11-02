@@ -39,7 +39,6 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     async function fetchChartData(
         fieldName: UsageField,
-        periodDescription: PeriodDescription,
         prefer15MinInterval = false
     ): Promise<MeasurementEntry[]> {
         let url: string;
@@ -64,7 +63,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("gas")) {
         const periodGasContainer = d3.select("#gas_period_data");
 
-        fetchChartData("gas", periodDescription).then((values) => {
+        fetchChartData("gas").then((values) => {
             const graphDescription = new GasGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
@@ -78,7 +77,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("water")) {
         const periodWaterContainer = d3.select("#water_period_data");
 
-        fetchChartData("water", periodDescription).then((values) => {
+        fetchChartData("water").then((values) => {
             const graphDescription = new WaterGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
@@ -94,7 +93,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("generation")) {
         const periodGenerationContainer = d3.select("#generation_period_data");
 
-        fetchChartData("generation", periodDescription, true).then((values) => {
+        fetchChartData("generation", true).then((values) => {
             const graphDescription = new GenerationGraphDescription(periodDescription);
 
             // The API returns Wh. I prefer to show the "average wattage"show.
@@ -135,9 +134,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         const periodStroomContainer = d3.select("#stroom_period_data");
 
         Promise.all<MeasurementEntry[]>([
-            fetchChartData("stroom", periodDescription),
-            fetchChartData("generation", periodDescription),
-            fetchChartData("back_delivery", periodDescription)
+            fetchChartData("stroom"),
+            fetchChartData("generation"),
+            fetchChartData("back_delivery")
         ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
             const graphDescription = new StroomGraphDescription(periodDescription);
 
@@ -160,9 +159,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         });
     }
 
-    async function fetchTemperatureData(
-        periodDescription: PeriodDescription
-    ): Promise<Map<string, MeasurementEntry[]>> {
+    async function fetchTemperatureData(): Promise<Map<string, MeasurementEntry[]>> {
         const url = periodDescription.toUrl();
 
         const response = await fetch(`/api/temperature/living_room${url}`);
@@ -181,7 +178,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("temperature")) {
-        fetchTemperatureData(periodDescription).then((result) => {
+        fetchTemperatureData().then((result) => {
             const chartContainer = d3.select("#temperature_line_chart");
             const temperatureChart = lineChart(
                 periodDescription,
