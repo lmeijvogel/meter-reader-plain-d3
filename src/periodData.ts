@@ -225,8 +225,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     if (enabledGraphs.includes("temperature")) {
         const card = d3.select("#temperature_line_chart");
-
         const chartContainer = card.select(".chart");
+        setCardTitle(card, "Binnentemperatuur");
 
         fetchTemperatureData(card).then((result) => {
             const temperatureChart = lineChart(

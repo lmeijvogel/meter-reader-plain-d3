@@ -6,6 +6,7 @@ import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasuremen
 import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
+import { setCardTitle } from "./vizCard";
 
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
@@ -91,16 +92,22 @@ function addAndReplaceValues(existing: MeasurementEntry[], newValues: Measuremen
 }
 
 function drawPowerUsage(fieldsKW: CurrentFields) {
-    const recentCurrentContainer = d3.select("#recent_current").select(".chart");
+    const recentCurrentCard = d3.select("#recent_current");
+    const recentCurrentContainer = recentCurrentCard.select(".chart");
+    setCardTitle(recentCurrentCard, "Stroomverbruik laatste uur");
 
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
     recentCurrentGraph.setSeries("current", currentInW, "black");
+
     recentCurrentContainer.call(recentCurrentGraph.call);
 }
 
 function updateCurrentUsageGauge(valueInW: number) {
-    const gaugeContainer = d3.select("#current_power_gauge").select(".chart");
+    const gaugeCard = d3.select("#current_power_gauge");
+    const gaugeContainer = gaugeCard.select(".chart");
+    setCardTitle(gaugeCard, "Huidig stroomverbruik");
+
     powerUsageGauge.value(valueInW);
 
     gaugeContainer.call(powerUsageGauge.call);

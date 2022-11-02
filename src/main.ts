@@ -11,7 +11,7 @@ import { getDate } from "date-fns";
 import { retrieveAndDrawPeriodCharts } from "./periodData";
 import { initializeCurrentCharts } from "./currentCharts";
 import { initIcons } from "./icons";
-import { addCards } from "./vizCard";
+import { addCards, setCardTitle } from "./vizCard";
 
 const cardsPerRow = [
     ["gas_period_data", "stroom_period_data"],
@@ -45,6 +45,7 @@ function loadData(fieldName: UsageField, period: "last_30_days" | "last_year") {
 
 loadData("gas", "last_year").then((result) => {
     const chartContainer = d3.select("#gas_heatmap_yearly");
+    setCardTitle(chartContainer, "Gas laatste jaar");
 
     heatMap("year")
         .colors("#ffffff", "#e73710", "#791d09")
@@ -57,6 +58,7 @@ loadData("gas", "last_year").then((result) => {
 
 loadData("stroom", "last_year").then((result) => {
     const chartContainer = d3.select("#stroom_heatmap_yearly");
+    setCardTitle(chartContainer, "Stroom laatste jaar");
 
     heatMap("year")
         .colors("#ffffff", "#f0ad4e", "#784805")
@@ -69,6 +71,7 @@ loadData("stroom", "last_year").then((result) => {
 
 loadData("generation", "last_year").then((result) => {
     const chartContainer = d3.select("#opwekking_heatmap_yearly");
+    setCardTitle(chartContainer, "Opwek laatste jaar");
 
     heatMap("year")
         .colors("#ffffff", "#88ff28", "#22aa08")
@@ -81,6 +84,7 @@ loadData("generation", "last_year").then((result) => {
 
 loadData("water", "last_year").then((result) => {
     const chartContainer = d3.select("#water_heatmap_yearly");
+    setCardTitle(chartContainer, "Water laatste jaar");
 
     heatMap("year")
         .colors("#ffffff", "#428bca", "#224767")
@@ -93,6 +97,7 @@ loadData("water", "last_year").then((result) => {
 
 loadData("gas", "last_30_days").then((result) => {
     const chartContainer = d3.select("#gas_heatmap_monthly");
+    setCardTitle(chartContainer, "Gas laatste 30 dagen");
 
     heatMap("30_days")
         .colors("#ffffff", "#e73710", "#791d09")
@@ -104,6 +109,7 @@ loadData("gas", "last_30_days").then((result) => {
 
 loadData("stroom", "last_30_days").then((result) => {
     const chartContainer = d3.select("#stroom_heatmap_monthly");
+    setCardTitle(chartContainer, "Stroom laatste 30 dagen");
 
     heatMap("30_days")
         .colors("#ffffff", "#f0ad4e", "#784805")
@@ -116,6 +122,7 @@ loadData("stroom", "last_30_days").then((result) => {
 
 loadData("generation", "last_30_days").then((result) => {
     const chartContainer = d3.select("#opwekking_heatmap_monthly");
+    setCardTitle(chartContainer, "Opwek laatste 30 dagen");
 
     heatMap("30_days")
         .colors("#ffffff", "#88ff28", "#22aa08")
@@ -128,6 +135,7 @@ loadData("generation", "last_30_days").then((result) => {
 
 loadData("water", "last_30_days").then((result) => {
     const chartContainer = d3.select("#water_heatmap_monthly");
+    setCardTitle(chartContainer, "Water laatste 30 dagen");
 
     heatMap("30_days")
         .colors("#ffffff", "#428bca", "#224767")
