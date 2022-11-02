@@ -39,6 +39,10 @@ const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")
 let requestedStartOfPeriod: Date | null;
 
 export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
+    if (previousPeriod && periodDescription.equals(previousPeriod)) {
+        return;
+    }
+
     navigation.setPeriodDescription(periodDescription);
 
     const shouldClearCanvas = previousPeriod?.periodSize !== periodDescription.periodSize;
