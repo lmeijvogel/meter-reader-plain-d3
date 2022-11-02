@@ -123,6 +123,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             if (store.clearCanvas) {
                 selection.selectAll("*").remove();
+                d3.select("#tooltip").style("display", "none");
             }
 
             if (firstDrawCall) {

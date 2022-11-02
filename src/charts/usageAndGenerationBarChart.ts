@@ -351,6 +351,8 @@ export function usageAndGenerationBarChart(
                 selection.selectAll("*").remove();
             }
 
+            d3.select("#tooltip").style("display", "none");
+
             addSvgChildTags(selection);
 
             registerEventHandlers(selection);

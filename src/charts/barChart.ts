@@ -315,9 +315,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
                 store.firstDrawCall = true;
             }
 
-            selection.on("mouseover", null);
-            selection.on("mouseout", null);
-            selection.on("mousemove", null);
+            d3.select("#tooltip").style("display", "none");
 
             if (store.firstDrawCall) {
                 addSvgChildTags(selection);
