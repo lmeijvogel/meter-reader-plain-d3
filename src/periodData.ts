@@ -20,11 +20,6 @@ import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { initializeNavigation } from "./navigation";
 
-const periodGasContainer = d3.select("#gas_period_data");
-const periodStroomContainer = d3.select("#stroom_period_data");
-const periodWaterContainer = d3.select("#water_period_data");
-const periodGenerationContainer = d3.select("#generation_period_data");
-
 const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
 
 let previousPeriod: PeriodDescription | null = null;
@@ -67,6 +62,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("gas")) {
+        const periodGasContainer = d3.select("#gas_period_data");
+
         fetchChartData("gas", periodDescription).then((values) => {
             const graphDescription = new GasGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
@@ -79,6 +76,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("water")) {
+        const periodWaterContainer = d3.select("#water_period_data");
+
         fetchChartData("water", periodDescription).then((values) => {
             const graphDescription = new WaterGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
@@ -93,6 +92,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("generation")) {
+        const periodGenerationContainer = d3.select("#generation_period_data");
+
         fetchChartData("generation", periodDescription, true).then((values) => {
             const graphDescription = new GenerationGraphDescription(periodDescription);
 
@@ -131,6 +132,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     }
 
     if (enabledGraphs.includes("stroom")) {
+        const periodStroomContainer = d3.select("#stroom_period_data");
+
         Promise.all<MeasurementEntry[]>([
             fetchChartData("stroom", periodDescription),
             fetchChartData("generation", periodDescription),

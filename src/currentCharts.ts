@@ -7,8 +7,6 @@ import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
 
-const gaugeContainer = d3.select("#current_power_gauge");
-const recentCurrentContainer = d3.select("#recent_current");
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
 const lastHourDescription = new LastHourDescription();
@@ -93,6 +91,8 @@ function addAndReplaceValues(existing: MeasurementEntry[], newValues: Measuremen
 }
 
 function drawPowerUsage(fieldsKW: CurrentFields) {
+    const recentCurrentContainer = d3.select("#recent_current");
+
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
     recentCurrentGraph.setSeries("current", currentInW, "black");
@@ -100,6 +100,7 @@ function drawPowerUsage(fieldsKW: CurrentFields) {
 }
 
 function updateCurrentUsageGauge(valueInW: number) {
+    const gaugeContainer = d3.select("#current_power_gauge");
     powerUsageGauge.value(valueInW);
 
     gaugeContainer.call(powerUsageGauge.call);
