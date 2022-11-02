@@ -429,13 +429,7 @@ export class HourDescription extends PeriodDescription {
     }
 
     atIndex(date: Date) {
-        return new MinuteDescription(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate(),
-            date.getHours(),
-            date.getMinutes()
-        );
+        return new MinuteDescription(date.getHours(), date.getMinutes());
     }
 
     toShortTitle() {
@@ -484,13 +478,7 @@ export class LastHourDescription extends HourDescription {
 export class MinuteDescription extends PeriodDescription {
     readonly periodSize = "day";
 
-    constructor(
-        private readonly _year: number,
-        private readonly _month: number,
-        private readonly _day: number,
-        private readonly hour: number,
-        private readonly minute: number
-    ) {
+    constructor(private readonly hour: number, private readonly minute: number) {
         super();
     }
 
