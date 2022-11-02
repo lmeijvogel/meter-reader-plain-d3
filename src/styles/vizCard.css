@@ -31,7 +31,8 @@
         flex-direction: column;
     }
 
-    .chart {
+    .chart,
+    .overlay {
         width: 340px;
         height: 180px;
     }
