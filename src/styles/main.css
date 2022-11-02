@@ -36,8 +36,11 @@ body {
 #tooltip .tableValue {
     text-align: right;
 }
+.usageAndGenerationTooltip .title {
+    font-style: italic;
+}
 .usageAndGenerationTooltip .category {
-    padding: 10px;
+    padding: 3px 10px;
 }
 
 .lineChartBrush {

@@ -262,7 +262,7 @@ export function usageAndGenerationBarChart(
             );
         }
 
-        const contents = `${dateString}<br />
+        const contents = `<h3 class="title">${dateString}</h3>
                             <table class="usageAndGenerationTooltip">
                             <tbody>
                                 ${rows.join("")}
@@ -323,7 +323,7 @@ export function usageAndGenerationBarChart(
 
         const tooltipSelector = d3.select("#tooltip");
         tooltipSelector
-            .style("top", event.pageY - 170 + "px")
+            .style("top", event.pageY - 200 + "px")
             .style("left", left + "px")
             .html(htmlProvider);
     }
