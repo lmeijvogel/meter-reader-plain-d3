@@ -8,6 +8,7 @@ import {
     endOfHour,
     endOfMonth,
     endOfYear,
+    isEqual,
     startOfDay,
     startOfMinute,
     startOfMonth,
@@ -72,6 +73,10 @@ export abstract class PeriodDescription {
 
     toShortTitle(): string {
         return this.toTitle();
+    }
+
+    equals(other: PeriodDescription): boolean {
+        return this.periodSize === other.periodSize && isEqual(this.startOfPeriod(), other.startOfPeriod());
     }
 
     abstract startOfPeriod(): Date;

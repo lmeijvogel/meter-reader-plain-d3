@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { isEqual } from "date-fns";
 import { barChart } from "./charts/barChart";
 import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
@@ -32,6 +33,11 @@ const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")
     "generation"
 ];
 
+/* Store the requested period to prevent older requests "overtaking" newer requests and being rendered
+ * when the newer ones should be rendered.
+ */
+let requestedStartOfPeriod: Date | null;
+
 export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription) {
     navigation.setPeriodDescription(periodDescription);
 
@@ -40,15 +46,22 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     async function fetchChartData(
         fieldName: UsageField,
         prefer15MinInterval = false
-    ): Promise<MeasurementEntry[]> {
+    ): Promise<MeasurementEntry[] | "stale"> {
         let url: string;
         url = `/api/${fieldName}${periodDescription.toUrl()}`;
         if (prefer15MinInterval && periodDescription.periodSize === "day") {
             url = `${url}/15m`;
         }
 
+        requestedStartOfPeriod = periodDescription.startOfPeriod();
+
         const response = await fetch(url);
         const json = await response.json();
+
+        if (!isEqual(requestedStartOfPeriod, periodDescription.startOfPeriod())) {
+            return "stale";
+        }
+
         const data = json.map(responseRowToMeasurementEntry);
 
         if (prefer15MinInterval) {
@@ -64,6 +77,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         const periodGasContainer = d3.select("#gas_period_data");
 
         fetchChartData("gas").then((values) => {
+            if (values === "stale") {
+                return;
+            }
+
             const graphDescription = new GasGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
@@ -78,6 +95,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         const periodWaterContainer = d3.select("#water_period_data");
 
         fetchChartData("water").then((values) => {
+            if (values === "stale") {
+                return;
+            }
+
             const graphDescription = new WaterGraphDescription(periodDescription);
             const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
 
@@ -93,7 +114,11 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("generation")) {
         const periodGenerationContainer = d3.select("#generation_period_data");
 
-        fetchChartData("generation", true).then((values) => {
+        fetchChartData("generation").then((values) => {
+            if (values === "stale") {
+                return;
+            }
+
             const graphDescription = new GenerationGraphDescription(periodDescription);
 
             // The API returns Wh. I prefer to show the "average wattage"show.
@@ -133,11 +158,15 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("stroom")) {
         const periodStroomContainer = d3.select("#stroom_period_data");
 
-        Promise.all<MeasurementEntry[]>([
+        Promise.all<MeasurementEntry[] | "stale">([
             fetchChartData("stroom"),
             fetchChartData("generation"),
             fetchChartData("back_delivery")
         ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
+            if (stroomValues === "stale" || generationValues === "stale" || backDeliveryValues === "stale") {
+                return;
+            }
+
             const graphDescription = new StroomGraphDescription(periodDescription);
 
             const equalizedData = {
