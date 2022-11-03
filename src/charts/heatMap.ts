@@ -169,14 +169,15 @@ export function heatMap(graphType: GraphType) {
 
 function buildColorScale(store: Store) {
     const values = store.data.map((v) => v.value);
-    const min = store.min;
-    let median = d3.median(values.filter((value) => value !== 0));
 
-    const max = d3.max(values);
+    const min = store.min;
+    const max = d3.max(values)!;
+
+    const middle = (min + max) / 2.5;
 
     return d3
         .scaleLinear()
-        .domain([min, median!, max!])
+        .domain([min, middle, max])
         .range([store.lightColor, store.midColor, store.darkColor] as any[])
         .clamp(true);
 }
