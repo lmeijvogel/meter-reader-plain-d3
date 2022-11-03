@@ -5,11 +5,9 @@ import { monthNames } from "../lib/monthNames";
 import { MeasurementEntry } from "../models/MeasurementEntry";
 
 import { tip as d3tip } from "d3-v6-tip";
-import { PeriodDescription } from "../models/PeriodDescription";
 
 type GraphType = "30_days" | "year";
 
-const borderGrey = "#ccc";
 const xAxisWidth = 40;
 const yAxisHeight = 20;
 
@@ -215,7 +213,7 @@ function drawBorder(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
 }
 
 function drawAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
-    const xAxis = d3.axisBottom(store.scaleX).tickFormat(store.tickFormat);
+    const xAxis = d3.axisBottom(store.scaleX).tickFormat(store.tickFormat as any);
 
     const xAxisContainer = svg.select(".xAxis").attr("transform", `translate(0, ${store.scaleY(0)})`);
 
