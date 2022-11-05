@@ -330,7 +330,7 @@ export function usageAndGenerationBarChart(
 
     const api = {
         data(data: Data) {
-            store.data = prepareForBars(consolidateData(data));
+            store.data = splitSolarSourceData(groupValuesByDate(data));
 
             return api;
         },
@@ -388,7 +388,7 @@ function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLEleme
     selection.attr("viewBox", "0 0 480 240");
 }
 
-function consolidateData(input: Data): ConsolidatedData[] {
+function groupValuesByDate(input: Data): ConsolidatedData[] {
     const getDates = (input: MeasurementEntry[]) => input.map((el) => el.timestamp);
     const dataFields: (keyof Data)[] = ["consumption", "generation", "backDelivery"];
     const timestamps = d3.sort(d3.union(dataFields.flatMap((field) => getDates(input[field]))));
@@ -408,7 +408,7 @@ function consolidateData(input: Data): ConsolidatedData[] {
     return result;
 }
 
-function prepareForBars(input: ConsolidatedData[]): PowerSourcesAndBackDelivery[] {
+function splitSolarSourceData(input: ConsolidatedData[]): PowerSourcesAndBackDelivery[] {
     const result: PowerSourcesAndBackDelivery[] = [];
 
     for (const entry of input) {
