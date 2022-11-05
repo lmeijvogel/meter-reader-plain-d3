@@ -18,7 +18,7 @@ export function initializeNavigation(onPeriodChange: (periodDescription: PeriodD
 function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
     const swipeArea = document.getElementById("js-navigate-overlay");
 
-    const isIPad = navigator.userAgent.includes("iPad");
+    const isIPad = navigator.userAgent.includes("iPad") || navigator.userAgent.includes("Safari");
 
     if (isIPad) {
         initializeDesktopNavigation(onPeriodChange);
