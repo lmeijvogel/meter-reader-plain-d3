@@ -17,8 +17,8 @@ const recentCurrentGraph = lineChart(lastHourDescription, new CurrentPowerUsageG
 
 type CurrentFields = { current: MeasurementEntry[] };
 
-async function retrievePowerUsage(page = 0) {
-    return fetch(`/api/stroom/recent?page=${page}`)
+async function retrievePowerUsage(minutes = 10) {
+    return fetch(`/api/stroom/recent?minutes=${minutes}`)
         .then((response) => response.json())
         .then((json) => {
             const fieldsKW: CurrentFields = {
@@ -45,8 +45,8 @@ const powerUsage: CurrentFields = {
     current: []
 };
 
-async function updatePowerUsage(page = 0) {
-    const newValues = await retrievePowerUsage(page);
+async function updatePowerUsage(minutes: number) {
+    const newValues = await retrievePowerUsage(minutes);
 
     powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
 
@@ -122,15 +122,9 @@ export async function initializeCurrentCharts() {
 }
 
 async function retrieveAndDrawPowerUsageInBatches() {
-    for (let i = 0; i < 6; i++) {
-        const batch = await retrievePowerUsage(i);
+    const batch = await retrievePowerUsage(60);
 
-        powerUsage.current = sortByTimestamp([...batch.current, ...powerUsage.current]);
+    powerUsage.current = batch.current;
 
-        drawPowerUsage(powerUsage);
-    }
-}
-
-function sortByTimestamp(entries: MeasurementEntry[]): MeasurementEntry[] {
-    return d3.sort(entries, (a, b) => (a.timestamp < b.timestamp ? -1 : 1));
+    drawPowerUsage(powerUsage);
 }
