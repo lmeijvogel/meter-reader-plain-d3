@@ -72,6 +72,8 @@ h3 {
 .upButtonsContainer.visible {
     position: fixed;
     top: 0px;
+
+    z-index: 300;
 }
 
 .sideButtonsContainer {
@@ -90,6 +92,8 @@ h3 {
 
     justify-content: space-around;
     align-items: center;
+
+    z-index: 300;
 }
 
 @media screen and (max-width: 575px) {
