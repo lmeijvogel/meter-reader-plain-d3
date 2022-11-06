@@ -198,6 +198,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         selection.on("mouseout", () => {
             d3.select("#tooltip").style("display", "none");
             selection.select(".tooltipLine").style("display", "none");
+            unhighlightBar(selection);
         });
 
         selection.on("mousemove", (event) => {
@@ -250,6 +251,10 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .select(".values")
             .selectAll("rect")
             .style("fill", (_d, i) => (i === closestIndex ? graphDescription.lightColor : graphDescription.barColor));
+    }
+
+    function unhighlightBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        selection.select(".values").selectAll("rect").style("fill", graphDescription.barColor);
     }
 
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
