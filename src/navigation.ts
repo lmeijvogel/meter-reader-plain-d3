@@ -10,19 +10,13 @@ let windowWidth = getWindowWidth();
 let periodDescription: PeriodDescription | undefined;
 
 export function initializeNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
+    initializeButtonEventHandlers(onPeriodChange);
     return VanillaSwipe.isTouchEventsSupported()
         ? initializeMobileNavigation(onPeriodChange)
-        : initializeDesktopNavigation(onPeriodChange);
+        : initializeDesktopNavigation();
 }
-
 function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
     const swipeArea = document.getElementById("js-navigate-overlay");
-
-    const isIPad = navigator.userAgent.includes("iPad") || navigator.userAgent.includes("Safari");
-
-    if (isIPad) {
-        initializeDesktopNavigation(onPeriodChange);
-    }
 
     const swipe = new VanillaSwipe({
         element: swipeArea!,
@@ -55,6 +49,11 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
                     break;
             }
         },
+        onTap: (_e: Event, data: EventData) => {
+            if (isIPad()) {
+                setMouseCoords(data.positionX!, data.positionY!);
+            }
+        },
         delta: 50
     });
 
@@ -73,6 +72,7 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
         setPeriodDescription: (newPeriodDescription: PeriodDescription) => {
             periodDescription = newPeriodDescription;
 
+            enableOrDisableNavigationButtons();
             setPageTitle(periodDescription.toTitle());
 
             return api;
@@ -82,20 +82,33 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
     return api;
 }
 
-function initializeDesktopNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
-    function enableOrDisableNavigation() {
-        if (!periodDescription) return;
+function initializeDesktopNavigation() {
+    const onResize = () => {
+        windowWidth = getWindowWidth();
+    };
+    window.addEventListener("resize", onResize);
 
-        const prevButton = document.getElementsByClassName("js-navigate-prev")[0].getElementsByTagName("button")[0];
-        prevButton.disabled = periodDescription.previous().beforeFirstMeasurement();
+    const onMouseMove = (event: any) => {
+        setMouseCoords(event.clientX, event.clientY);
+    };
+    window.addEventListener("mousemove", onMouseMove);
 
-        const nextButton = document.getElementsByClassName("js-navigate-next")[0].getElementsByTagName("button")[0];
-        nextButton.disabled = periodDescription.next().isInFuture();
+    const api = {
+        setPeriodDescription: (newPeriodDescription: PeriodDescription) => {
+            periodDescription = newPeriodDescription;
 
-        const upButton = document.getElementsByClassName("js-navigate-up")[0].getElementsByTagName("button")[0];
-        upButton.disabled = periodDescription instanceof YearDescription;
-    }
+            enableOrDisableNavigationButtons();
 
+            setPageTitle(periodDescription.toTitle());
+
+            return api;
+        }
+    };
+
+    return api;
+}
+
+function initializeButtonEventHandlers(onPeriodChange: (periodDescription: PeriodDescription) => void) {
     function addButtonEventListener(
         selector: string,
         handler: (periodDescription: PeriodDescription) => PeriodDescription | null
@@ -114,34 +127,24 @@ function initializeDesktopNavigation(onPeriodChange: (periodDescription: PeriodD
             });
         }
     }
+
     addButtonEventListener("js-navigate-up", (periodDescription: PeriodDescription) => periodDescription?.up());
     addButtonEventListener("js-navigate-prev", (periodDescription: PeriodDescription) => periodDescription?.previous());
     addButtonEventListener("js-navigate-next", (periodDescription: PeriodDescription) => periodDescription?.next());
     addButtonEventListener("js-navigate-today", () => DayDescription.today());
+}
 
-    const onResize = () => {
-        windowWidth = getWindowWidth();
-    };
-    window.addEventListener("resize", onResize);
+function enableOrDisableNavigationButtons() {
+    if (!periodDescription) return;
 
-    const onMouseMove = (event: any) => {
-        setMouseCoords(event.clientX, event.clientY);
-    };
-    window.addEventListener("mousemove", onMouseMove);
+    const prevButton = document.getElementsByClassName("js-navigate-prev")[0].getElementsByTagName("button")[0];
+    prevButton.disabled = periodDescription.previous().beforeFirstMeasurement();
 
-    const api = {
-        setPeriodDescription: (newPeriodDescription: PeriodDescription) => {
-            periodDescription = newPeriodDescription;
+    const nextButton = document.getElementsByClassName("js-navigate-next")[0].getElementsByTagName("button")[0];
+    nextButton.disabled = periodDescription.next().isInFuture();
 
-            enableOrDisableNavigation();
-
-            setPageTitle(periodDescription.toTitle());
-
-            return api;
-        }
-    };
-
-    return api;
+    const upButton = document.getElementsByClassName("js-navigate-up")[0].getElementsByTagName("button")[0];
+    upButton.disabled = periodDescription instanceof YearDescription;
 }
 
 function setPageTitle(title: string) {
@@ -167,3 +170,7 @@ const setMouseCoords = (x: number, y: number) => {
     showOrHideEdge("js-buttons-left", mouseAtLeftEdge);
     showOrHideEdge("js-buttons-right", mouseAtRightEdge);
 };
+
+function isIPad() {
+    return navigator.userAgent.includes("iPad") || navigator.userAgent.includes("Safari");
+}
