@@ -154,7 +154,7 @@ export function gauge() {
             .selectAll("text")
             .data([store.currentValue])
             .join("text")
-            .attr("fill", "black")
+            .attr("class", styles.gaugeText)
             .attr("text-anchor", "middle")
             .text(formatNumeric);
     }

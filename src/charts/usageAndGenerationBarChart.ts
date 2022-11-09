@@ -172,7 +172,7 @@ export function usageAndGenerationBarChart(
             .domain([periodDescription.startOfPeriod(), periodDescription.endOfPeriod()])
             .range([axisWidth + padding.left, width - padding.right]);
 
-        const xAxisBase = selection.select("g.xAxis").attr("class", "xAxis");
+        const xAxisBase = selection.select("g.xAxis").attr("class", "xAxis axis");
 
         xAxisBase
             .transition()
@@ -184,7 +184,6 @@ export function usageAndGenerationBarChart(
         selection
             .select(".yAxis")
             .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
-            .style("font-size", "13pt")
             .transition()
             .duration(200)
             .call(yAxis as any);
@@ -377,8 +376,8 @@ function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLEleme
         "values-solarSource",
         "values-backDelivery",
         "values-gridSource",
-        "xAxis",
-        "yAxis"
+        "xAxis axis",
+        "yAxis axis"
     ].forEach((name) => {
         if (!selection.select(`g.${name}`).node()) {
             selection.append("g").attr("class", name);

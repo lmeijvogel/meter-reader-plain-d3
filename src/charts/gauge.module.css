@@ -49,3 +49,7 @@
 .gaugeGuide {
     fill: #e8e8e8;
 }
+
+.gaugeText {
+    fill: black;
+}

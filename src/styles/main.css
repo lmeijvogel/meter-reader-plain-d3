@@ -85,3 +85,24 @@ body {
 .spinner-icon {
     animation: spin 2s linear infinite;
 }
+
+.axis {
+    color: black;
+    stroke: black;
+    stroke-width: 1;
+}
+
+.axis text {
+    fill: black;
+
+    stroke: none;
+}
+
+.tooltipLine {
+    stroke: #333;
+    stroke-width: 1;
+}
+
+.dark .tooltipLine {
+    stroke: white;
+}

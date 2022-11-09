@@ -144,7 +144,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
         const xAxisBase = selection
             .select("g.xAxis")
-            .attr("class", "xAxis")
+            .attr("class", "xAxis axis")
             .attr("transform", `translate(0, ${scaleY(0)})`);
 
         xAxisBase.transition().duration(store.firstDrawCall ? 0 : 200);
@@ -254,6 +254,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
                 i === closestIndex[0] ? graphDescription.lightColor : graphDescription.barColor
             );
     }
+
     function unhighlightBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         selection.select(".values").selectAll("rect").style("fill", graphDescription.barColor);
     }
@@ -274,8 +275,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .attr("x2", (x) => x + scaleX.bandwidth() / 2)
             .attr("y1", padding.top)
             .attr("y2", height - padding.bottom - xAxisHeight())
-            .attr("stroke", "#333")
-            .attr("stroke-width", 1);
+            .attr("class", "tooltipLine");
     }
 
     const api = {
@@ -339,7 +339,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["tooltipLine", "gridLines", "additionalInfo", "values", "xAxis", "yAxis"].forEach((name) => {
+    ["tooltipLine", "gridLines", "additionalInfo", "values", "xAxis axis", "yAxis axis"].forEach((name) => {
         if (!selection.select(`g.${name}`).node()) {
             selection.append("g").attr("class", name);
         }

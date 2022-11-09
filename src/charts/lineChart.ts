@@ -273,7 +273,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        ["gridLines", "values", "xAxis", "yAxis", "tooltipLine", "brush"].forEach((className) => {
+        ["gridLines", "values", "xAxis axis", "yAxis axis", "tooltipLine", "brush"].forEach((className) => {
             const g = selection.append("g");
 
             g.attr("class", className);
@@ -363,8 +363,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("x2", (x) => x)
             .attr("y1", minimumY)
             .attr("y2", maximumY)
-            .attr("stroke", "#333")
-            .attr("stroke-width", 1);
+            .attr("class", "tooltipLine");
 
         /* Draw a circle on all matching lines */
         const yValues = seriesCollectionValues.map((series, i) => series.series[closestIndices[i][0]].value);
