@@ -11,9 +11,10 @@ import { setCardTitle } from "./vizCard";
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
 const lastHourDescription = new LastHourDescription();
-const recentCurrentGraph = lineChart(lastHourDescription, new CurrentPowerUsageGraphDescription(lastHourDescription))
-    .minMaxCalculation("quantile")
-    .fill("#f0ad4e", "#adf04e");
+const recentCurrentGraph = lineChart(
+    lastHourDescription,
+    new CurrentPowerUsageGraphDescription(lastHourDescription)
+).minMaxCalculation("quantile");
 
 type CurrentFields = { current: MeasurementEntry[] };
 
@@ -98,7 +99,7 @@ function drawPowerUsage(fieldsKW: CurrentFields) {
 
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
-    recentCurrentGraph.setSeries("current", currentInW, "black");
+    recentCurrentGraph.setSeries("current", currentInW, "black", { positive: "#f0ad4e", negative: "#adf04e" });
 
     recentCurrentContainer.call(recentCurrentGraph.call);
 }

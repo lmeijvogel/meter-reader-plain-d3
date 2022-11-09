@@ -146,7 +146,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             if (periodDescription instanceof DayDescription) {
                 api = lineChart(periodDescription, graphDescription)
                     .minMaxCalculation("quantile")
-                    .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor)
+                     .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor, {
+                         positive: graphDescription.lightColor,
+                         negative: "#ffffff"
+                     }) // The values will never be negative
                     .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
             } else {
                 api = barChart(periodDescription, graphDescription)

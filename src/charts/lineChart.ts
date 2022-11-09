@@ -8,10 +8,14 @@ import { clamp } from "../helpers/clamp";
 import { GraphDescription } from "../models/GraphDescription";
 import { getClosestIndex } from "../lib/getClosestIndex";
 
-type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string }>;
+type FillColors = {
+    positive: string;
+    negative: string;
+};
+
+type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string; fill?: FillColors }>;
 
 type Store = {
-    fillArea?: boolean;
     lineColors?: Map<string, string>;
     defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
@@ -20,7 +24,6 @@ type Store = {
     tooltipDisplayableUnit: string;
     seriesCollection: SeriesCollection;
     domain?: [number, number];
-    fill?: { positive: string; negative: string };
     clearCanvas: boolean;
 };
 
@@ -39,7 +42,6 @@ const axisWidth = 50;
 
 export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
     const store: Store = {
-        fillArea: false,
         lineColors: new Map(),
         defaultLineColor: "black",
         tooltipDateFormat: periodDescription.timeFormatString(),
@@ -71,8 +73,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     let isBrushVisible = false;
 
     const api = {
-        setSeries(name: string, series: ValueWithTimestamp[], lineColor: string) {
-            store.seriesCollection.set(name, { series, lineColor });
+        setSeries(name: string, series: ValueWithTimestamp[], lineColor: string, fill?: FillColors) {
+            store.seriesCollection.set(name, { series, lineColor, fill });
 
             return api;
         },
@@ -80,12 +82,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         domain(domain: [number, number]) {
             store.domain = domain;
             store.minMaxCalculation = "explicit";
-
-            return api;
-        },
-
-        fill(positiveColor: string, negativeColor: string) {
-            store.fill = { positive: positiveColor, negative: negativeColor };
 
             return api;
         },
@@ -181,7 +177,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                     g.attr("class", seriesGClassName).attr("width", width).attr("height", height);
                 }
 
-                drawValues(series.series, series.lineColor, g);
+                drawValues(series.series, series.lineColor, g, series.fill);
             });
 
             return api;
@@ -191,7 +187,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     function drawValues(
         series: ValueWithTimestamp[],
         lineColor: string,
-        selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+        selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+        fill?: FillColors
     ) {
         const lineGenerator = d3
             .line<ValueWithTimestamp>()
@@ -199,7 +196,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .x((d) => scaleX(d.timestamp))
             .y((d) => scaleY(d.value));
 
-        if (!!store.fill) {
+        if (!!fill) {
             const areaPositive = d3
                 .area<ValueWithTimestamp>()
                 .curve(d3.curveNatural)
@@ -225,7 +222,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .attr("x2", "0%")
                 .attr("y2", "100%");
 
-            areaGradientPositive.append("stop").attr("offset", "40%").attr("stop-color", store.fill.positive);
+            areaGradientPositive.append("stop").attr("offset", "40%").attr("stop-color", fill.positive);
             areaGradientPositive.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
 
             const areaGradientNegative = selection
@@ -238,7 +235,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .attr("y2", "100%");
 
             areaGradientNegative.append("stop").attr("offset", "0%").attr("stop-color", "#fff");
-            areaGradientNegative.append("stop").attr("offset", "60%").attr("stop-color", store.fill.negative);
+            areaGradientNegative.append("stop").attr("offset", "60%").attr("stop-color", fill.negative);
 
             selection
                 .selectAll(`path.areaPositive`)
@@ -271,7 +268,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("class", `line`)
             .attr("fill", "none")
             .attr("stroke", lineColor)
-            .attr("stroke-width", store.fill ? 1 : 2)
+            .attr("stroke-width", fill ? 1 : 2)
             .attr("d", lineGenerator);
     }
 
