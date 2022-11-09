@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import { isEqual } from "date-fns";
+import { utcToZonedTime } from "date-fns-tz";
 import { barChart } from "./charts/barChart";
 import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
@@ -123,48 +124,78 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("generation")) {
         const periodGenerationContainer = d3.select("#generation_period_data");
 
-        fetchChartData("generation", periodGenerationContainer, true).then((values) => {
-            if (values === "stale") {
-                return;
+        const fetchAverages =
+            periodDescription instanceof DayDescription
+                ? fetch(`/api/generation/average${periodDescription.toUrl()}`)
+                      .then((r) => r.json())
+                      .then((r) =>
+                          r.map((row: [number, number, number]) => {
+                              const now = new Date();
+
+                              const timestamp = new Date(
+                                  Date.UTC(
+                                      periodDescription.year,
+                                      periodDescription.month,
+                                      periodDescription.day,
+                                      row[0],
+                                      row[1]
+                                  )
+                              );
+
+                              return { value: row[2] / 250, timestamp: utcToZonedTime(timestamp, "Europe/Amsterdam") };
+                          })
+                      )
+                : Promise.resolve([]);
+
+        Promise.all([fetchChartData("generation", periodGenerationContainer, true), fetchAverages]).then(
+            ([generationValues, averagesValues]) => {
+                if (generationValues === "stale") {
+                    return;
+                }
+
+                const graphDescription = new GenerationGraphDescription(periodDescription);
+
+                // The API returns Wh. I prefer to show the "average wattage".
+                // When the periodSize === "day", values for every 15m are returned.
+                // To convert these to kWh, we need to multiply by 4 (15m => 1h)
+                // in addition to dividing by 1000.
+                const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
+                const valuesInKW = generationValues.map((value) => ({ ...value, value: value.value / 1000 }));
+
+                const valuesInKWhPer15m = generationValues.map((value) => ({
+                    ...value,
+                    value: value.value / kWMultiplicationFactor
+                }));
+
+                let api: any;
+                if (periodDescription instanceof DayDescription) {
+                    api = lineChart(periodDescription, graphDescription)
+                        .minMaxCalculation("quantile")
+                        .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor, {
+                            positive: graphDescription.lightColor,
+                            negative: "#ffffff"
+                        }) // The values will never be negative
+                        .setSeries("gemiddelde", averagesValues, "#bbb");
+                } else {
+                    api = barChart(periodDescription, graphDescription)
+                        .data(valuesInKWhPer15m)
+                        .onClick(retrieveAndDrawPeriodCharts);
+                }
+
+                api.clearCanvas(shouldClearCanvas);
+
+                const cardTitle = createPeriodDataCardTitle(
+                    valuesInKW,
+                    "generation",
+                    graphDescription,
+                    periodDescription
+                );
+
+                setCardTitle(periodGenerationContainer, cardTitle);
+
+                api.call(periodGenerationContainer.select(".chart"));
             }
-
-            const graphDescription = new GenerationGraphDescription(periodDescription);
-
-            // The API returns Wh. I prefer to show the "average wattage"show.
-            // When the periodSize === "day", values for every 15m are returned.
-            // To convert these to kWh, we need to multiply by 4 (15m => 1h)
-            // in addition to dividing by 1000.
-            const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
-            const valuesInKW = values.map((value) => ({ ...value, value: value.value / 1000 }));
-
-            const valuesInKWhPer15m = values.map((value) => ({
-                ...value,
-                value: value.value / kWMultiplicationFactor
-            }));
-
-            let api: any;
-            if (periodDescription instanceof DayDescription) {
-                api = lineChart(periodDescription, graphDescription)
-                    .minMaxCalculation("quantile")
-                     .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor, {
-                         positive: graphDescription.lightColor,
-                         negative: "#ffffff"
-                     }) // The values will never be negative
-                    .fill(graphDescription.lightColor, "#ffffff"); // The values will never be negative
-            } else {
-                api = barChart(periodDescription, graphDescription)
-                    .data(valuesInKWhPer15m)
-                    .onClick(retrieveAndDrawPeriodCharts);
-            }
-
-            api.clearCanvas(shouldClearCanvas);
-
-            const cardTitle = createPeriodDataCardTitle(valuesInKW, "generation", graphDescription, periodDescription);
-
-            setCardTitle(periodGenerationContainer, cardTitle);
-
-            api.call(periodGenerationContainer.select(".chart"));
-        });
+        );
     }
 
     if (enabledGraphs.includes("stroom")) {

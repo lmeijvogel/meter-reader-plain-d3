@@ -9,10 +9,10 @@ export function getClosestIndex(
     scaleX: d3.ScaleTime<number, number, never>,
     series: { timestamp: Date }[],
     pointerX: number = d3.pointer(event)[0]
-): number {
+): [number, Date] {
     var bisect = d3.bisector((d: { timestamp: Date }) => d.timestamp).right;
 
     const pointerDate = scaleX.invert(pointerX);
 
-    return bisect(series, pointerDate, 1) - 1;
+    return [bisect(series, pointerDate, 1) - 1, pointerDate];
 }

@@ -338,10 +338,22 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         const tooltipLineSelector = selection.select(".tooltipLine");
 
         const seriesCollectionValues = Array.from(store.seriesCollection.values());
-        const firstSeries = seriesCollectionValues[0].series;
-        const closestIndex = getClosestIndex(event, scaleX, firstSeries);
+        const closestIndices = seriesCollectionValues.map((collection) =>
+            getClosestIndex(event, scaleX, collection.series)
+        );
 
-        const x = scaleX(firstSeries[closestIndex].timestamp);
+        const maxIndex = closestIndices.reduce(
+            (acc, el, index) => {
+                if (el[1] > acc.maxTimestamp) {
+                    return { maxTimestamp: el[1], seriesIndexInArray: index };
+                } else {
+                    return acc;
+                }
+            },
+            { maxTimestamp: new Date(1970), seriesIndexInArray: -1 }
+        );
+
+        const x = scaleX(maxIndex.maxTimestamp);
 
         tooltipLineSelector
             .selectAll("line")
@@ -355,7 +367,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("stroke-width", 1);
 
         /* Draw a circle on all matching lines */
-        const yValues = seriesCollectionValues.map((series) => series.series[closestIndex].value);
+        const yValues = seriesCollectionValues.map((series, i) => series.series[closestIndices[i][0]].value);
+
         tooltipLineSelector
             .selectAll("circle")
             .data(yValues)
@@ -374,11 +387,11 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             const series = store.seriesCollection.get(key)!;
 
             var closestIndex = getClosestIndex(event, scaleX, series.series);
-            closestDate = series.series[closestIndex].timestamp;
+            closestDate = series.series[closestIndex[0]].timestamp;
 
             return {
                 name: key,
-                value: series.series[closestIndex]?.value
+                value: series.series[closestIndex[0]]?.value
             };
         });
 
@@ -405,7 +418,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             const startIndex = getClosestIndex(event.selection[0], scaleX, series[1].series, event.selection[0]);
             const endIndex = getClosestIndex(event.selection[1], scaleX, series[1].series, event.selection[1]);
 
-            const relevantEntries = series[1].series.slice(startIndex, endIndex);
+            const relevantEntries = series[1].series.slice(startIndex[0], endIndex[0]);
 
             const [min, max] = d3.extent(relevantEntries, (v) => v.value);
 

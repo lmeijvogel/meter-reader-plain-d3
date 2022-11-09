@@ -227,8 +227,8 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
 
         var closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const closestDate = data[closestIndex].timestamp;
-        const value = data[closestIndex].value;
+        const closestDate = closestIndex[1];
+        const value = data[closestIndex[0]].value;
 
         const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
 
@@ -250,9 +250,10 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         selection
             .select(".values")
             .selectAll("rect")
-            .style("fill", (_d, i) => (i === closestIndex ? graphDescription.lightColor : graphDescription.barColor));
+            .style("fill", (_d, i) =>
+                i === closestIndex[0] ? graphDescription.lightColor : graphDescription.barColor
+            );
     }
-
     function unhighlightBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         selection.select(".values").selectAll("rect").style("fill", graphDescription.barColor);
     }
@@ -263,7 +264,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         const data = store.data;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(initialPeriodDescription.normalize(data[closestIndex].timestamp))!;
+        const x = scaleX(initialPeriodDescription.normalize(closestIndex[1]))!;
 
         tooltipLineSelector
             .selectAll("line")
