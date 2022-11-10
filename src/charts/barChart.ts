@@ -3,9 +3,8 @@ import { GraphDescription } from "../models/GraphDescription";
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
-import { clamp } from "../helpers/clamp";
-import { getWindowWidth } from "../lib/getWindowWidth";
 import { getClosestIndex } from "../lib/getClosestIndex";
+import { hideTooltip, showTooltip } from "../tooltip";
 
 type Store = {
     periodDescription: PeriodDescription;
@@ -51,12 +50,6 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         clearCanvas: false,
         firstDrawCall: true
     };
-
-    let windowWidth = getWindowWidth();
-
-    window.addEventListener("resize", () => {
-        windowWidth = getWindowWidth();
-    });
 
     const scaleX = d3.scaleBand<Date>().padding(0.15);
     const scaleXForInversion = d3.scaleTime();
@@ -191,12 +184,11 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         selection.on("mousemove", null);
 
         selection.on("mouseover", () => {
-            d3.select("#tooltip").style("display", "flex");
             selection.select(".tooltipLine").style("display", "block");
         });
 
         selection.on("mouseout", () => {
-            d3.select("#tooltip").style("display", "none");
+            hideTooltip();
             selection.select(".tooltipLine").style("display", "none");
             unhighlightBar(selection);
         });
@@ -209,26 +201,13 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         });
     }
 
-    function showTooltip(event: any, htmlProvider: () => string) {
-        const tooltipWidth = 300; // Matches the CSS value
-        const tooltipLeft = event.pageX + 20;
-
-        const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
-
-        const tooltipSelector = d3.select("#tooltip");
-        tooltipSelector
-            .style("top", event.pageY - 170 + "px")
-            .style("left", left + "px")
-            .html(htmlProvider);
-    }
-
     function getHoverTooltipContents(event: any): string {
         const data = store.data;
 
         var closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const closestDate = closestIndex[1];
-        const value = data[closestIndex[0]].value;
+        const closestDate = closestIndex.timestamp;
+        const value = data[closestIndex.index].value;
 
         const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
 
@@ -251,7 +230,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .select(".values")
             .selectAll("rect")
             .style("fill", (_d, i) =>
-                i === closestIndex[0] ? graphDescription.lightColor : graphDescription.barColor
+                i === closestIndex.index ? graphDescription.lightColor : graphDescription.barColor
             );
     }
 
@@ -265,7 +244,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         const data = store.data;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(initialPeriodDescription.normalize(closestIndex[1]))!;
+        const x = scaleX(initialPeriodDescription.normalize(closestIndex.timestamp))!;
 
         tooltipLineSelector
             .selectAll("line")
@@ -320,8 +299,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
                 selection.selectAll("*").remove();
                 store.firstDrawCall = true;
             }
-
-            d3.select("#tooltip").style("display", "none");
+            hideTooltip();
 
             if (store.firstDrawCall) {
                 addSvgChildTags(selection);

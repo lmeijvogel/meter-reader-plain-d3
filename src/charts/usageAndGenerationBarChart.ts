@@ -4,9 +4,8 @@ import { MeasurementEntry } from "../models/MeasurementEntry";
 import { PeriodDescription } from "../models/PeriodDescription";
 
 import { isEqual } from "date-fns";
-import { clamp } from "../helpers/clamp";
-import { getWindowWidth } from "../lib/getWindowWidth";
 import { getClosestIndex } from "../lib/getClosestIndex";
+import { hideTooltip, showTooltip } from "../tooltip";
 
 type Data = {
     consumption: MeasurementEntry[];
@@ -75,12 +74,6 @@ export function usageAndGenerationBarChart(
         onValueClick: () => {},
         clearCanvas: false
     };
-
-    let windowWidth = getWindowWidth();
-
-    window.addEventListener("resize", () => {
-        windowWidth = getWindowWidth();
-    });
 
     const scaleX = d3.scaleBand<Date>().padding(0.15);
     const scaleXForInversion = d3.scaleTime();
@@ -278,7 +271,7 @@ export function usageAndGenerationBarChart(
         const data = store.data;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(initialPeriodDescription.normalize(data[closestIndex].timestamp))!;
+        const x = scaleX(initialPeriodDescription.normalize(closestIndex.timestamp))!;
 
         tooltipLineSelector
             .selectAll("line")
@@ -298,12 +291,11 @@ export function usageAndGenerationBarChart(
         selection.on("mousemove", null);
 
         selection.on("mouseover", () => {
-            d3.select("#tooltip").style("display", "flex");
             selection.select(".tooltipLine").style("display", "block");
         });
 
         selection.on("mouseout", () => {
-            d3.select("#tooltip").style("display", "none");
+            hideTooltip();
             selection.select(".tooltipLine").style("display", "none");
         });
 
@@ -312,19 +304,6 @@ export function usageAndGenerationBarChart(
 
             drawTooltipLine(selection, event);
         });
-    }
-
-    function showTooltip(event: any, htmlProvider: () => string) {
-        const tooltipWidth = 300; // Matches the CSS value
-        const tooltipLeft = event.pageX + 20;
-
-        const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
-
-        const tooltipSelector = d3.select("#tooltip");
-        tooltipSelector
-            .style("top", event.pageY - 200 + "px")
-            .style("left", left + "px")
-            .html(htmlProvider);
     }
 
     const api = {

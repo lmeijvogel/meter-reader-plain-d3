@@ -2,11 +2,10 @@ import * as d3 from "d3";
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
-import { getWindowWidth } from "../lib/getWindowWidth";
 import { assertNever } from "../lib/assertNever";
-import { clamp } from "../helpers/clamp";
 import { GraphDescription } from "../models/GraphDescription";
 import { getClosestIndex } from "../lib/getClosestIndex";
+import { hideTooltip, showTooltip } from "../tooltip";
 
 type FillColors = {
     positive: string;
@@ -53,12 +52,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     };
 
     let firstDrawCall = true;
-
-    let windowWidth = getWindowWidth();
-
-    window.addEventListener("resize", () => {
-        windowWidth = getWindowWidth();
-    });
 
     const minimumX = padding.left + axisWidth;
     const maximumX = width - padding.right;
@@ -119,7 +112,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             if (store.clearCanvas) {
                 selection.selectAll("*").remove();
-                d3.select("#tooltip").style("display", "none");
+                hideTooltip();
             }
 
             if (firstDrawCall) {
@@ -321,19 +314,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         }
     }
 
-    function showTooltip(event: any, htmlProvider: () => string) {
-        const tooltipWidth = 300; // Matches the CSS value
-        const tooltipLeft = event.pageX + 20;
-
-        const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
-
-        const tooltipSelector = d3.select("#tooltip");
-        tooltipSelector
-            .style("top", event.pageY - 170 + "px")
-            .style("left", left + "px")
-            .html(htmlProvider);
-    }
-
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
         const tooltipLineSelector = selection.select(".tooltipLine");
 
@@ -344,8 +324,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
         const maxIndex = closestIndices.reduce(
             (acc, el, index) => {
-                if (el[1] > acc.maxTimestamp) {
-                    return { maxTimestamp: el[1], seriesIndexInArray: index };
+                if (el.timestamp > acc.maxTimestamp) {
+                    return { maxTimestamp: el.timestamp, seriesIndexInArray: index };
                 } else {
                     return acc;
                 }
@@ -366,7 +346,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("class", "tooltipLine");
 
         /* Draw a circle on all matching lines */
-        const yValues = seriesCollectionValues.map((series, i) => series.series[closestIndices[i][0]].value);
+        const yValues = seriesCollectionValues.map((series, i) => series.series[closestIndices[i].index].value);
 
         tooltipLineSelector
             .selectAll("circle")
@@ -386,11 +366,11 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             const series = store.seriesCollection.get(key)!;
 
             var closestIndex = getClosestIndex(event, scaleX, series.series);
-            closestDate = series.series[closestIndex[0]].timestamp;
+            closestDate = closestIndex.timestamp;
 
             return {
                 name: key,
-                value: series.series[closestIndex[0]]?.value
+                value: series.series[closestIndex.index]?.value
             };
         });
 
@@ -417,7 +397,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             const startIndex = getClosestIndex(event.selection[0], scaleX, series[1].series, event.selection[0]);
             const endIndex = getClosestIndex(event.selection[1], scaleX, series[1].series, event.selection[1]);
 
-            const relevantEntries = series[1].series.slice(startIndex[0], endIndex[0]);
+            const relevantEntries = series[1].series.slice(startIndex.index, endIndex.index);
 
             const [min, max] = d3.extent(relevantEntries, (v) => v.value);
 
@@ -467,12 +447,11 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         selection.on("mousemove", null);
 
         selection.on("mouseover", () => {
-            d3.select("#tooltip").style("display", "flex");
             selection.select(".tooltipLine").style("display", "block");
         });
 
         selection.on("mouseout", () => {
-            d3.select("#tooltip").style("display", "none");
+            hideTooltip();
             selection.select(".tooltipLine").style("display", "none");
         });
 

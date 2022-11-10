@@ -3,8 +3,7 @@ import * as d3 from "d3";
 import { format, getDate, getHours, getMonth, startOfDay, startOfMonth, subDays, subYears } from "date-fns";
 import { monthNames } from "../lib/monthNames";
 import { MeasurementEntry } from "../models/MeasurementEntry";
-
-import { tip as d3tip } from "d3-v6-tip";
+import { hideTooltip, showTooltip } from "../tooltip";
 
 type GraphType = "30_days" | "year";
 
@@ -44,8 +43,6 @@ export function formatMonthNames(domainValue: d3.NumberValue): string {
 }
 
 export function heatMap(graphType: GraphType) {
-    let tip: any;
-
     const store: Store = {
         lightColor: "#ffffff",
         midColor: "#808080",
@@ -142,21 +139,8 @@ export function heatMap(graphType: GraphType) {
                 addContainerIfNotExists(selection, className)
             );
 
-            /* Initialize tooltip */
-            tip = d3tip()
-                .attr("class", "d3-tip")
-                .offset([-store.cellHeight / 2, 0])
-                .html((_event: unknown, d: MeasurementEntry) => {
-                    const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
-
-                    const contents = `${dateString}<br />Waarde: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
-
-                    return contents;
-                });
-            selection.call(tip);
-
             drawBorder(selection);
-            drawData(selection, store, tip);
+            drawData(selection, store);
 
             drawAxes(selection, store);
 
@@ -182,7 +166,7 @@ function buildColorScale(store: Store) {
         .clamp(true);
 }
 
-function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store, tip: any) {
+function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
     const colorScale = buildColorScale(store);
 
     svg.select(".values")
@@ -196,9 +180,15 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         .attr("fill", (d) => colorScale(d.value ?? 0))
         .text((d) => d.value)
         .on("mouseover", (event, d) => {
-            tip.show(event, d);
+            showTooltip(event, () => {
+                const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
+
+                const contents = `${dateString}<br />Waarde: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
+
+                return contents;
+            });
         })
-        .on("mouseout", tip.hide)
+        .on("mouseout", hideTooltip)
         .on("click", (_event, d) => {
             store.onClick(d.timestamp);
         });
