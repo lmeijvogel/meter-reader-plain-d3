@@ -165,11 +165,11 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .select("g.values")
             .selectAll("rect")
             .data(store.data)
+            .join("rect")
             .on("click", (_event: any, d) => {
                 const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
-            .join("rect")
             .transition()
             .duration(store.firstDrawCall ? 0 : 200)
             .attr("x", (el) => calculateBarXPosition(el.timestamp))
