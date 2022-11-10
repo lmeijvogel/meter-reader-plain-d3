@@ -180,6 +180,13 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         .attr("fill", (d) => colorScale(d.value ?? 0))
         .text((d) => d.value)
         .on("mouseover", (event, d) => {
+            /* Sadly, it seems to be difficult to have a mouseover handler
+             * for the whole canvas, since it's not trivial to get the date
+             * from the current x,y-coordinates.
+             *
+             * For the other charts, it's easier since there's only one
+             * scale to go over, while here there are two.
+             */
             showTooltip(event, () => {
                 const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
 
