@@ -124,9 +124,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("generation")) {
         const periodGenerationContainer = d3.select("#generation_period_data");
 
-        const fetchAverages =
+        const fetchAggregate = (field: "mean" | "max") =>
             periodDescription instanceof DayDescription
-                ? fetch(`/api/generation/average${periodDescription.toUrl()}`)
+                ? fetch(`/api/generation/aggregate/${field}${periodDescription.toUrl()}`)
                       .then((r) => r.json())
                       .then((r) =>
                           r.map((row: [number, number, number]) => {
@@ -147,55 +147,53 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
                       )
                 : Promise.resolve([]);
 
-        Promise.all([fetchChartData("generation", periodGenerationContainer, true), fetchAverages]).then(
-            ([generationValues, averagesValues]) => {
-                if (generationValues === "stale") {
-                    return;
-                }
-
-                const graphDescription = new GenerationGraphDescription(periodDescription);
-
-                // The API returns Wh. I prefer to show the "average wattage".
-                // When the periodSize === "day", values for every 15m are returned.
-                // To convert these to kWh, we need to multiply by 4 (15m => 1h)
-                // in addition to dividing by 1000.
-                const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
-                const valuesInKW = generationValues.map((value) => ({ ...value, value: value.value / 1000 }));
-
-                const valuesInKWhPer15m = generationValues.map((value) => ({
-                    ...value,
-                    value: value.value / kWMultiplicationFactor
-                }));
-
-                let api: any;
-                if (periodDescription instanceof DayDescription) {
-                    api = lineChart(periodDescription, graphDescription)
-                        .minMaxCalculation("quantile")
-                        .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor, {
-                            positive: graphDescription.lightColor,
-                            negative: "#ffffff"
-                        }) // The values will never be negative
-                        .setSeries("gemiddelde", averagesValues, "#bbb");
-                } else {
-                    api = barChart(periodDescription, graphDescription)
-                        .data(valuesInKWhPer15m)
-                        .onClick(retrieveAndDrawPeriodCharts);
-                }
-
-                api.clearCanvas(shouldClearCanvas);
-
-                const cardTitle = createPeriodDataCardTitle(
-                    valuesInKW,
-                    "generation",
-                    graphDescription,
-                    periodDescription
-                );
-
-                setCardTitle(periodGenerationContainer, cardTitle);
-
-                api.call(periodGenerationContainer.select(".chart"));
+        Promise.all([
+            fetchChartData("generation", periodGenerationContainer, true),
+            fetchAggregate("mean"),
+            fetchAggregate("max")
+        ]).then(([generationValues, averagesValues, maxValues]) => {
+            if (generationValues === "stale") {
+                return;
             }
-        );
+
+            const graphDescription = new GenerationGraphDescription(periodDescription);
+
+            // The API returns Wh. I prefer to show the "average wattage".
+            // When the periodSize === "day", values for every 15m are returned.
+            // To convert these to kWh, we need to multiply by 4 (15m => 1h)
+            // in addition to dividing by 1000.
+            const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
+            const valuesInKW = generationValues.map((value) => ({ ...value, value: value.value / 1000 }));
+
+            const valuesInKWhPer15m = generationValues.map((value) => ({
+                ...value,
+                value: value.value / kWMultiplicationFactor
+            }));
+
+            let api: any;
+            if (periodDescription instanceof DayDescription) {
+                api = lineChart(periodDescription, graphDescription)
+                    .minMaxCalculation("minMax", "max")
+                    .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor, {
+                        positive: graphDescription.lightColor,
+                        negative: "#ffffff"
+                    }) // The values will never be negative
+                    .setSeries("gemiddelde", averagesValues, "#bbb")
+                    .setSeries("max", maxValues, "#888");
+            } else {
+                api = barChart(periodDescription, graphDescription)
+                    .data(valuesInKWhPer15m)
+                    .onClick(retrieveAndDrawPeriodCharts);
+            }
+
+            api.clearCanvas(shouldClearCanvas);
+
+            const cardTitle = createPeriodDataCardTitle(valuesInKW, "generation", graphDescription, periodDescription);
+
+            setCardTitle(periodGenerationContainer, cardTitle);
+
+            api.call(periodGenerationContainer.select(".chart"));
+        });
     }
 
     if (enabledGraphs.includes("stroom")) {
