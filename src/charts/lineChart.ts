@@ -18,6 +18,7 @@ type Store = {
     lineColors?: Map<string, string>;
     defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
+    minMaxCalculationField: string | undefined;
     tooltipDateFormat: string;
     tooltipValueFormat: string;
     tooltipDisplayableUnit: string;
@@ -47,6 +48,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         tooltipValueFormat: graphDescription.tooltipValueFormat,
         tooltipDisplayableUnit: graphDescription.displayableUnit,
         minMaxCalculation: "explicit",
+        minMaxCalculationField: undefined,
         seriesCollection: new Map(),
         clearCanvas: false
     };
@@ -79,8 +81,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             return api;
         },
 
-        minMaxCalculation: (method: "minMax" | "quantile") => {
+        minMaxCalculation: (method: "minMax" | "quantile", field?: string | undefined) => {
             store.minMaxCalculation = method;
+            store.minMaxCalculationField = field;
 
             return api;
         },
@@ -285,13 +288,13 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             return store.domain!;
         }
 
-        const allValues = Array.from(store.seriesCollection.values()).flatMap((series) =>
-            series.series.map((s) => s.value)
-        );
+        const relevantValues = !!store.minMaxCalculationField
+            ? store.seriesCollection.get(store.minMaxCalculationField)!.series.map((s) => s.value)
+            : Array.from(store.seriesCollection.values()).flatMap((series) => series.series.map((s) => s.value));
 
         if (store.minMaxCalculation === "quantile") {
-            let min = d3.quantile(allValues, 0.05)!;
-            let max = d3.quantile(allValues, 0.95)!;
+            let min = d3.quantile(relevantValues, 0.05)!;
+            let max = d3.quantile(relevantValues, 0.95)!;
 
             // Make sure x axis is visible
             if (max < 0) {
@@ -305,8 +308,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             // Always show a bit of margin around the range
             return [min - Math.abs(min * 0.1), max + Math.abs(max * 1.0)];
         } else if (store.minMaxCalculation === "minMax") {
-            const min = Math.min(...allValues) * 0.95;
-            const max = Math.max(...allValues) * 1.1;
+            const min = Math.min(...relevantValues) * 0.95;
+            const max = Math.max(...relevantValues) * 1.1;
 
             return [min, max];
         } else {
