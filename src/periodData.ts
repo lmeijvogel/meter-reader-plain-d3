@@ -7,7 +7,7 @@ import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart"
 import { padData } from "./helpers/padData";
 import { costsFor, PriceCategory } from "./helpers/PriceCalculator";
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
-import { assertNever } from "./lib/assertNever";
+import { titleForCategory } from "./lib/titleForCategory";
 import {
     GasGraphDescription,
     WaterGraphDescription,
@@ -311,26 +311,4 @@ function createPeriodDataCardTitle(
     );
 
     return result + ` (${costs})`;
-}
-
-function titleForCategory(priceCategory: PriceCategory | "generation"): string {
-    let categoryName: string;
-
-    switch (priceCategory) {
-        case "gas":
-            categoryName = "Gas";
-            break;
-        case "stroom":
-            categoryName = "Stroom";
-            break;
-        case "water":
-            categoryName = "Water";
-            break;
-        case "generation":
-            categoryName = "Opwekking";
-            break;
-        default:
-            assertNever(priceCategory);
-    }
-    return categoryName;
 }

@@ -18,14 +18,6 @@ export abstract class GraphDescription {
 
     abstract get maxY(): number;
 
-    get xLabelHeight(): number {
-        switch (this.periodDescription.periodSize) {
-            case "year":
-                return 40;
-            default:
-                return 20;
-        }
-    }
     get hasTextLabels(): boolean {
         return this.periodDescription.periodSize === "year";
     }

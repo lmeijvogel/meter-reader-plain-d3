@@ -5,6 +5,8 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
+import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
+import { initScales, updateScales } from "./barChartHelpers/updateScales";
 
 type Store = {
     periodDescription: PeriodDescription;
@@ -12,145 +14,37 @@ type Store = {
     tooltipDateFormat: string;
     tooltipValueFormat: string;
     tooltipDisplayableUnit: string;
-    hasTextLabels: boolean;
     data: ValueWithTimestamp[];
     relativeMinMax: boolean;
-    graphTickPositions: "on_value" | "between_values";
     unit: string;
     onValueClick: (periodDescription: PeriodDescription) => void;
     clearCanvas: boolean;
     firstDrawCall: boolean;
+    minMaxCalculator: (data: ValueWithTimestamp[]) => { min: number; max: number };
 };
 
-const width = 480;
-const height = 240;
-
-const padding = {
-    top: 10,
-    right: 30,
-    bottom: 10,
-    left: 10
-};
-
-const axisWidth = 50;
-
-export function barChart(initialPeriodDescription: PeriodDescription, graphDescription: GraphDescription) {
+export function barChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
     const store: Store = {
-        periodDescription: initialPeriodDescription,
-        tooltipDateFormat: initialPeriodDescription.timeFormatString(),
+        periodDescription: periodDescription,
+        tooltipDateFormat: periodDescription.timeFormatString(),
         tooltipValueFormat: graphDescription.tooltipValueFormat,
         tooltipDisplayableUnit: graphDescription.displayableUnit,
-        hasTextLabels: true,
         barColor: graphDescription.barColor,
-        graphTickPositions: "on_value",
         relativeMinMax: true,
         data: [],
         unit: graphDescription.displayableUnit,
         onValueClick: () => {},
         clearCanvas: false,
-        firstDrawCall: true
+        firstDrawCall: true,
+        minMaxCalculator: () => ({ min: graphDescription.minY, max: graphDescription.maxY })
     };
-
-    const scaleX = d3.scaleBand<Date>().padding(0.15);
-    const scaleXForInversion = d3.scaleTime();
-
-    const scaleY = d3.scaleLinear().clamp(true);
-    const yAxis = d3.axisLeft(scaleY);
-
-    const renderXAxis = (xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-        /* The reasonable assumption would be that creating a scale for a bar chart
-         * would just reuse the band scale, but that has the downside that the ticks will
-         * always end up in the middle of the bars. For the year and month charts that is fine:
-         * A bar represents the usage for a given day or month.
-         *
-         * For the day chart, it feels better to have the bars *between* the axis ticks,
-         * since the graph shows the usage between e.g. 09:00 and 10:00. And we need a linear
-         * scale to do that: I can't persuade an xAxis based on a band scale to put the ticks
-         * between the bands.
-         */
-
-        // Sadly, I also can't use the same logic as in the LineChart here, by using
-        // scaleTime and using .ticks(), since bandScale does not support .ticks().
-
-        const { graphTickPositions, periodDescription } = store;
-
-        let domain = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
-
-        if (graphTickPositions === "on_value") {
-            domain = domain.map(periodDescription.shiftHalfTick);
-        }
-
-        const scaleXForXAxis = d3
-            .scaleTime()
-            .domain(domain)
-            .range([padding.left + axisWidth, width - padding.right]);
-
-        const ticks = periodDescription.getChartTicks();
-        const xAxis = d3
-            .axisBottom(scaleXForXAxis)
-            .ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()))
-            .tickSizeOuter(0);
-
-        const renderedXAxisLabels = xAxisBase
-            .call(xAxis as any)
-            .selectAll("text")
-            .style("font-size", "13pt");
-
-        if (store.hasTextLabels) {
-            renderedXAxisLabels
-                .style("text-anchor", "end")
-                .attr("dy", "-.2em")
-                .attr("dx", "-1em")
-                .attr("transform", "rotate(-65)");
-        } else {
-            // Got the 0.71em from the browser
-            renderedXAxisLabels.style("text-anchor", null).attr("dy", "0.71em").attr("transform", null);
-        }
-    };
+    const { scaleX, scaleXForInversion, scaleY } = initScales();
 
     const calculateBarXPosition = (date: Date) => {
         const { periodDescription } = store;
         const pos = scaleX(periodDescription.normalize(date));
 
         return !!pos ? pos : 0;
-    };
-
-    const getDomain = (): number[] => {
-        return [graphDescription.minY, graphDescription.maxY];
-    };
-
-    const updateScales = (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-        const { periodDescription } = store;
-
-        const domainY = store.relativeMinMax ? getDomain() : [graphDescription.minY, graphDescription.maxY];
-        scaleY.domain(domainY).range([height - padding.bottom - xAxisHeight(), padding.top]);
-
-        const domainX = periodDescription
-            .getExpectedDomainValues()
-            .range(periodDescription.startOfPeriod(), periodDescription.endOfPeriod());
-
-        scaleX.domain(domainX).range([padding.left + axisWidth, width - padding.right]);
-
-        scaleXForInversion
-            .domain([periodDescription.startOfPeriod(), periodDescription.endOfPeriod()])
-            .range([axisWidth + padding.left, width - padding.right]);
-
-        const xAxisBase = selection
-            .select("g.xAxis")
-            .attr("class", "xAxis axis")
-            .attr("transform", `translate(0, ${scaleY(0)})`);
-
-        xAxisBase.transition().duration(store.firstDrawCall ? 0 : 200);
-
-        renderXAxis(xAxisBase);
-
-        selection
-            .select(".yAxis")
-            .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
-            .style("font-size", "13pt")
-            .transition()
-            .duration(store.firstDrawCall ? 0 : 200)
-            .call(yAxis as any);
     };
 
     function drawBars(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
@@ -172,10 +66,6 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .attr("fill", store.barColor)
             .attr("data-value", (el) => el.value)
             .attr("index", (_d: any, i: number) => i);
-    }
-
-    function xAxisHeight() {
-        return graphDescription.xLabelHeight;
     }
 
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
@@ -212,9 +102,9 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
 
         const valueLine = `<tr>
-                                            <td>${graphDescription.fieldName}:</td>
-                                            <td class="tableValue">${renderDisplayValue(value)}</td>
-                                        </tr>`;
+                               <td>${graphDescription.fieldName}:</td>
+                               <td class="tableValue">${renderDisplayValue(value)}</td>
+                           </tr>`;
 
         return `<b>${dateString}</b><table><tbody>${valueLine}</tbody></table>`;
     }
@@ -244,7 +134,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
         const data = store.data;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(initialPeriodDescription.normalize(closestIndex.timestamp))!;
+        const x = scaleX(periodDescription.normalize(closestIndex.timestamp))!;
 
         tooltipLineSelector
             .selectAll("line")
@@ -253,7 +143,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             .attr("x1", (x) => x + scaleX.bandwidth() / 2)
             .attr("x2", (x) => x + scaleX.bandwidth() / 2)
             .attr("y1", padding.top)
-            .attr("y2", height - padding.bottom - xAxisHeight())
+            .attr("y2", height - padding.bottom - xAxisHeight)
             .attr("class", "tooltipLine");
     }
 
@@ -306,7 +196,7 @@ export function barChart(initialPeriodDescription: PeriodDescription, graphDescr
             }
 
             registerEventHandlers(selection);
-            updateScales(selection);
+            updateScales(selection, store.firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
 
             drawBars(selection);
             store.firstDrawCall = false;

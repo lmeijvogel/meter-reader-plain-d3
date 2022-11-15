@@ -14,8 +14,7 @@ export function showTooltip(event: any, htmlProvider: () => string) {
 
     const left = clamp(tooltipLeft, 0, windowWidth - tooltipWidth);
 
-    const tooltipSelector = d3.select("#tooltip");
-    tooltipSelector
+    d3.select("#tooltip")
         .style("display", "flex")
         .style("top", event.pageY - 170 + "px")
         .style("left", left + "px")
@@ -23,5 +22,5 @@ export function showTooltip(event: any, htmlProvider: () => string) {
 }
 
 export function hideTooltip() {
-    d3.select("#tooltip").attr("display", "none");
+    d3.select("#tooltip").style("display", "none");
 }
