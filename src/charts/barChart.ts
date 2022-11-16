@@ -10,13 +10,9 @@ import { initScales, updateScales } from "./barChartHelpers/updateScales";
 
 type Store = {
     periodDescription: PeriodDescription;
-    barColor: string;
     tooltipDateFormat: string;
-    tooltipValueFormat: string;
-    tooltipDisplayableUnit: string;
     data: ValueWithTimestamp[];
     relativeMinMax: boolean;
-    unit: string;
     onValueClick: (periodDescription: PeriodDescription) => void;
     clearCanvas: boolean;
     firstDrawCall: boolean;
@@ -27,12 +23,8 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
     const store: Store = {
         periodDescription: periodDescription,
         tooltipDateFormat: periodDescription.timeFormatString(),
-        tooltipValueFormat: graphDescription.tooltipValueFormat,
-        tooltipDisplayableUnit: graphDescription.displayableUnit,
-        barColor: graphDescription.barColor,
         relativeMinMax: true,
         data: [],
-        unit: graphDescription.displayableUnit,
         onValueClick: () => {},
         clearCanvas: false,
         firstDrawCall: true,
@@ -41,7 +33,6 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
     const { scaleX, scaleXForInversion, scaleY } = initScales();
 
     const calculateBarXPosition = (date: Date) => {
-        const { periodDescription } = store;
         const pos = scaleX(periodDescription.normalize(date));
 
         return !!pos ? pos : 0;
@@ -54,7 +45,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             .data(store.data)
             .join("rect")
             .on("click", (_event: any, d) => {
-                const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
+                const clickedPeriod = periodDescription.atIndex(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
             .transition()
@@ -63,7 +54,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             .attr("y", (el) => scaleY(el.value))
             .attr("height", (el) => scaleY(0) - scaleY(el.value))
             .attr("width", scaleX.bandwidth())
-            .attr("fill", store.barColor)
+            .attr("fill", graphDescription.barColor)
             .attr("data-value", (el) => el.value)
             .attr("index", (_d: any, i: number) => i);
     }
@@ -110,7 +101,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
     }
 
     function renderDisplayValue(value: number) {
-        return `${d3.format(store.tooltipValueFormat)(value)} ${store.tooltipDisplayableUnit}`;
+        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit}`;
     }
 
     function highlightActiveBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
@@ -156,18 +147,6 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
 
         tooltipDateFormat: (format: string) => {
             store.tooltipDateFormat = format;
-
-            return api;
-        },
-
-        tooltipDisplayableUnit: (unit: string) => {
-            store.tooltipDisplayableUnit = unit;
-
-            return api;
-        },
-
-        tooltipValueFormat: (format: string) => {
-            store.tooltipValueFormat = format;
 
             return api;
         },

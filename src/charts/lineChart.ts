@@ -19,9 +19,6 @@ type Store = {
     defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
     minMaxCalculationField: string | undefined;
-    tooltipDateFormat: string;
-    tooltipValueFormat: string;
-    tooltipDisplayableUnit: string;
     seriesCollection: SeriesCollection;
     domain?: [number, number];
     clearCanvas: boolean;
@@ -44,9 +41,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     const store: Store = {
         lineColors: new Map(),
         defaultLineColor: "black",
-        tooltipDateFormat: periodDescription.timeFormatString(),
-        tooltipValueFormat: graphDescription.tooltipValueFormat,
-        tooltipDisplayableUnit: graphDescription.displayableUnit,
         minMaxCalculation: "explicit",
         minMaxCalculationField: undefined,
         seriesCollection: new Map(),
@@ -84,24 +78,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         minMaxCalculation: (method: "minMax" | "quantile", field?: string | undefined) => {
             store.minMaxCalculation = method;
             store.minMaxCalculationField = field;
-
-            return api;
-        },
-
-        tooltipDateFormat: (format: string) => {
-            store.tooltipDateFormat = format;
-
-            return api;
-        },
-
-        tooltipDisplayableUnit: (unit: string) => {
-            store.tooltipDisplayableUnit = unit;
-
-            return api;
-        },
-
-        tooltipValueFormat: (format: string) => {
-            store.tooltipValueFormat = format;
 
             return api;
         },
@@ -377,7 +353,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             };
         });
 
-        const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
+        const dateString = d3.timeFormat(periodDescription.timeFormatString())(closestDate);
 
         const valueLines = ys
             .map(
@@ -411,8 +387,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             });
         }
 
-        const startDateString = d3.timeFormat(store.tooltipDateFormat)(pointerStartDate);
-        const endDateString = d3.timeFormat(store.tooltipDateFormat)(pointerEndDate);
+        const formatString = periodDescription.timeFormatString();
+        const startDateString = d3.timeFormat(formatString)(pointerStartDate);
+        const endDateString = d3.timeFormat(formatString)(pointerEndDate);
 
         return `<table class="lineChartBrush">
                     <caption>${startDateString} - ${endDateString}</caption>
@@ -430,18 +407,19 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         result.push("</tr></thead>");
 
         result.push("<tbody>");
+        const tooltipValueFormat = graphDescription.tooltipValueFormat;
         for (const [name, values] of displayValues) {
             result.push(`<tr><th scope="row">${name}</th>`);
-            result.push(`<td class="tableValue">${d3.format(store.tooltipValueFormat)(values.min)}</td>
-                    <td class="tableValue">${d3.format(store.tooltipValueFormat)(values.mean)}</td>
-                    <td class="tableValue">${d3.format(store.tooltipValueFormat)(values.max)}</td></tr>`);
+            result.push(`<td class="tableValue">${d3.format(tooltipValueFormat)(values.min)}</td>
+                    <td class="tableValue">${d3.format(tooltipValueFormat)(values.mean)}</td>
+                    <td class="tableValue">${d3.format(tooltipValueFormat)(values.max)}</td></tr>`);
         }
         result.push("</tbody>");
         return result;
     }
 
     function renderDisplayValue(value: number) {
-        return `${d3.format(store.tooltipValueFormat)(value)} ${store.tooltipDisplayableUnit}`;
+        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit}`;
     }
 
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {

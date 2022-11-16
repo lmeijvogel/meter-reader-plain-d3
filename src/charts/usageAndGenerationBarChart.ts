@@ -25,13 +25,8 @@ type ConsolidatedData = {
 
 type Store = {
     periodDescription: PeriodDescription;
-    barColor: string;
-    tooltipDateFormat: string;
-    tooltipValueFormat: string;
-    tooltipDisplayableUnit: string;
     data: PowerSourcesAndBackDelivery[];
     relativeMinMax: boolean;
-    unit: string;
     onValueClick: (periodDescription: PeriodDescription) => void;
     clearCanvas: boolean;
     minMaxCalculator: (data: PowerSourcesAndBackDelivery[]) => { min: number; max: number };
@@ -45,13 +40,8 @@ export function usageAndGenerationBarChart(
 ) {
     const store: Store = {
         periodDescription: initialPeriodDescription,
-        barColor: graphDescription.barColor,
-        tooltipDateFormat: initialPeriodDescription.timeFormatString(),
-        tooltipValueFormat: graphDescription.tooltipValueFormat,
-        tooltipDisplayableUnit: graphDescription.displayableUnit,
         relativeMinMax: true,
         data: [],
-        unit: graphDescription.displayableUnit,
         onValueClick: () => {},
         clearCanvas: false,
         minMaxCalculator: (data: PowerSourcesAndBackDelivery[]): { min: number; max: number } => {
@@ -103,6 +93,7 @@ export function usageAndGenerationBarChart(
     }
 
     function buildTooltip(event: any) {
+        const unit = graphDescription.displayableUnit;
         var bisect = d3.bisector((d: PowerSourcesAndBackDelivery) => d.timestamp).right;
 
         const pointerX = d3.pointer(event)[0];
@@ -118,14 +109,14 @@ export function usageAndGenerationBarChart(
 
         const rows = [
             `<tr><td class="category">Grid</td><td class="tableValue">${d3.format(".2f")(d.gridSource)} ${
-                store.unit
+                unit
             }</td></tr>`
         ];
 
         if (Math.abs(d.solarSource) > 0.01) {
             rows.push(
                 `<tr><td class="category">Panelen</td><td class="tableValue">${d3.format(".2f")(d.solarSource)} ${
-                    store.unit
+                    unit
                 }</td></tr>`
             );
         }
@@ -133,7 +124,7 @@ export function usageAndGenerationBarChart(
         if (Math.abs(d.backDelivery) > 0.01) {
             rows.push(
                 `<tr><td class="category">Geleverd: </td><td class="tableValue">${d3.format(".2f")(-d.backDelivery)} ${
-                    store.unit
+                    unit
                 }</td></tr>`
             );
         }
