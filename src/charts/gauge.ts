@@ -97,32 +97,6 @@ export function gauge() {
             .attr("d", scaleArcBorder as any);
     };
 
-    function getGaugeClassName(): string {
-        const { currentValue, goodValue, okValue, warnValue, maxValue } = store;
-
-        if (currentValue > maxValue) {
-            return styles.gaugeOverflow;
-        }
-
-        if (warnValue && currentValue > warnValue) {
-            return styles.gaugeBad;
-        }
-
-        if (okValue && currentValue > okValue) {
-            return styles.gaugeRegular;
-        }
-
-        if (!okValue) {
-            return styles.gaugeRegular;
-        }
-
-        if (currentValue < goodValue) {
-            return styles.gaugeGood;
-        }
-
-        return styles.gaugeOk;
-    }
-
     function renderGraph(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         renderScale(svg);
 
