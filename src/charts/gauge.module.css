@@ -46,8 +46,10 @@
     fill: var(--gauge-bad-color);
 }
 
-.gaugeGuide {
-    fill: #e8e8e8;
+.scaleBorder {
+    fill: none;
+    stroke: black;
+    stroke-width: 1px;
 }
 
 .gaugeText {

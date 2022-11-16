@@ -1,4 +1,3 @@
-import classNames from "classnames";
 import * as d3 from "d3";
 
 const styles = require("./gauge.module.css");
@@ -18,7 +17,12 @@ const startAngleFromBottom = Math.PI / 3;
 const width = 480;
 const height = 240;
 
-const padding = 10;
+const defaultTransform = `translate(${width / 2}, ${height / 2})`;
+
+const outerSize = 110;
+
+const gaugeOuterRadius = outerSize * 0.92;
+const gaugeInnerRadius = outerSize * 0.5;
 
 export function gauge() {
     let firstDrawCall = true;
@@ -30,12 +34,11 @@ export function gauge() {
         currentValue: 0,
         domain: [0, 3000]
     };
-    const valueArc = d3.arc();
-    const guideArc = d3.arc();
     const scaleArcLightGreen = d3.arc();
     const scaleArcGreen = d3.arc();
     const scaleArcYellow = d3.arc();
     const scaleArcRed = d3.arc();
+    const scaleArcBorder = d3.arc();
 
     const scale: d3.ScaleLinear<number, number, never> = d3.scaleLinear();
 
@@ -44,22 +47,14 @@ export function gauge() {
 
         scale.range([bottom + startAngleFromBottom, bottom + 2 * Math.PI - startAngleFromBottom]).clamp(true);
 
-        const outerSize = 110;
-        const scaleWidth = outerSize * 0.05;
-
-        const gaugeOuterRadius = outerSize * 0.92;
-        const gaugeWidth = outerSize * 0.3;
-
-        valueArc.innerRadius(gaugeOuterRadius - gaugeWidth).outerRadius(gaugeOuterRadius);
-        guideArc.innerRadius(gaugeOuterRadius - gaugeWidth).outerRadius(gaugeOuterRadius);
-        scaleArcLightGreen.innerRadius(outerSize - scaleWidth).outerRadius(outerSize);
-        scaleArcGreen.innerRadius(outerSize - scaleWidth).outerRadius(outerSize);
-        scaleArcYellow.innerRadius(outerSize - scaleWidth).outerRadius(outerSize);
-        scaleArcRed.innerRadius(outerSize - scaleWidth).outerRadius(outerSize);
+        scaleArcLightGreen.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
+        scaleArcGreen.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
+        scaleArcYellow.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
+        scaleArcRed.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
+        scaleArcBorder.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
     };
 
     const renderScale = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-        guideArc.startAngle(scale(store.domain[0]));
         scaleArcGreen.startAngle(scale(store.domain[0]));
         scaleArcLightGreen.startAngle(scale(0));
 
@@ -94,6 +89,13 @@ export function gauge() {
                 .attr("class", styles.gaugeScaleWarn)
                 .attr("d", scaleArcRed as any);
         }
+
+        scaleArcBorder.startAngle(scale(store.domain[0]));
+        scaleArcBorder.endAngle(scale(store.domain[1]));
+
+        svg.select("path.scaleBorder")
+            .attr("class", styles.scaleBorder)
+            .attr("d", scaleArcBorder as any);
     };
 
     function getGaugeClassName(): string {
@@ -125,30 +127,25 @@ export function gauge() {
     function renderGraph(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         renderScale(svg);
 
-        if (store.currentValue < 0) {
-            valueArc.endAngle(scale(0));
-            valueArc.startAngle(scale(store.currentValue));
-        } else {
-            valueArc.startAngle(scale(0));
-            valueArc.endAngle(scale(store.currentValue));
-        }
+        const points = [
+            [-1, -gaugeOuterRadius + 5],
+            [1, -gaugeOuterRadius + 5],
+            [4, 10],
+            [-4, 10]
+        ];
 
-        guideArc.endAngle(scale(store.maxValue));
+        const line = d3.line().curve(d3.curveLinearClosed);
 
-        svg.select("path.guide")
-            .attr("width", 100)
-            .attr("height", 100)
-            .attr("class", styles.gaugeGuide)
-            .attr("d", guideArc as any);
+        const degrees = (scale(store.currentValue) / (2 * Math.PI)) * 360;
 
-        const gaugeClassName = getGaugeClassName();
+        svg.select("path.arrow")
+            .attr("d", line(d3.polygonHull(points as any) as any))
+            .attr("fill", "black")
+            .transition()
+            .duration(1000)
+            .attr("transform", `${defaultTransform} rotate(${degrees} 0 0)`);
 
-        svg.select("g.gauge")
-            .selectAll("path")
-            .data([store.currentValue])
-            .join("path")
-            .attr("class", gaugeClassName)
-            .attr("d", valueArc as any);
+        svg.select("circle.arrowAnchor").attr("cx", 0).attr("cy", 0).attr("r", "2px").attr("fill", "#888");
 
         svg.select("g.number")
             .selectAll("text")
@@ -206,7 +203,7 @@ export function gauge() {
             if (firstDrawCall) {
                 firstDrawCall = false;
 
-                addSvgChildTags(selection, width, height);
+                addSvgChildTags(selection);
             }
             renderGraph(selection);
 
@@ -217,18 +214,16 @@ export function gauge() {
     return api;
 }
 
-function addSvgChildTags(
-    selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-    width: number,
-    height: number
-) {
-    const transform = `translate(${width / 2}, ${height / 2})`;
-
-    selection.append("path").attr("class", "guide").attr("transform", transform);
-    selection.append("g").attr("class", "gauge").attr("transform", transform);
-    selection.append("path").attr("class", "scaleDarkGreen").attr("transform", transform);
-    selection.append("path").attr("class", "scaleLightGreen").attr("transform", transform);
-    selection.append("path").attr("class", "scaleYellow").attr("transform", transform);
-    selection.append("path").attr("class", "scaleRed").attr("transform", transform);
-    selection.append("g").attr("class", "number").attr("transform", transform);
+function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+    selection.append("path").attr("class", "scaleDarkGreen").attr("transform", defaultTransform);
+    selection.append("path").attr("class", "scaleLightGreen").attr("transform", defaultTransform);
+    selection.append("path").attr("class", "scaleYellow").attr("transform", defaultTransform);
+    selection.append("path").attr("class", "scaleRed").attr("transform", defaultTransform);
+    selection.append("path").attr("class", "scaleBorder").attr("transform", defaultTransform);
+    selection.append("path").attr("class", "arrow").attr("transform", defaultTransform);
+    selection.append("circle").attr("class", "arrowAnchor").attr("transform", defaultTransform);
+    selection
+        .append("g")
+        .attr("class", "number")
+        .attr("transform", `translate(${width / 2} ${height * 0.75})`);
 }
