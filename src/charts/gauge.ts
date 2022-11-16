@@ -123,14 +123,14 @@ export function gauge() {
         const rad = scale(store.currentValue);
         const degrees = radToDeg(rad);
 
-        svg.select("path.arrow")
+        svg.select("path.needle")
             .attr("d", line(d3.polygonHull(points as any) as any))
             .attr("fill", "black")
             .transition()
             .ease(d3.easeBackOut.overshoot(0.9))
             .duration(500)
             .tween("transform", function () {
-                /* Without this tween, the arrow will rotate through the bottom when that is
+                /* Without this tween, the needle will rotate through the bottom when that is
                  * the shortest path.
                  */
                 let currentAngle = getCurrentAngle(this);
@@ -142,7 +142,7 @@ export function gauge() {
                 };
             });
 
-        svg.select("circle.arrowAnchor").attr("cx", 0).attr("cy", 0).attr("r", "2px").attr("fill", "#888");
+        svg.select("circle.needlePin").attr("cx", 0).attr("cy", 0).attr("r", "2px").attr("fill", "#888");
 
         svg.select("g.number")
             .selectAll("text")
@@ -216,11 +216,11 @@ function radToDeg(rad: number) {
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["scaleDarkGreen", "scaleLightGreen", "scaleYellow", "scaleRed", "scaleBorder", "arrow"].forEach((className) =>
+    ["scaleDarkGreen", "scaleLightGreen", "scaleYellow", "scaleRed", "scaleBorder", "needle"].forEach((className) =>
         selection.append("path").attr("class", className).attr("transform", defaultTransform)
     );
 
-    selection.append("circle").attr("class", "arrowAnchor").attr("transform", defaultTransform);
+    selection.append("circle").attr("class", "needlePin").attr("transform", defaultTransform);
     selection
         .append("g")
         .attr("class", "number")
