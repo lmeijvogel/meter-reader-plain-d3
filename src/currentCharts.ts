@@ -18,6 +18,12 @@ const recentCurrentGraph = lineChart(
 
 type CurrentFields = { current: MeasurementEntry[] };
 
+let pageVisible = true;
+
+window.addEventListener("visibilitychange", () => {
+    pageVisible = document.visibilityState === "visible";
+});
+
 async function retrievePowerUsage(minutes = 10) {
     return fetch(`/api/stroom/recent?minutes=${minutes}`)
         .then((response) => response.json())
@@ -47,19 +53,23 @@ const powerUsage: CurrentFields = {
 };
 
 async function updatePowerUsage(minutes: number) {
-    const newValues = await retrievePowerUsage(minutes);
+    if (pageVisible) {
+        const newValues = await retrievePowerUsage(minutes);
 
-    powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
+        powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
 
-    drawPowerUsage(powerUsage);
+        drawPowerUsage(powerUsage);
+    }
 }
 
 async function getLatestPowerUsage() {
-    const newValues = await retrieveLatestPowerUsage();
+    if (pageVisible) {
+        const newValues = await retrieveLatestPowerUsage();
 
-    const currentValueInW = newValues.current[0].value * 1000;
+        const currentValueInW = newValues.current[0].value * 1000;
 
-    updateCurrentUsageGauge(currentValueInW);
+        updateCurrentUsageGauge(currentValueInW);
+    }
 }
 
 function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
