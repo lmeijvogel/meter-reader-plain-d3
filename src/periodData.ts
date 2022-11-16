@@ -110,9 +110,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             }
 
             const graphDescription = new WaterGraphDescription(periodDescription);
-            const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
-
-            api.clearCanvas(shouldClearCanvas);
+            const api = barChart(periodDescription, graphDescription)
+                .onClick(retrieveAndDrawPeriodCharts)
+                .clearCanvas(shouldClearCanvas)
+                .data(values);
 
             const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
             setCardTitle(periodWaterContainer, cardTitle);
@@ -218,9 +219,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
             const api = usageAndGenerationBarChart(periodDescription, graphDescription)
                 .onClick(retrieveAndDrawPeriodCharts)
+                .clearCanvas(shouldClearCanvas)
                 .data(equalizedData);
-
-            api.clearCanvas(shouldClearCanvas);
 
             const cardTitle = createPeriodDataCardTitle(stroomValues, "stroom", graphDescription, periodDescription);
             setCardTitle(periodStroomContainer, cardTitle);
@@ -261,12 +261,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         setCardTitle(card, "Binnentemperatuur");
 
         fetchTemperatureData(card).then((result) => {
-            const temperatureChart = lineChart(
-                periodDescription,
-                new TemperatuurGraphDescription(periodDescription)
-            ).minMaxCalculation("minMax");
-
-            temperatureChart.clearCanvas(shouldClearCanvas);
+            const temperatureChart = lineChart(periodDescription, new TemperatuurGraphDescription(periodDescription))
+                .minMaxCalculation("minMax")
+                .clearCanvas(shouldClearCanvas);
 
             [
                 ["huiskamer", "#ff0000"],

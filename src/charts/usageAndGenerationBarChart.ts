@@ -187,6 +187,8 @@ export function usageAndGenerationBarChart(
 
         clearCanvas: (value: boolean) => {
             store.clearCanvas = value;
+
+            return api;
         },
 
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
