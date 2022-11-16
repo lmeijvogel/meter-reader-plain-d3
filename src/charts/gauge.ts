@@ -12,7 +12,7 @@ type Store = {
     maxValue: number;
 };
 
-const startAngleFromBottom = Math.PI / 3;
+const startAngleFromTop = (2 * Math.PI) / 3;
 
 const width = 480;
 const height = 240;
@@ -43,9 +43,8 @@ export function gauge() {
     const scale: d3.ScaleLinear<number, number, never> = d3.scaleLinear();
 
     const initializeGraph = () => {
-        const bottom = Math.PI;
+        scale.range([-startAngleFromTop, startAngleFromTop]).clamp(true);
 
-        scale.range([bottom + startAngleFromBottom, bottom + 2 * Math.PI - startAngleFromBottom]).clamp(true);
 
         scaleArcLightGreen.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
         scaleArcGreen.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
