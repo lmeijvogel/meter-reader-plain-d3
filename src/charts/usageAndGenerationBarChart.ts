@@ -108,26 +108,17 @@ export function usageAndGenerationBarChart(
         const dateString = d3.timeFormat(initialPeriodDescription.timeFormatString())(d.timestamp);
 
         const rows = [
-            `<tr><td class="category">Grid</td><td class="tableValue">${d3.format(".2f")(d.gridSource)} ${
-                unit
-            }</td></tr>`
-        ];
-
-        if (Math.abs(d.solarSource) > 0.01) {
-            rows.push(
-                `<tr><td class="category">Panelen</td><td class="tableValue">${d3.format(".2f")(d.solarSource)} ${
-                    unit
-                }</td></tr>`
+            { caption: "Grid", value: d.gridSource },
+            { caption: "Panelen", value: d.solarSource },
+            { caption: "Geleverd", value: -d.backDelivery }
+        ]
+            .filter((r) => r.caption === "Grid" || r.value > 0.01)
+            .map(
+                ({ caption, value }) =>
+                    `<tr><td class="category">${caption}</td><td class="tableValue">${d3.format(".2f")(
+                        value
+                    )} ${unit}</td></tr>`
             );
-        }
-
-        if (Math.abs(d.backDelivery) > 0.01) {
-            rows.push(
-                `<tr><td class="category">Geleverd: </td><td class="tableValue">${d3.format(".2f")(-d.backDelivery)} ${
-                    unit
-                }</td></tr>`
-            );
-        }
 
         const contents = `<h3 class="title">${dateString}</h3>
                             <table class="usageAndGenerationTooltip">
