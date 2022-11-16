@@ -29,14 +29,6 @@ function createSvgCard(id: string, row: HTMLElement) {
     div.id = id;
 
     row.append(div);
-
-    // div.addEventListener("click", (e: any) => {
-    // console.log("card clicked", e);
-    // });
-
-    // div.getElementsByClassName("overlay")[0].addEventListener("click", (e) => {
-    // console.log("overlay clicked", e);
-    // });
 }
 
 function createRow(container: HTMLElement) {
