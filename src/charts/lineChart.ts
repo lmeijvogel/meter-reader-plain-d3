@@ -106,9 +106,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 [maximumX, maximumY]
             ]);
 
-            brush.on("start", () => {
-                isBrushVisible = true;
-            });
+            brush.on("start", () => (isBrushVisible = true));
 
             brush.on("brush", (event) => showTooltip(event.sourceEvent, () => getBrushTooltipContents(event)));
 
