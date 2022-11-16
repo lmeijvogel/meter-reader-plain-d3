@@ -14,9 +14,10 @@ import { initIcons } from "./icons";
 import { addCards, setCardTitle } from "./vizCard";
 
 const cardsPerRow = [
+    ["recent_current", "current_power_gauge"],
     ["gas_period_data", "stroom_period_data"],
     ["water_period_data", "generation_period_data"],
-    ["recent_current", "current_power_gauge", "temperature_line_chart"],
+    ["temperature_line_chart"],
     ["gas_heatmap_monthly", "gas_heatmap_yearly"],
     ["stroom_heatmap_monthly", "stroom_heatmap_yearly"],
     ["opwekking_heatmap_monthly", "opwekking_heatmap_yearly"],
