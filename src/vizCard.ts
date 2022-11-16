@@ -17,7 +17,9 @@ export function addCards(rowsAndIds: string[][], container: HTMLElement) {
 function createSvgCard(id: string, row: HTMLElement) {
     const div = document.createElement("div");
 
-    div.innerHTML = `<h3 class="title"></h3>
+    // Start with title = '&nbsp;' so it starts with the correct height.
+    // This prevents a jump when the element does get its title.
+    div.innerHTML = `<h3 class="title">&nbsp;</h3>
             <div class="chartContainer">
                 <div class="overlay" style="">
                     <i class="spinner-icon"  icon-name="loader-2"></i>
