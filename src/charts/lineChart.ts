@@ -169,66 +169,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .y((d) => scaleY(d.value));
 
         if (!!fill) {
-            const areaPositive = d3
-                .area<ValueWithTimestamp>()
-                .curve(d3.curveNatural)
-                .x((d) => scaleX(d.timestamp))
-                .y0(scaleY(-1.0))
-                .y1((d) => scaleY(Math.max(0.0, d.value)));
-
-            const areaNegative = d3
-                .area<ValueWithTimestamp>()
-                .curve(d3.curveNatural)
-                .x((d) => scaleX(d.timestamp))
-                .y0(scaleY(0.0))
-                .y1((d) => scaleY(Math.min(0.0, d.value)));
-
-            const positiveGradientId = `areaGradientPositive${graphDescription.fieldName}`;
-            const negativeGradientId = `areaGradientNegative${graphDescription.fieldName}`;
-            const areaGradientPositive = selection
-                .append("defs")
-                .append("linearGradient")
-                .attr("id", positiveGradientId)
-                .attr("x1", "0%")
-                .attr("y1", "0%")
-                .attr("x2", "0%")
-                .attr("y2", "100%");
-
-            areaGradientPositive.append("stop").attr("offset", "40%").attr("stop-color", fill.positive);
-            areaGradientPositive.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
-
-            const areaGradientNegative = selection
-                .append("defs")
-                .append("linearGradient")
-                .attr("id", negativeGradientId)
-                .attr("x1", "0%")
-                .attr("y1", "0%")
-                .attr("x2", "0%")
-                .attr("y2", "100%");
-
-            areaGradientNegative.append("stop").attr("offset", "0%").attr("stop-color", "#fff");
-            areaGradientNegative.append("stop").attr("offset", "60%").attr("stop-color", fill.negative);
-
-            selection
-                .selectAll(`path.areaPositive`)
-                .data([series])
-                .join("path")
-                .transition()
-                .duration(firstDrawCall ? 0 : 200)
-
-                .attr("class", "areaPositive")
-                .attr("fill", `url(#${positiveGradientId})`)
-                .attr("d", areaPositive);
-
-            selection
-                .selectAll(`path.areaNegative`)
-                .data([series])
-                .join("path")
-                .transition()
-                .duration(firstDrawCall ? 0 : 200)
-                .attr("class", "areaNegative")
-                .attr("d", areaNegative)
-                .attr("fill", `url(#${negativeGradientId})`);
+            drawGradient(selection, fill, series, "positive");
+            drawGradient(selection, fill, series, "negative");
         }
 
         selection
@@ -242,6 +184,48 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("stroke", lineColor)
             .attr("stroke-width", fill ? 1 : 2)
             .attr("d", lineGenerator);
+    }
+
+    function drawGradient(
+        selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+        fill: FillColors,
+        series: ValueWithTimestamp[],
+        areaRange: "positive" | "negative"
+    ) {
+        const gradientId = `areaGradient_${areaRange}_${graphDescription.fieldName}`;
+
+        const limitFunction =
+            areaRange === "positive" ? (v: number) => Math.max(0.0, v) : (v: number) => Math.min(v, 0.0);
+
+        const area = d3
+            .area<ValueWithTimestamp>()
+            .curve(d3.curveNatural)
+            .x((d) => scaleX(d.timestamp))
+            .y0(scaleY(-1.0))
+            .y1((d) => scaleY(limitFunction(d.value)));
+
+        const areaGradient = selection
+            .append("defs")
+            .append("linearGradient")
+            .attr("id", gradientId)
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "0%")
+            .attr("y2", "100%");
+
+        areaGradient.append("stop").attr("offset", "40%").attr("stop-color", fill[areaRange]);
+        areaGradient.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
+
+        selection
+            .selectAll(`path.area_${areaRange}`)
+            .data([series])
+            .join("path")
+            .transition()
+            .duration(firstDrawCall ? 0 : 200)
+
+            .attr("class", `area_${areaRange}`)
+            .attr("fill", `url(#${gradientId})`)
+            .attr("d", area);
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
