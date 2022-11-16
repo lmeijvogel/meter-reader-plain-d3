@@ -45,12 +45,9 @@ export function gauge() {
     const initializeGraph = () => {
         scale.range([-startAngleFromTop, startAngleFromTop]).clamp(true);
 
-
-        scaleArcLightGreen.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
-        scaleArcGreen.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
-        scaleArcYellow.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
-        scaleArcRed.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
-        scaleArcBorder.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
+        [scaleArcLightGreen, scaleArcGreen, scaleArcYellow, scaleArcRed, scaleArcBorder].forEach((arc) =>
+            arc.innerRadius(gaugeInnerRadius).outerRadius(outerSize)
+        );
     };
 
     const renderScale = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
@@ -214,13 +211,15 @@ export function gauge() {
     return api;
 }
 
+function radToDeg(rad: number) {
+    return (rad / (2 * Math.PI)) * 360;
+}
+
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    selection.append("path").attr("class", "scaleDarkGreen").attr("transform", defaultTransform);
-    selection.append("path").attr("class", "scaleLightGreen").attr("transform", defaultTransform);
-    selection.append("path").attr("class", "scaleYellow").attr("transform", defaultTransform);
-    selection.append("path").attr("class", "scaleRed").attr("transform", defaultTransform);
-    selection.append("path").attr("class", "scaleBorder").attr("transform", defaultTransform);
-    selection.append("path").attr("class", "arrow").attr("transform", defaultTransform);
+    ["scaleDarkGreen", "scaleLightGreen", "scaleYellow", "scaleRed", "scaleBorder", "arrow"].forEach((className) =>
+        selection.append("path").attr("class", className).attr("transform", defaultTransform)
+    );
+
     selection.append("circle").attr("class", "arrowAnchor").attr("transform", defaultTransform);
     selection
         .append("g")
