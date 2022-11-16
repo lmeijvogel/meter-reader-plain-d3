@@ -97,6 +97,20 @@ export function gauge() {
             .attr("d", scaleArcBorder as any);
     };
 
+    function getCurrentAngle(el: d3.BaseType) {
+        const transform = d3.select(el).attr("transform");
+
+        const match = transform.match(/rotate\((-?\d+(?:\.\d+)?)/);
+
+        if (!match) {
+            return radToDeg(scale(0));
+        }
+
+        const angle = parseFloat(match[1]);
+
+        return angle;
+    }
+
     function renderGraph(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         renderScale(svg);
 
@@ -109,14 +123,27 @@ export function gauge() {
 
         const line = d3.line().curve(d3.curveLinearClosed);
 
-        const degrees = (scale(store.currentValue) / (2 * Math.PI)) * 360;
+        const rad = scale(store.currentValue);
+        const degrees = radToDeg(rad);
 
         svg.select("path.arrow")
             .attr("d", line(d3.polygonHull(points as any) as any))
             .attr("fill", "black")
             .transition()
-            .duration(1000)
-            .attr("transform", `${defaultTransform} rotate(${degrees} 0 0)`);
+            .ease(d3.easeBackOut.overshoot(0.9))
+            .duration(500)
+            .tween("transform", function () {
+                /* Without this tween, the arrow will rotate through the bottom when that is
+                 * the shortest path.
+                 */
+                let currentAngle = getCurrentAngle(this);
+
+                let i = d3.interpolate(currentAngle, degrees);
+
+                return (t: number) => {
+                    d3.select(this).attr("transform", `${defaultTransform}rotate(${i(t)})`);
+                };
+            });
 
         svg.select("circle.arrowAnchor").attr("cx", 0).attr("cy", 0).attr("r", "2px").attr("fill", "#888");
 
