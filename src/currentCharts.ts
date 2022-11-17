@@ -8,6 +8,9 @@ import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
 import { setCardTitle } from "./vizCard";
 
+/* A single retrieve does 10 minutes, so be on the safe side */
+const RELOAD_GRAPH_THRESHOLD_IN_MINUTES = 9;
+
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
 const lastHourDescription = new LastHourDescription();
@@ -144,7 +147,10 @@ export async function initializeCurrentCharts() {
         return;
     }
 
-    if (!pageInvisibleTimestamp || differenceInSeconds(new Date(), pageInvisibleTimestamp) > 60) {
+    if (
+        !pageInvisibleTimestamp ||
+        differenceInSeconds(new Date(), pageInvisibleTimestamp) > RELOAD_GRAPH_THRESHOLD_IN_MINUTES * 60
+    ) {
         await retrievePowerUsageForWholeGraph();
     }
 
