@@ -69,7 +69,7 @@ const powerUsage: CurrentFields = {
     current: []
 };
 
-async function updatePowerUsage(minutes: number) {
+async function updatePowerUsageGraph(minutes: number) {
     const newValues = await retrievePowerUsage(minutes);
 
     powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
@@ -86,33 +86,30 @@ async function getLatestPowerUsage() {
 }
 
 function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
-    const result: MeasurementEntry[] = [];
+    if (existing.length === 0) {
+        return newValues;
+    }
 
     const tooOld = subHours(new Date(), 1);
 
-    const maxValue = d3.max(existing, (v) => v.timestamp);
+    /* For this whole function, I'm assuming both lists are sorted */
+    const maxValue = existing.at(-1)!.timestamp;
 
-    /* In practice, this might lead to more entries being added than
-     * removed: The earlier retrievals can have fewer readings
-     * (< 1 per second), while we can poll more frequently.
+    const bisect = d3.bisector((d: { timestamp: Date }) => d.timestamp).right;
+
+    const indexOfOlderItems = bisect(existing, tooOld);
+    const indexOfNewerItems = bisect(newValues, maxValue!);
+
+    /* Apparently, the last value of each batch is "special",
+     * it is not aligned on 6 seconds, as are the other ones.
      *
-     * I don't think this is a problem.
+     * These values tend to accumulate (albeit slowly) if I
+     * don't filter them out (the -1 in the first slice).
+     *
+     * I only filter them out of the previous batch, because
+     * including the value at the end _is_ more accurate.
      */
-    for (const existingValue of existing) {
-        if (existingValue.timestamp > tooOld) {
-            result.push(existingValue);
-        }
-    }
-
-    for (const newValue of newValues) {
-        if (newValue.timestamp > maxValue!) {
-            result.push(newValue);
-        }
-    }
-
-    result.sort();
-
-    return result;
+    return [...existing.slice(indexOfOlderItems, -1), ...newValues.slice(indexOfNewerItems)];
 }
 
 function drawPowerUsage(fieldsKW: CurrentFields) {
@@ -161,7 +158,7 @@ export async function initializeCurrentCharts() {
     }
 
     if (!recentPowerGraphTimer) {
-        recentPowerGraphTimer = setInterval(updatePowerUsage, 5000);
+        recentPowerGraphTimer = setInterval(updatePowerUsageGraph, 5000);
     }
 }
 
