@@ -202,17 +202,21 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .y0(scaleY(-1.0))
             .y1((d) => scaleY(limitFunction(d.value)));
 
-        const areaGradient = selection
-            .append("defs")
-            .append("linearGradient")
-            .attr("id", gradientId)
-            .attr("x1", "0%")
-            .attr("y1", "0%")
-            .attr("x2", "0%")
-            .attr("y2", "100%");
+        const gradientExists = !!selection.select(`#${gradientId}`).node();
 
-        areaGradient.append("stop").attr("offset", "40%").attr("stop-color", fill[areaRange]);
-        areaGradient.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
+        if (!gradientExists) {
+            const areaGradient = selection
+                .append("defs")
+                .append("linearGradient")
+                .attr("id", gradientId)
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "0%")
+                .attr("y2", "100%");
+
+            areaGradient.append("stop").attr("offset", "40%").attr("stop-color", fill[areaRange]);
+            areaGradient.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
+        }
 
         selection
             .selectAll(`path.area_${areaRange}`)
