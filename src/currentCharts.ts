@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { subHours } from "date-fns";
+import { differenceInSeconds, subHours } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
@@ -18,10 +18,24 @@ const recentCurrentGraph = lineChart(
 
 type CurrentFields = { current: MeasurementEntry[] };
 
-let pageVisible = true;
+let pageInvisibleTimestamp: Date | undefined;
+
+let powerGaugeTimer: NodeJS.Timer | undefined;
+let recentPowerGraphTimer: number | undefined;
 
 window.addEventListener("visibilitychange", () => {
-    pageVisible = document.visibilityState === "visible";
+    const pageVisible = document.visibilityState === "visible";
+
+    if (pageVisible) {
+        initializeCurrentCharts();
+    } else {
+        clearInterval(powerGaugeTimer);
+        clearInterval(recentPowerGraphTimer);
+        powerGaugeTimer = undefined;
+        recentPowerGraphTimer = undefined;
+
+        pageInvisibleTimestamp = new Date();
+    }
 });
 
 async function retrievePowerUsage(minutes = 10) {
@@ -53,23 +67,19 @@ const powerUsage: CurrentFields = {
 };
 
 async function updatePowerUsage(minutes: number) {
-    if (pageVisible) {
-        const newValues = await retrievePowerUsage(minutes);
+    const newValues = await retrievePowerUsage(minutes);
 
-        powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
+    powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
 
-        drawPowerUsage(powerUsage);
-    }
+    drawPowerUsage(powerUsage);
 }
 
 async function getLatestPowerUsage() {
-    if (pageVisible) {
-        const newValues = await retrieveLatestPowerUsage();
+    const newValues = await retrieveLatestPowerUsage();
 
-        const currentValueInW = newValues.current[0].value * 1000;
+    const currentValueInW = newValues.current[0].value * 1000;
 
-        updateCurrentUsageGauge(currentValueInW);
-    }
+    updateCurrentUsageGauge(currentValueInW);
 }
 
 function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
@@ -125,14 +135,31 @@ function updateCurrentUsageGauge(valueInW: number) {
 }
 
 export async function initializeCurrentCharts() {
-    await retrieveAndDrawPowerUsageInBatches();
+    const pageVisible = document.visibilityState === "visible";
 
-    setInterval(getLatestPowerUsage, 1000);
-    // Done with the batches: Only set interval now, now that we're in a known state.
-    setInterval(updatePowerUsage, 5000);
+    /* This duplicates the check at the top, but we don't want the intervals
+     * to be set if the page is loaded in the background.
+     */
+    if (!pageVisible) {
+        return;
+    }
+
+    if (!pageInvisibleTimestamp || differenceInSeconds(new Date(), pageInvisibleTimestamp) > 60) {
+        await retrievePowerUsageForWholeGraph();
+    }
+
+    pageInvisibleTimestamp = undefined;
+
+    if (!powerGaugeTimer) {
+        powerGaugeTimer = setInterval(getLatestPowerUsage, 1000);
+    }
+
+    if (!recentPowerGraphTimer) {
+        recentPowerGraphTimer = setInterval(updatePowerUsage, 5000);
+    }
 }
 
-async function retrieveAndDrawPowerUsageInBatches() {
+async function retrievePowerUsageForWholeGraph() {
     const batch = await retrievePowerUsage(60);
 
     powerUsage.current = batch.current;
