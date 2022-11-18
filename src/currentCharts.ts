@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { differenceInSeconds, subHours } from "date-fns";
+import { differenceInMinutes, differenceInSeconds, subHours } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
 import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
@@ -69,7 +69,7 @@ const powerUsage: CurrentFields = {
     current: []
 };
 
-async function updatePowerUsageGraph(minutes: number) {
+async function updatePowerUsageGraph(minutes: number = 1) {
     const newValues = await retrievePowerUsage(minutes);
 
     powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
@@ -144,10 +144,11 @@ export async function initializeCurrentCharts() {
         return;
     }
 
-    if (
-        !pageInvisibleTimestamp ||
-        differenceInSeconds(new Date(), pageInvisibleTimestamp) > RELOAD_GRAPH_THRESHOLD_IN_MINUTES * 60
-    ) {
+    if (pageInvisibleTimestamp) {
+        const minutesSinceLastLoad = differenceInMinutes(new Date(), pageInvisibleTimestamp);
+        await retrievePowerUsage(minutesSinceLastLoad + 1);
+    } else {
+        /* This is the first page load, so load everything */
         await updatePowerUsageGraph(60);
     }
 
