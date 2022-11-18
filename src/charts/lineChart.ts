@@ -15,6 +15,7 @@ type FillColors = {
 type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string; fill?: FillColors }>;
 
 type Store = {
+    animate: boolean;
     lineColors?: Map<string, string>;
     defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
@@ -39,6 +40,7 @@ const axisWidth = 50;
 
 export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
     const store: Store = {
+        animate: true,
         lineColors: new Map(),
         defaultLineColor: "black",
         minMaxCalculation: "explicit",
@@ -64,6 +66,12 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     const api = {
         setSeries(name: string, series: ValueWithTimestamp[], lineColor: string, fill?: FillColors) {
             store.seriesCollection.set(name, { series, lineColor, fill });
+
+            return api;
+        },
+
+        animate: (value: boolean) => {
+            store.animate = value;
 
             return api;
         },
@@ -171,13 +179,13 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             drawGradient(selection, fill, series, "negative");
         }
 
-        selection
-            .selectAll(`path.line`)
-            .data([series])
-            .join("path")
-            .transition()
-            .duration(firstDrawCall ? 0 : 200)
-            .attr("class", `line`)
+        var path = selection.selectAll(`path.line`).data([series]).join("path");
+
+        if (store.animate) {
+            path.transition().duration(firstDrawCall ? 0 : 200);
+        }
+
+        path.attr("class", `line`)
             .attr("fill", "none")
             .attr("stroke", lineColor)
             .attr("stroke-width", fill ? 1 : 2)

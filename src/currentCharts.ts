@@ -8,9 +8,6 @@ import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
 import { setCardTitle } from "./vizCard";
 
-/* A single retrieve does 10 minutes, so be on the safe side */
-const RELOAD_GRAPH_THRESHOLD_IN_MINUTES = 9;
-
 const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
 
 const lastHourDescription = new LastHourDescription();
@@ -24,7 +21,7 @@ type CurrentFields = { current: MeasurementEntry[] };
 let pageInvisibleTimestamp: Date | undefined;
 
 let powerGaugeTimer: NodeJS.Timer | undefined;
-let recentPowerGraphTimer: number | undefined;
+let recentPowerGraphTimer: NodeJS.Timer | undefined;
 
 window.addEventListener("visibilitychange", () => {
     const pageVisible = document.visibilityState === "visible";
@@ -119,7 +116,9 @@ function drawPowerUsage(fieldsKW: CurrentFields) {
 
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
-    recentCurrentGraph.setSeries("current", currentInW, "black", { positive: "#f0ad4e", negative: "#adf04e" });
+    recentCurrentGraph
+        .setSeries("current", currentInW, "black", { positive: "#f0ad4e", negative: "#adf04e" })
+        .animate(false);
 
     recentCurrentContainer.call(recentCurrentGraph.call);
 }
