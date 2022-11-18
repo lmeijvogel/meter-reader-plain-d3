@@ -148,7 +148,7 @@ export async function initializeCurrentCharts() {
         !pageInvisibleTimestamp ||
         differenceInSeconds(new Date(), pageInvisibleTimestamp) > RELOAD_GRAPH_THRESHOLD_IN_MINUTES * 60
     ) {
-        await retrievePowerUsageForWholeGraph();
+        await updatePowerUsageGraph(60);
     }
 
     pageInvisibleTimestamp = undefined;
@@ -160,12 +160,4 @@ export async function initializeCurrentCharts() {
     if (!recentPowerGraphTimer) {
         recentPowerGraphTimer = setInterval(updatePowerUsageGraph, 5000);
     }
-}
-
-async function retrievePowerUsageForWholeGraph() {
-    const batch = await retrievePowerUsage(60);
-
-    powerUsage.current = batch.current;
-
-    drawPowerUsage(powerUsage);
 }
