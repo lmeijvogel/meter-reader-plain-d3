@@ -8,7 +8,14 @@ import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
 import { setCardTitle } from "./vizCard";
 
-const powerUsageGauge = gauge().domain([-3000, 3000]).goodValue(0).okValue(500).warnValue(2000).maxValue(3000);
+const powerUsageGauge = gauge()
+    .domain([-3000, 3000])
+    .colors([
+        { start: -3000, color: "#55ff11" },
+        { start: 0, color: "#bbff33" },
+        { start: 500, color: "#ffbb33" },
+        { start: 2000, color: "#ff3333" }
+    ]);
 
 const lastHourDescription = new LastHourDescription();
 const recentCurrentGraph = lineChart(

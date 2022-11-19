@@ -1,15 +1,10 @@
 import * as d3 from "d3";
 
-const styles = require("./gauge.module.css");
-
 type Store = {
     currentValue: number;
 
+    colorRanges: { start: number; color: string }[];
     domain: [min: number, max: number];
-    goodValue: number;
-    okValue: number;
-    warnValue: number;
-    maxValue: number;
 };
 
 const startAngleFromTop = (2 * Math.PI) / 3;
@@ -27,17 +22,11 @@ const gaugeInnerRadius = outerSize * 0.5;
 export function gauge() {
     let firstDrawCall = true;
     const store: Store = {
-        goodValue: 0,
-        okValue: 0,
-        warnValue: 0,
-        maxValue: 0,
+        colorRanges: [],
         currentValue: 0,
         domain: [0, 3000]
     };
-    const scaleArcLightGreen = d3.arc();
-    const scaleArcGreen = d3.arc();
-    const scaleArcYellow = d3.arc();
-    const scaleArcRed = d3.arc();
+
     const scaleArcBorder = d3.arc();
 
     const scale: d3.ScaleLinear<number, number, never> = d3.scaleLinear();
@@ -45,52 +34,38 @@ export function gauge() {
     const initializeGraph = () => {
         scale.range([-startAngleFromTop, startAngleFromTop]).clamp(true);
 
-        [scaleArcLightGreen, scaleArcGreen, scaleArcYellow, scaleArcRed, scaleArcBorder].forEach((arc) =>
-            arc.innerRadius(gaugeInnerRadius).outerRadius(outerSize)
-        );
+        scaleArcBorder.innerRadius(gaugeInnerRadius).outerRadius(outerSize);
     };
 
     const renderScale = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-        scaleArcGreen.startAngle(scale(store.domain[0]));
-        scaleArcLightGreen.startAngle(scale(0));
+        const sortedRanges = [...store.colorRanges].sort((r1, r2) =>
+            r1.start < r2.start ? -1 : r1.start > r2.start ? 1 : 0
+        );
 
-        const { goodValue, okValue, warnValue, maxValue } = store;
+        svg.select("g.scales").selectAll("*").remove();
+        for (let i = 0; i < sortedRanges.length; i++) {
+            const currentElement = store.colorRanges[i];
+            const nextStart = i < store.colorRanges.length - 1 ? store.colorRanges[i + 1].start : store.domain[1];
 
-        if (goodValue !== undefined) {
-            scaleArcGreen.endAngle(scale(goodValue));
+            const scaleArc = d3
+                .arc()
+                .startAngle(scale(currentElement.start))
+                .endAngle(scale(nextStart))
+                .innerRadius(gaugeInnerRadius)
+                .outerRadius(outerSize);
 
-            svg.select("path.scaleDarkGreen")
-                .attr("class", styles.gaugeScaleGood)
-                .attr("d", scaleArcGreen as any);
-        }
+            const path = svg.select("g.scales").append("path");
 
-        if (!!okValue) {
-            scaleArcLightGreen.endAngle(scale(okValue));
-
-            svg.select("path.scaleLightGreen")
-                .attr("class", styles.gaugeScaleOk)
-                .attr("d", scaleArcLightGreen as any);
-        }
-
-        scaleArcYellow.startAngle(scale(okValue ?? goodValue ?? 0));
-        scaleArcYellow.endAngle(scale(warnValue ?? maxValue));
-
-        svg.select("path.scaleYellow")
-            .attr("class", styles.gaugeScaleRegular)
-            .attr("d", scaleArcYellow as any);
-
-        if (!!warnValue) {
-            scaleArcRed.startAngle(scale(warnValue)).endAngle(scale(store.maxValue));
-            svg.select("path.scaleRed")
-                .attr("class", styles.gaugeScaleWarn)
-                .attr("d", scaleArcRed as any);
+            path.style("fill", currentElement.color).attr("d", scaleArc as any);
         }
 
         scaleArcBorder.startAngle(scale(store.domain[0]));
         scaleArcBorder.endAngle(scale(store.domain[1]));
 
         svg.select("path.scaleBorder")
-            .attr("class", styles.scaleBorder)
+            .style("fill", "none")
+            .style("stroke", "black")
+            .style("stroke-width", "1px")
             .attr("d", scaleArcBorder as any);
     };
 
@@ -109,8 +84,6 @@ export function gauge() {
     }
 
     function renderGraph(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        renderScale(svg);
-
         const points = [
             [-1, -gaugeOuterRadius + 5],
             [1, -gaugeOuterRadius + 5],
@@ -148,15 +121,16 @@ export function gauge() {
             .selectAll("text")
             .data([store.currentValue])
             .join("text")
-            .attr("class", styles.gaugeText)
+            .style("fill", "black")
+            .style("font-size", "20pt")
             .attr("text-anchor", "middle")
-            .text(formatNumeric);
-    }
+            .text(d3.format("d"));
 
-    function formatNumeric(value: number) {
-        const trimmedValue = d3.format("d")(value);
-
-        return `${trimmedValue} W`;
+        svg.select("text.unit")
+            .style("fill", "black")
+            .style("font-size", "12pt")
+            .attr("text-anchor", "middle")
+            .text("W");
     }
 
     initializeGraph();
@@ -174,26 +148,17 @@ export function gauge() {
             return api;
         },
 
-        goodValue(value: number) {
-            store.goodValue = value;
+        colors(
+            colorRanges: {
+                start: number;
+                color: string;
+            }[]
+        ) {
+            store.colorRanges = colorRanges;
 
             return api;
         },
-        okValue(value: number) {
-            store.okValue = value;
 
-            return api;
-        },
-        warnValue(value: number) {
-            store.warnValue = value;
-
-            return api;
-        },
-        maxValue(value: number) {
-            store.maxValue = value;
-
-            return api;
-        },
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             selection.attr("viewBox", `0 0 ${width} ${height}`);
 
@@ -201,6 +166,7 @@ export function gauge() {
                 firstDrawCall = false;
 
                 addSvgChildTags(selection);
+                renderScale(selection);
             }
             renderGraph(selection);
 
@@ -216,13 +182,18 @@ function radToDeg(rad: number) {
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["scaleDarkGreen", "scaleLightGreen", "scaleYellow", "scaleRed", "scaleBorder", "needle"].forEach((className) =>
-        selection.append("path").attr("class", className).attr("transform", defaultTransform)
-    );
+    selection.append("path").attr("class", "scaleBorder").attr("transform", defaultTransform);
+    selection.append("g").attr("class", "scales").attr("transform", defaultTransform);
 
+    selection.append("path").attr("class", "needle").attr("transform", defaultTransform);
     selection.append("circle").attr("class", "needlePin").attr("transform", defaultTransform);
     selection
         .append("g")
         .attr("class", "number")
         .attr("transform", `translate(${width / 2} ${height * 0.75})`);
+
+    selection
+        .append("text")
+        .attr("class", "unit")
+        .attr("transform", `translate(${width / 2} ${height * 0.75 + 20})`);
 }
