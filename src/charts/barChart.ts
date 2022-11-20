@@ -12,6 +12,8 @@ type Store = {
     periodDescription: PeriodDescription;
     tooltipDateFormat: string;
     data: ValueWithTimestamp[];
+    color: string;
+    colorLight: string;
     relativeMinMax: boolean;
     onValueClick: (periodDescription: PeriodDescription) => void;
     clearCanvas: boolean;
@@ -25,6 +27,8 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         tooltipDateFormat: periodDescription.timeFormatString(),
         relativeMinMax: true,
         data: [],
+        color: "#888888",
+        colorLight: "#bbbbbb",
         onValueClick: () => {},
         clearCanvas: false,
         firstDrawCall: true,
@@ -54,7 +58,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             .attr("y", (el) => scaleY(el.value))
             .attr("height", (el) => scaleY(0) - scaleY(el.value))
             .attr("width", scaleX.bandwidth())
-            .attr("fill", graphDescription.barColor)
+            .attr("fill", store.color)
             .attr("data-value", (el) => el.value)
             .attr("index", (_d: any, i: number) => i);
     }
@@ -92,12 +96,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
 
         const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
 
-        const valueLine = `<tr>
-                               <td>${graphDescription.fieldName}:</td>
-                               <td class="tableValue">${renderDisplayValue(value)}</td>
-                           </tr>`;
-
-        return `<b>${dateString}</b><table><tbody>${valueLine}</tbody></table>`;
+        return `${dateString}: <b>${renderDisplayValue(value)}</b>`;
     }
 
     function renderDisplayValue(value: number) {
@@ -110,13 +109,11 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         selection
             .select(".values")
             .selectAll("rect")
-            .style("fill", (_d, i) =>
-                i === closestIndex.index ? graphDescription.lightColor : graphDescription.barColor
-            );
+            .style("fill", (_d, i) => (i === closestIndex.index ? store.colorLight : store.color));
     }
 
     function unhighlightBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        selection.select(".values").selectAll("rect").style("fill", graphDescription.barColor);
+        selection.select(".values").selectAll("rect").style("fill", store.color);
     }
 
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
@@ -142,6 +139,12 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         data(data: ValueWithTimestamp[]) {
             store.data = data;
 
+            return api;
+        },
+
+        color(color: string) {
+            store.color = color;
+            store.colorLight = d3.color(color)!.brighter(1.5).formatHex();
             return api;
         },
 

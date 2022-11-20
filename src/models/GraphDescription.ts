@@ -1,14 +1,8 @@
 import { PeriodDescription } from "./PeriodDescription";
-import { UsageField } from "../models/UsageData";
 import { assertNever } from "../lib/assertNever";
 
 export abstract class GraphDescription {
     constructor(protected readonly periodDescription: PeriodDescription) {}
-
-    abstract readonly barColor: string;
-    abstract readonly darkColor: string;
-    abstract readonly lightColor: string;
-    abstract readonly fieldName: UsageField | "temperatuur";
 
     abstract readonly displayableUnit: string;
 
@@ -17,10 +11,6 @@ export abstract class GraphDescription {
     }
 
     abstract get maxY(): number;
-
-    get hasTextLabels(): boolean {
-        return this.periodDescription.periodSize === "year";
-    }
 
     get tooltipValueFormat() {
         return ".2f";
@@ -32,12 +22,6 @@ export abstract class GraphDescription {
 }
 
 export class GasGraphDescription extends GraphDescription {
-    readonly barColor = "#e73710";
-    readonly lightColor = "#e7846e";
-    readonly darkColor = "#791d09";
-
-    readonly fieldName = "gas";
-
     readonly displayableUnit = "m³";
 
     get maxY() {
@@ -55,10 +39,6 @@ export class GasGraphDescription extends GraphDescription {
 }
 
 export class StroomGraphDescription extends GraphDescription {
-    readonly barColor = "#f0ad4e";
-    readonly lightColor = "#ffddad";
-    readonly darkColor = "#784805";
-    readonly fieldName = "stroom";
     readonly displayableUnit = "kWh";
 
     get minY() {
@@ -80,10 +60,6 @@ export class StroomGraphDescription extends GraphDescription {
 }
 
 export class GenerationGraphDescription extends GraphDescription {
-    readonly barColor = "#55ff10";
-    readonly lightColor = "#88ff28";
-    readonly darkColor = "#22aa08";
-    readonly fieldName = "generation";
     readonly displayableUnit = "kWh";
 
     get minY() {
@@ -105,11 +81,6 @@ export class GenerationGraphDescription extends GraphDescription {
 }
 
 export class WaterGraphDescription extends GraphDescription {
-    readonly barColor = "#428bca";
-    readonly lightColor = "#7ea7ca";
-    readonly darkColor = "#224767";
-    readonly fieldName = "water";
-
     readonly displayableUnit = "L";
 
     get maxY() {
@@ -131,10 +102,6 @@ export class WaterGraphDescription extends GraphDescription {
 }
 
 export class CurrentPowerUsageGraphDescription extends GraphDescription {
-    readonly barColor = "#f0ad4e";
-    readonly lightColor = "#ffddad";
-    readonly darkColor = "#f0ad4e";
-    readonly fieldName = "stroom";
     readonly displayableUnit = "W";
 
     get maxY() {
@@ -147,9 +114,6 @@ export class CurrentPowerUsageGraphDescription extends GraphDescription {
 }
 
 export class TemperatuurGraphDescription extends GraphDescription {
-    readonly barColor = "#428bca";
-    readonly lightColor = "#ffddad";
-    readonly darkColor = "#428bca";
     readonly fieldName = "temperatuur";
 
     readonly displayableUnit = "°C";

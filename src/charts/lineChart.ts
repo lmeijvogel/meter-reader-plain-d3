@@ -1,4 +1,6 @@
 import * as d3 from "d3";
+import * as uuid from "uuid";
+
 import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
@@ -39,6 +41,8 @@ const xAxisHeight = 20;
 const axisWidth = 50;
 
 export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
+    const randomId = uuid.v4();
+
     const store: Store = {
         animate: true,
         lineColors: new Map(),
@@ -198,7 +202,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         series: ValueWithTimestamp[],
         areaRange: "positive" | "negative"
     ) {
-        const gradientId = `areaGradient_${areaRange}_${graphDescription.fieldName}`;
+        const gradientId = `areaGradient_${areaRange}_${randomId}`;
 
         const limitFunction =
             areaRange === "positive" ? (v: number) => Math.max(0.0, v) : (v: number) => Math.min(v, 0.0);

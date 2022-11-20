@@ -205,7 +205,7 @@ export function usageAndGenerationBarChart(
             updateScales(selection, firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
 
             drawBars(selection, store.data, "solarSource", "#55ff10", "gridSource");
-            drawBars(selection, store.data, "gridSource", graphDescription.barColor);
+            drawBars(selection, store.data, "gridSource", "#f0ad4e");
             drawBars(selection, store.data, "backDelivery", "#55ff10");
 
             firstDrawCall = false;

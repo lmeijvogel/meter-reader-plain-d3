@@ -92,7 +92,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             }
 
             const graphDescription = new GasGraphDescription(periodDescription);
-            const api = barChart(periodDescription, graphDescription).onClick(retrieveAndDrawPeriodCharts).data(values);
+            const api = barChart(periodDescription, graphDescription)
+                .onClick(retrieveAndDrawPeriodCharts)
+                .data(values)
+                .color("#e73710");
 
             const cardTitle = createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
             setCardTitle(periodGasContainer, cardTitle);
@@ -113,7 +116,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             const api = barChart(periodDescription, graphDescription)
                 .onClick(retrieveAndDrawPeriodCharts)
                 .clearCanvas(shouldClearCanvas)
-                .data(values);
+                .data(values)
+                .color("#428bca");
 
             const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
             setCardTitle(periodWaterContainer, cardTitle);
@@ -131,8 +135,6 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
                       .then((r) => r.json())
                       .then((r) =>
                           r.map((row: [number, number, number]) => {
-                              const now = new Date();
-
                               const timestamp = new Date(
                                   Date.UTC(
                                       periodDescription.year,
@@ -175,10 +177,10 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             if (periodDescription instanceof DayDescription) {
                 api = lineChart(periodDescription, graphDescription)
                     .minMaxCalculation("minMax", "max")
-                    .setSeries("opwekking", valuesInKWhPer15m, graphDescription.darkColor, {
-                        positive: graphDescription.lightColor,
-                        negative: "#ffffff"
-                    }) // The values will never be negative
+                    .setSeries("opwekking", valuesInKWhPer15m, "#22aa08", {
+                        positive: "#88ff28",
+                        negative: "#ffffff" // The values will never be negative
+                    })
                     .setSeries("gemiddelde", averagesValues, "#bbb")
                     .setSeries("max", maxValues, "#888");
             } else {
