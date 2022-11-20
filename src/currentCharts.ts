@@ -1,11 +1,11 @@
 import * as d3 from "d3";
-import { differenceInMinutes, differenceInSeconds, subHours } from "date-fns";
+import { differenceInMinutes, subHours } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
-import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
+import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
 import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
-import { MeasurementEntry } from "./models/MeasurementEntry";
 import { LastHourDescription } from "./models/PeriodDescription";
+import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { setCardTitle } from "./vizCard";
 
 const powerUsageGauge = gauge()
@@ -23,7 +23,7 @@ const recentCurrentGraph = lineChart(
     new CurrentPowerUsageGraphDescription(lastHourDescription)
 ).minMaxCalculation("quantile");
 
-type CurrentFields = { current: MeasurementEntry[] };
+type CurrentFields = { current: ValueWithTimestamp[] };
 
 let pageInvisibleTimestamp: Date | undefined;
 
@@ -50,7 +50,7 @@ async function retrievePowerUsage(minutes = 10) {
         .then((response) => response.json())
         .then((json) => {
             const fieldsKW: CurrentFields = {
-                current: json["current"].map(responseRowToMeasurementEntry)
+                current: json["current"].map(responseRowToValueWithTimestamp)
             };
 
             return fieldsKW;
@@ -62,7 +62,7 @@ async function retrieveLatestPowerUsage() {
         .then((response) => response.json())
         .then((json) => {
             const fieldsKW: CurrentFields = {
-                current: json["current"].map(responseRowToMeasurementEntry)
+                current: json["current"].map(responseRowToValueWithTimestamp)
             };
 
             return fieldsKW;
@@ -89,7 +89,7 @@ async function getLatestPowerUsage() {
     updateCurrentUsageGauge(currentValueInW);
 }
 
-function addAndReplaceValues(existing: MeasurementEntry[], newValues: MeasurementEntry[]): MeasurementEntry[] {
+function addAndReplaceValues(existing: ValueWithTimestamp[], newValues: ValueWithTimestamp[]): ValueWithTimestamp[] {
     if (existing.length === 0) {
         return newValues;
     }

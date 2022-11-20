@@ -1,7 +1,6 @@
 import * as d3 from "d3";
 
-import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
-import { MeasurementEntry } from "./models/MeasurementEntry";
+import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
 import { UsageField } from "./models/UsageData";
 
 import { formatMonthNames, heatMap } from "./charts/heatMap";
@@ -12,6 +11,7 @@ import { retrieveAndDrawPeriodCharts } from "./periodData";
 import { initializeCurrentCharts } from "./currentCharts";
 import { initIcons } from "./icons";
 import { addCards, setCardTitle } from "./vizCard";
+import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 
 const cardsPerRow = [
     ["recent_current", "current_power_gauge"],
@@ -32,10 +32,10 @@ function selectPeriod(periodDescription: PeriodDescription) {
     retrieveAndDrawPeriodCharts(periodDescription);
 }
 
-async function fetchLastMonthHeatMapData(query: string): Promise<MeasurementEntry[]> {
+async function fetchLastMonthHeatMapData(query: string): Promise<ValueWithTimestamp[]> {
     return fetch(query)
         .then((response) => response.json())
-        .then((json) => json.map(responseRowToMeasurementEntry));
+        .then((json) => json.map(responseRowToValueWithTimestamp));
 }
 
 function loadData(fieldName: UsageField, period: "last_30_days" | "last_year") {

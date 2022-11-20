@@ -1,15 +1,15 @@
 import { addDays, addHours, getDaysInMonth, isBefore, isSameDay } from "date-fns";
-import { MeasurementEntry } from "../models/MeasurementEntry";
+import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 /* This name is not really correct. On the one hand, it pads the data, but it also
  * aggregates it on the hour/day and makes sure that there are no values outside the expected range.
  */
 export function padData(
-    data: MeasurementEntry[],
+    data: ValueWithTimestamp[],
     startDate: Date,
     periodSize: "day" | "month" | "year"
-): MeasurementEntry[] {
-    const result: MeasurementEntry[] = [];
+): ValueWithTimestamp[] {
+    const result: ValueWithTimestamp[] = [];
 
     if (periodSize === "day") {
         let currentDate: Date = startDate;

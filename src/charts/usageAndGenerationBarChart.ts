@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 import { GraphDescription } from "../models/GraphDescription";
-import { MeasurementEntry } from "../models/MeasurementEntry";
 import { PeriodDescription } from "../models/PeriodDescription";
 
 import { isEqual } from "date-fns";
@@ -9,11 +8,12 @@ import { hideTooltip, showTooltip } from "../tooltip";
 import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
 import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { PowerSourcesAndBackDelivery } from "./barChartHelpers/Types";
+import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 type Data = {
-    consumption: MeasurementEntry[];
-    generation: MeasurementEntry[];
-    backDelivery: MeasurementEntry[];
+    consumption: ValueWithTimestamp[];
+    generation: ValueWithTimestamp[];
+    backDelivery: ValueWithTimestamp[];
 };
 
 type ConsolidatedData = {
@@ -235,7 +235,7 @@ function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLEleme
 }
 
 function groupValuesByDate(input: Data): ConsolidatedData[] {
-    const getDates = (input: MeasurementEntry[]) => input.map((el) => el.timestamp);
+    const getDates = (input: ValueWithTimestamp[]) => input.map((el) => el.timestamp);
     const dataFields: (keyof Data)[] = ["consumption", "generation", "backDelivery"];
     const timestamps = d3.sort(d3.union(dataFields.flatMap((field) => getDates(input[field]))));
 

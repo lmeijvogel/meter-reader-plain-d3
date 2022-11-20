@@ -6,7 +6,7 @@ import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 import { padData } from "./helpers/padData";
 import { costsFor, PriceCategory } from "./helpers/PriceCalculator";
-import { responseRowToMeasurementEntry } from "./helpers/responseRowToMeasurementEntry";
+import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
 import { titleForCategory } from "./lib/titleForCategory";
 import {
     GasGraphDescription,
@@ -16,9 +16,9 @@ import {
     GenerationGraphDescription,
     TemperatuurGraphDescription
 } from "./models/GraphDescription";
-import { MeasurementEntry } from "./models/MeasurementEntry";
 import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
+import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation } from "./navigation";
 import { setCardTitle } from "./vizCard";
 
@@ -52,7 +52,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
         fieldName: UsageField,
         card: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
         prefer15MinInterval = false
-    ): Promise<MeasurementEntry[] | "stale"> {
+    ): Promise<ValueWithTimestamp[] | "stale"> {
         card.classed("loading", true);
 
         try {
@@ -71,7 +71,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
                 return "stale";
             }
 
-            const data = json.map(responseRowToMeasurementEntry);
+            const data = json.map(responseRowToValueWithTimestamp);
 
             if (prefer15MinInterval) {
                 return data;
@@ -202,7 +202,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
     if (enabledGraphs.includes("stroom")) {
         const periodStroomContainer = d3.select("#stroom_period_data");
 
-        Promise.all<MeasurementEntry[] | "stale">([
+        Promise.all<ValueWithTimestamp[] | "stale">([
             fetchChartData("stroom", periodStroomContainer),
             fetchChartData("generation", periodStroomContainer),
             fetchChartData("back_delivery", periodStroomContainer)
@@ -233,7 +233,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
     async function fetchTemperatureData(
         card: d3.Selection<d3.BaseType, unknown, HTMLElement, any>
-    ): Promise<Map<string, MeasurementEntry[]>> {
+    ): Promise<Map<string, ValueWithTimestamp[]>> {
         card.classed("loading", true);
 
         const url = periodDescription.toUrl();
@@ -242,11 +242,11 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 
         try {
             const response = await fetch(`/api/temperature/living_room${url}`);
-            const json: { [key: string]: MeasurementEntry[] } = await response.json();
+            const json: { [key: string]: ValueWithTimestamp[] } = await response.json();
 
             Object.entries(json).forEach((keyAndSeries) => {
                 const [key, rawSeries] = keyAndSeries;
-                const series = rawSeries.map(responseRowToMeasurementEntry);
+                const series = rawSeries.map(responseRowToValueWithTimestamp);
 
                 result.set(key, series);
             });
@@ -287,7 +287,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
 }
 
 function createPeriodDataCardTitle(
-    values: MeasurementEntry[],
+    values: ValueWithTimestamp[],
     priceCategory: PriceCategory | "generation",
     graphDescription: GraphDescription,
     periodDescription: PeriodDescription

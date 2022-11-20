@@ -2,7 +2,7 @@
 import * as d3 from "d3";
 import { format, getDate, getHours, getMonth, startOfDay, startOfMonth, subDays, subYears } from "date-fns";
 import { monthNames } from "../lib/monthNames";
-import { MeasurementEntry } from "../models/MeasurementEntry";
+import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { hideTooltip, showTooltip } from "../tooltip";
 
 type GraphType = "30_days" | "year";
@@ -25,13 +25,13 @@ type Store = {
     lightColor: string;
     midColor: string;
     darkColor: string;
-    data: MeasurementEntry[];
+    data: ValueWithTimestamp[];
     cellWidth: number;
     cellHeight: number;
     unit: string;
     min: number;
-    mapX: (d: MeasurementEntry) => number;
-    mapY: (d: MeasurementEntry) => number;
+    mapX: (d: ValueWithTimestamp) => number;
+    mapY: (d: ValueWithTimestamp) => number;
     scaleX: d3.ScaleTime<number, number, never>;
     scaleY: d3.ScaleLinear<number, number, never>;
     tickFormat: (domainValue: Date) => string;
@@ -61,7 +61,7 @@ export function heatMap(graphType: GraphType) {
     };
 
     const api = {
-        data: (data: MeasurementEntry[]) => {
+        data: (data: ValueWithTimestamp[]) => {
             store.data = data;
 
             const numberOfColumns = graphType === "30_days" ? 30 : 13;
