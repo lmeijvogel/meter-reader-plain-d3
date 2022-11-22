@@ -126,7 +126,8 @@ export async function initializeCurrentCharts() {
 
     if (pageInvisibleTimestamp) {
         const minutesSinceLastLoad = differenceInMinutes(new Date(), pageInvisibleTimestamp);
-        await retrievePowerUsage(minutesSinceLastLoad + 1);
+
+        await updatePowerUsageGraph(minutesSinceLastLoad + 1);
     } else {
         /* This is the first page load, so load everything */
         await updatePowerUsageGraph(60);
