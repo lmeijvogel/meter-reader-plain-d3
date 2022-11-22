@@ -14,7 +14,7 @@ export function getClosestIndex(
     series: { timestamp: Date }[],
     pointerX: number = d3.pointer(event)[0]
 ): ClosestIndex {
-    var bisect = d3.bisector((d: { timestamp: Date }) => d.timestamp).right;
+    const bisect = d3.bisector((d: { timestamp: Date }) => d.timestamp).right;
 
     const pointerDate = scaleX.invert(pointerX);
 

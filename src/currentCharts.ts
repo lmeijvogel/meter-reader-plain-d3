@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import { differenceInMinutes, subHours } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
+import { mergeNewWithOldValues } from "./helpers/mergeNewWithOldValues";
 import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
 import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { LastHourDescription } from "./models/PeriodDescription";
@@ -76,7 +77,7 @@ const powerUsage: CurrentFields = {
 async function updatePowerUsageGraph(minutes: number = 1) {
     const newValues = await retrievePowerUsage(minutes);
 
-    powerUsage.current = addAndReplaceValues(powerUsage.current, newValues.current);
+    powerUsage.current = mergeNewWithOldValues(newValues.current, powerUsage.current);
 
     drawPowerUsage(powerUsage);
 }
@@ -87,33 +88,6 @@ async function getLatestPowerUsage() {
     const currentValueInW = newValues.current[0].value * 1000;
 
     updateCurrentUsageGauge(currentValueInW);
-}
-
-function addAndReplaceValues(existing: ValueWithTimestamp[], newValues: ValueWithTimestamp[]): ValueWithTimestamp[] {
-    if (existing.length === 0) {
-        return newValues;
-    }
-
-    const tooOld = subHours(new Date(), 1);
-
-    /* For this whole function, I'm assuming both lists are sorted */
-    const maxValue = existing.at(-1)!.timestamp;
-
-    const bisect = d3.bisector((d: { timestamp: Date }) => d.timestamp).right;
-
-    const indexOfOlderItems = bisect(existing, tooOld);
-    const indexOfNewerItems = bisect(newValues, maxValue!);
-
-    /* Apparently, the last value of each batch is "special",
-     * it is not aligned on 6 seconds, as are the other ones.
-     *
-     * These values tend to accumulate (albeit slowly) if I
-     * don't filter them out (the -1 in the first slice).
-     *
-     * I only filter them out of the previous batch, because
-     * including the value at the end _is_ more accurate.
-     */
-    return [...existing.slice(indexOfOlderItems, -1), ...newValues.slice(indexOfNewerItems)];
 }
 
 function drawPowerUsage(fieldsKW: CurrentFields) {
