@@ -12,7 +12,7 @@ const startAngleFromTop = (2 * Math.PI) / 3;
 const width = 480;
 const height = 240;
 
-const defaultTransform = `translate(${width / 2}, ${height / 2})`;
+const defaultTransform = `translate(${width / 2}, ${height / 2 + 20})`;
 
 const outerSize = 110;
 
@@ -67,6 +67,39 @@ export function gauge() {
             .style("stroke", "black")
             .style("stroke-width", "1px")
             .attr("d", scaleArcBorder as any);
+    };
+
+    const renderTicks = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+        const ticksContainer = svg.select(".ticks");
+
+        d3.union(
+            store.domain,
+            store.colorRanges.map((r) => r.start)
+        ).forEach((value) => {
+            const rotationRad = scale(value);
+            ticksContainer
+                .append("line")
+                .style("stroke", "black")
+                .attr("x1", 0)
+                .attr("x2", 0)
+                .attr("y1", -outerSize - 10)
+                .attr("y2", -outerSize)
+                .attr("transform", `rotate(${radToDeg(rotationRad)})`);
+
+            const textX = Math.sin(rotationRad) * (outerSize + 15);
+            const textY = -Math.cos(rotationRad) * (outerSize + 15);
+
+            const marginX = value < 0 ? -10 : 10;
+
+            ticksContainer
+                .append("text")
+                .attr("text-anchor", value < 0 ? "end" : value > 0 ? "start" : "middle")
+                .attr("dominant-baseline", value === 0 ? "baseline" : "middle")
+                .text(value)
+                .attr("x", textX)
+                .attr("y", textY)
+                .style("stroke", "none");
+        });
     };
 
     function getCurrentAngle(el: d3.BaseType) {
@@ -167,6 +200,7 @@ export function gauge() {
 
                 addSvgChildTags(selection);
                 renderScale(selection);
+                renderTicks(selection);
             }
             renderGraph(selection);
 
@@ -184,6 +218,7 @@ function radToDeg(rad: number) {
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
     selection.append("path").attr("class", "scaleBorder").attr("transform", defaultTransform);
     selection.append("g").attr("class", "scales").attr("transform", defaultTransform);
+    selection.append("g").attr("class", "ticks").attr("transform", defaultTransform);
 
     selection.append("path").attr("class", "needle").attr("transform", defaultTransform);
     selection.append("circle").attr("class", "needlePin").attr("transform", defaultTransform);
