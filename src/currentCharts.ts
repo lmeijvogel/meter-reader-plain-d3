@@ -13,8 +13,10 @@ const powerUsageGauge = gauge()
     .domain([-3000, 3000])
     .colors([
         { start: -3000, color: "#55ff11" },
-        { start: 0, color: "#bbff33" },
-        { start: 500, color: "#ffbb33" },
+        { start: -2000, color: "#88ff22" },
+        { start: -1000, color: "#bbff33" },
+        { start: 0, color: "#ffff00" },
+        { start: 1000, color: "#ffbb33" },
         { start: 2000, color: "#ff3333" }
     ]);
 
