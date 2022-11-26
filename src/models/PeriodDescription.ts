@@ -8,6 +8,7 @@ import {
     endOfHour,
     endOfMonth,
     endOfYear,
+    getDaysInMonth,
     isEqual,
     startOfDay,
     startOfMinute,
@@ -71,6 +72,8 @@ export abstract class PeriodDescription {
         return this.toDate() > new Date();
     }
 
+    abstract isValid(): boolean;
+
     toShortTitle(): string {
         return this.toTitle();
     }
@@ -83,7 +86,7 @@ export abstract class PeriodDescription {
     abstract endOfPeriod(): Date;
 
     abstract atDate(date: Date): PeriodDescription;
-    atIndex(index: number): PeriodDescription {
+    atIndex(_index: number): PeriodDescription {
         return this; // TODO: Fix in all subclasses
     }
 }
@@ -163,11 +166,15 @@ export class YearDescription extends PeriodDescription {
     }
 
     atIndex(index: number) {
-        return new MonthDescription(this.year, index);
+        return new MonthDescription(this.year, index - 1);
     }
 
     normalize(date: Date) {
         return startOfMonth(date);
+    }
+
+    isValid() {
+        return true;
     }
 }
 
@@ -202,7 +209,7 @@ export class MonthDescription extends PeriodDescription {
         return new MonthDescription(date.getFullYear(), date.getMonth());
     }
 
-    up() {
+    up(): YearDescription {
         return new YearDescription(this.year);
     }
 
@@ -261,6 +268,10 @@ export class MonthDescription extends PeriodDescription {
     normalize(date: Date) {
         return startOfDay(date);
     }
+
+    isValid() {
+        return 0 <= this.month && this.month <= 11;
+    }
 }
 
 export class DayDescription extends PeriodDescription {
@@ -293,7 +304,7 @@ export class DayDescription extends PeriodDescription {
         return new DayDescription(date.getFullYear(), date.getMonth(), date.getDate());
     }
 
-    up() {
+    up(): MonthDescription {
         return new MonthDescription(this.year, this.month);
     }
 
@@ -365,6 +376,18 @@ export class DayDescription extends PeriodDescription {
         const utcDate = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours());
 
         return new Date(utcDate);
+    }
+
+    isValid() {
+        if (!this.up().isValid()) {
+            return false;
+        }
+
+        if (this.day < 1 || this.day > getDaysInMonth(this.startOfPeriod())) {
+            return false;
+        }
+
+        return true;
     }
 }
 
@@ -489,6 +512,10 @@ export class LastHourDescription extends HourDescription {
     getChartTicks() {
         return d3.timeMinute.every(5)!;
     }
+
+    isValid() {
+        return true;
+    }
 }
 
 export class MinuteDescription extends PeriodDescription {
@@ -555,11 +582,16 @@ export class MinuteDescription extends PeriodDescription {
     toShortTitle() {
         return `${this.hour}:${this.minute}`;
     }
+
+    isValid() {
+        return true;
+    }
 }
 
 function now() {
     return new Date();
 }
+
 export function deserializePeriodDescription(input: any): PeriodDescription {
     switch (input.type) {
         case "DayDescription":

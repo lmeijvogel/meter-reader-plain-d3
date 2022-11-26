@@ -17,40 +17,45 @@ export function initKeyboardListener(
             return;
         }
 
+        if (event.key >= "0" && event.key <= "9") {
+            handleDigit(event.key);
+            return;
+        }
+
+        let newPeriod: PeriodDescription | null = null;
+
         switch (event.key) {
             case "h":
             case "ArrowLeft":
-                periodSelected(currentPeriod.previous());
+                newPeriod = currentPeriod.previous();
                 break;
             case "l":
             case "ArrowRight":
                 if (!currentPeriod.next().isInFuture()) {
-                    periodSelected(currentPeriod.next());
+                    newPeriod = currentPeriod.next();
                 }
                 break;
             case "k":
             case "u":
             case "ArrowUp":
                 if (!(currentPeriod instanceof YearDescription)) {
-                    const up = currentPeriod.up();
-
-                    if (!!up) {
-                        periodSelected(up);
-                    }
+                    newPeriod = currentPeriod.up();
                 }
                 break;
             case "t":
             case "T":
-                periodSelected(DayDescription.today());
+                newPeriod = DayDescription.today();
                 break;
 
             case "Enter":
-                handleEnter();
+                newPeriod = handleEnter();
                 break;
+            default:
+                return;
         }
 
-        if (event.key >= "0" && event.key <= "9") {
-            handleDigit(event.key);
+        if (newPeriod?.isValid()) {
+            periodSelected(newPeriod);
         }
     });
 
@@ -58,7 +63,7 @@ export function initKeyboardListener(
         digitStack += digit;
     }
 
-    function handleEnter() {
+    function handleEnter(): PeriodDescription | null {
         const number = parseInt(digitStack);
 
         digitStack = "";
@@ -66,11 +71,11 @@ export function initKeyboardListener(
         if (!!number) {
             const periodDescription = getCurrentPeriod()?.atIndex(number);
 
-            if (!periodDescription) {
-                return;
+            if (periodDescription) {
+                return periodDescription;
             }
-
-            periodSelected(periodDescription);
         }
+
+        return null;
     }
 }
