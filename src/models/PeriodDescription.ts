@@ -162,6 +162,10 @@ export class YearDescription extends PeriodDescription {
         return new MonthDescription(date.getFullYear(), date.getMonth());
     }
 
+    atIndex(index: number) {
+        return new MonthDescription(this.year, index);
+    }
+
     normalize(date: Date) {
         return startOfMonth(date);
     }
@@ -248,6 +252,10 @@ export class MonthDescription extends PeriodDescription {
 
     atDate(date: Date): DayDescription {
         return new DayDescription(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    atIndex(index: number) {
+        return new DayDescription(this.year, this.month, index);
     }
 
     normalize(date: Date) {

@@ -26,6 +26,9 @@ const navigation = initializeNavigation(retrieveAndDrawPeriodCharts);
 
 let previousPeriod: PeriodDescription | null = null;
 
+initKeyboardListener(retrieveAndDrawPeriodCharts, () => previousPeriod);
+import { initKeyboardListener } from "./initKeyboardListener";
+
 const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")[] = [
     "gas",
     "stroom",
