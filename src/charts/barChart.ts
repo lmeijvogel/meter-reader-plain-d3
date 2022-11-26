@@ -49,7 +49,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             .data(store.data)
             .join("rect")
             .on("click", (_event: any, d) => {
-                const clickedPeriod = periodDescription.atIndex(d.timestamp);
+                const clickedPeriod = periodDescription.atDate(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
             .transition()

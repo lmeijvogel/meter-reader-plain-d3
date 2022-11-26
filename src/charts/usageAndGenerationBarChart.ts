@@ -73,7 +73,7 @@ export function usageAndGenerationBarChart(
             .data(data)
             .join("rect")
             .on("click", (_event: any, d) => {
-                const clickedPeriod = store.periodDescription.atIndex(d.timestamp);
+                const clickedPeriod = store.periodDescription.atDate(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
             .transition()

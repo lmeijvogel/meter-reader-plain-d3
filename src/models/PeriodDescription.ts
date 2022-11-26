@@ -82,7 +82,10 @@ export abstract class PeriodDescription {
     abstract startOfPeriod(): Date;
     abstract endOfPeriod(): Date;
 
-    abstract atIndex(date: Date): PeriodDescription;
+    abstract atDate(date: Date): PeriodDescription;
+    atIndex(index: number): PeriodDescription {
+        return this; // TODO: Fix in all subclasses
+    }
 }
 
 export class YearDescription extends PeriodDescription {
@@ -155,7 +158,7 @@ export class YearDescription extends PeriodDescription {
         return addDays(date, -15);
     }
 
-    atIndex(date: Date): MonthDescription {
+    atDate(date: Date): MonthDescription {
         return new MonthDescription(date.getFullYear(), date.getMonth());
     }
 
@@ -243,7 +246,7 @@ export class MonthDescription extends PeriodDescription {
         return "%a %d-%m-%Y";
     }
 
-    atIndex(date: Date): DayDescription {
+    atDate(date: Date): DayDescription {
         return new DayDescription(date.getFullYear(), date.getMonth(), date.getDate());
     }
 
@@ -342,7 +345,7 @@ export class DayDescription extends PeriodDescription {
         return addMinutes(date, -30);
     }
 
-    atIndex(_date: Date): DayDescription {
+    atDate(_date: Date): DayDescription {
         return this; // HourDescription is not fully supported.
     }
 
@@ -433,7 +436,7 @@ export class HourDescription extends PeriodDescription {
         return endOfHour(this.startOfPeriod());
     }
 
-    atIndex(date: Date) {
+    atDate(date: Date) {
         return new MinuteDescription(date.getHours(), date.getMinutes());
     }
 
@@ -536,7 +539,8 @@ export class MinuteDescription extends PeriodDescription {
     endOfPeriod(): Date {
         throw new Error("Method not implemented.");
     }
-    atIndex(_date: Date): PeriodDescription {
+
+    atDate(_date: Date): PeriodDescription {
         throw new Error("Method not implemented.");
     }
 
