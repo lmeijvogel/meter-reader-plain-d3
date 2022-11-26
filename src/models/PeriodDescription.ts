@@ -484,11 +484,21 @@ export class HourDescription extends PeriodDescription {
     normalize(date: Date) {
         return startOfMinute(date);
     }
+
+    isValid() {
+        if (!this.up().isValid()) {
+            return false;
+        }
+
+        return 0 <= this.hour && this.hour <= 23;
+    }
 }
 
 export class LastHourDescription extends HourDescription {
     constructor() {
-        super(now().getFullYear(), now().getMonth(), now().getDate(), now().getHours());
+        const now = new Date();
+
+        super(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
     }
 
     override endOfPeriod() {
@@ -586,10 +596,6 @@ export class MinuteDescription extends PeriodDescription {
     isValid() {
         return true;
     }
-}
-
-function now() {
-    return new Date();
 }
 
 export function deserializePeriodDescription(input: any): PeriodDescription {
