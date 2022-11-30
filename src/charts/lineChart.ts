@@ -42,8 +42,6 @@ const xAxisHeight = 20;
 const axisWidth = 50;
 
 export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
-    const randomId = uuid.v4();
-
     const store: Store = {
         animate: true,
         lineColors: new Map(),
@@ -180,6 +178,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .y((d) => scaleY(d.value));
 
         if (!!fill) {
+            selection.select("defs").remove();
+            selection.append("defs");
+
             drawGradient(selection, fill, series, "positive");
             drawGradient(selection, fill, series, "negative");
         }
@@ -203,6 +204,24 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         series: ValueWithTimestamp[],
         areaRange: "positive" | "negative"
     ) {
+        /* I can't think of a better way to store the random id.
+         * I want it to be random for these reasons:
+         * - I don't want name clashes,
+         * - I don't want to make it depend on the fieldName, because
+         *   I might want to add more graphs for the same field
+         *
+         * I need to define it per-graph, but only once, so I'm storing it
+         * in the DOM.
+         *
+         */
+        let randomId = selection.attr("data-gradient-random-id");
+
+        if (!randomId) {
+            randomId = uuid.v4();
+
+            selection.attr("data-gradient-random-id", randomId);
+        }
+
         const gradientId = `areaGradient_${areaRange}_${randomId}`;
 
         const limitFunction =
@@ -219,7 +238,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
         if (!gradientExists) {
             const areaGradient = selection
-                .append("defs")
+                .select("defs")
                 .append("linearGradient")
                 .attr("id", gradientId)
                 .attr("x1", "0%")
