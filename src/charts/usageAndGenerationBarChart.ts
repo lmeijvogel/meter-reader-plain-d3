@@ -9,6 +9,7 @@ import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
 import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { PowerSourcesAndBackDelivery } from "./barChartHelpers/Types";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
+import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageColor } from "../colors";
 
 type Data = {
     consumption: ValueWithTimestamp[];
@@ -147,7 +148,7 @@ export function usageAndGenerationBarChart(
             .attr("x2", (x) => x + scaleX.bandwidth() / 2)
             .attr("y1", padding.top)
             .attr("y2", height - padding.bottom - xAxisHeight)
-            .attr("stroke", "#333")
+            .attr("stroke", darkGrey)
             .attr("stroke-width", 1);
     }
 
@@ -204,9 +205,9 @@ export function usageAndGenerationBarChart(
             registerEventHandlers(selection);
             updateScales(selection, firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
 
-            drawBars(selection, store.data, "solarSource", "#55ff10", "gridSource");
-            drawBars(selection, store.data, "gridSource", "#f0ad4e");
-            drawBars(selection, store.data, "backDelivery", "#55ff10");
+            drawBars(selection, store.data, "solarSource", stroomGenerationColor, "gridSource");
+            drawBars(selection, store.data, "gridSource", stroomUsageColor);
+            drawBars(selection, store.data, "backDelivery", stroomBackDeliveryColor);
 
             firstDrawCall = false;
         }

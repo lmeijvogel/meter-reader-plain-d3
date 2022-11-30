@@ -12,6 +12,17 @@ import { initializeCurrentCharts } from "./currentCharts";
 import { initIcons } from "./icons";
 import { addCards, setCardTitle } from "./vizCard";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
+import {
+    darkGasGraphColor,
+    darkGenerationGraphColor,
+    darkStroomUsageColor,
+    darkWaterGraphColor,
+    gasGraphColor,
+    generationGraphColor,
+    stroomUsageColor,
+    waterGraphColor,
+    white
+} from "./colors";
 
 const cardsPerRow = [
     ["recent_current", "current_power_gauge"],
@@ -49,7 +60,7 @@ loadData("gas", "last_year").then((result) => {
     setCardTitle(chartContainer, "Gas laatste jaar");
 
     heatMap("year")
-        .colors("#ffffff", "#e73710", "#791d09")
+        .colors(white, gasGraphColor, darkGasGraphColor)
         .data(result)
         .unit("m³")
         .tickFormat(formatMonthNames)
@@ -62,7 +73,7 @@ loadData("stroom", "last_year").then((result) => {
     setCardTitle(chartContainer, "Stroom laatste jaar");
 
     heatMap("year")
-        .colors("#ffffff", "#f0ad4e", "#784805")
+        .colors(white, stroomUsageColor, darkStroomUsageColor)
         .data(result)
         .unit("kWh")
         .tickFormat(formatMonthNames)
@@ -75,7 +86,7 @@ loadData("generation", "last_year").then((result) => {
     setCardTitle(chartContainer, "Opwek laatste jaar");
 
     heatMap("year")
-        .colors("#ffffff", "#88ff28", "#22aa08")
+        .colors(white, generationGraphColor, darkGenerationGraphColor)
         .data(result)
         .unit("Wh")
         .tickFormat(formatMonthNames)
@@ -88,7 +99,7 @@ loadData("water", "last_year").then((result) => {
     setCardTitle(chartContainer, "Water laatste jaar");
 
     heatMap("year")
-        .colors("#ffffff", "#428bca", "#224767")
+        .colors(white, waterGraphColor, darkWaterGraphColor)
         .data(result)
         .unit("L")
         .tickFormat(formatMonthNames)
@@ -101,7 +112,7 @@ loadData("gas", "last_30_days").then((result) => {
     setCardTitle(chartContainer, "Gas laatste 30 dagen");
 
     heatMap("30_days")
-        .colors("#ffffff", "#e73710", "#791d09")
+        .colors(white, gasGraphColor, darkGasGraphColor)
         .data(result)
         .unit("m³")
         .tickFormat((value: Date) => getDate(value).toString())
@@ -113,7 +124,7 @@ loadData("stroom", "last_30_days").then((result) => {
     setCardTitle(chartContainer, "Stroom laatste 30 dagen");
 
     heatMap("30_days")
-        .colors("#ffffff", "#f0ad4e", "#784805")
+        .colors(white, stroomUsageColor, darkStroomUsageColor)
         .min(0.1)
         .data(result)
         .unit("kWh")
@@ -126,7 +137,7 @@ loadData("generation", "last_30_days").then((result) => {
     setCardTitle(chartContainer, "Opwek laatste 30 dagen");
 
     heatMap("30_days")
-        .colors("#ffffff", "#88ff28", "#22aa08")
+        .colors(white, generationGraphColor, darkGenerationGraphColor)
         .min(0.1)
         .data(result)
         .unit("Wh")
@@ -139,7 +150,7 @@ loadData("water", "last_30_days").then((result) => {
     setCardTitle(chartContainer, "Water laatste 30 dagen");
 
     heatMap("30_days")
-        .colors("#ffffff", "#428bca", "#224767")
+        .colors(white, waterGraphColor, darkWaterGraphColor)
         .data(result)
         .unit("L")
         .tickFormat((value: Date) => getDate(value).toString())

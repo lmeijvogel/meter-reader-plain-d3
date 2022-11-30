@@ -1,7 +1,18 @@
 import * as d3 from "d3";
-import { differenceInMinutes, subHours } from "date-fns";
+import { differenceInMinutes } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
+import {
+    black,
+    gaugeBadColor,
+    gaugeGoodColor,
+    gaugeMildColor,
+    gaugeOkColor,
+    gaugeVeryGoodColor,
+    gaugeWorseColor,
+    stroomGenerationColorForCurrentGraph,
+    stroomUsageColorForCurrentGraph
+} from "./colors";
 import { mergeNewWithOldValues } from "./helpers/mergeNewWithOldValues";
 import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
 import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
@@ -12,12 +23,12 @@ import { setCardTitle } from "./vizCard";
 const powerUsageGauge = gauge()
     .domain([-3000, 3000])
     .colors([
-        { start: -3000, color: "#55ff11" },
-        { start: -2000, color: "#88ff22" },
-        { start: -1000, color: "#bbff33" },
-        { start: 0, color: "#ffff00" },
-        { start: 1000, color: "#ffbb33" },
-        { start: 2000, color: "#ff3333" }
+        { start: -3000, color: gaugeVeryGoodColor },
+        { start: -2000, color: gaugeGoodColor },
+        { start: -1000, color: gaugeOkColor },
+        { start: 0, color: gaugeMildColor },
+        { start: 1000, color: gaugeBadColor },
+        { start: 2000, color: gaugeWorseColor }
     ]);
 
 const lastHourDescription = new LastHourDescription();
@@ -100,7 +111,10 @@ function drawPowerUsage(fieldsKW: CurrentFields) {
     const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
     recentCurrentGraph
-        .setSeries("current", currentInW, "black", { positive: "#f0ad4e", negative: "#adf04e" })
+        .setSeries("current", currentInW, black, {
+            positive: stroomUsageColorForCurrentGraph,
+            negative: stroomGenerationColorForCurrentGraph
+        })
         .animate(false);
 
     recentCurrentContainer.call(recentCurrentGraph.call);

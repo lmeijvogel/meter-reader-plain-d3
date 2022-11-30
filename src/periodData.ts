@@ -28,6 +28,20 @@ let previousPeriod: PeriodDescription | null = null;
 
 initKeyboardListener(retrieveAndDrawPeriodCharts, () => previousPeriod);
 import { initKeyboardListener } from "./initKeyboardListener";
+import {
+    darkGenerationGraphColor,
+    gasGraphColor,
+    generationGraphColor,
+    grey,
+    huiskamerColor,
+    lightGrey,
+    stroomGenerationColor,
+    temperatuurHuiskamerColor,
+    temperatuurTuinkamerColor,
+    temperatuurZolderColor,
+    waterGraphColor,
+    white
+} from "./colors";
 
 const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")[] = [
     "gas",
@@ -98,7 +112,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             const api = barChart(periodDescription, graphDescription)
                 .onClick(retrieveAndDrawPeriodCharts)
                 .data(values)
-                .color("#e73710");
+                .color(gasGraphColor);
 
             const cardTitle = createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
             setCardTitle(periodGasContainer, cardTitle);
@@ -120,7 +134,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
                 .onClick(retrieveAndDrawPeriodCharts)
                 .clearCanvas(shouldClearCanvas)
                 .data(values)
-                .color("#428bca");
+                .color(waterGraphColor);
 
             const cardTitle = createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
             setCardTitle(periodWaterContainer, cardTitle);
@@ -180,12 +194,12 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             if (periodDescription instanceof DayDescription) {
                 api = lineChart(periodDescription, graphDescription)
                     .minMaxCalculation("minMax", "max")
-                    .setSeries("opwekking", valuesInKWhPer15m, "#22aa08", {
-                        positive: "#88ff28",
-                        negative: "#ffffff" // The values will never be negative
+                    .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, {
+                        positive: generationGraphColor,
+                        negative: white // The values will never be negative
                     })
-                    .setSeries("gemiddelde", averagesValues, "#bbb")
-                    .setSeries("max", maxValues, "#888");
+                    .setSeries("gemiddelde", averagesValues, lightGrey)
+                    .setSeries("max", maxValues, grey);
             } else {
                 api = barChart(periodDescription, graphDescription)
                     .data(valuesInKWhPer15m)
@@ -271,9 +285,9 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
                 .clearCanvas(shouldClearCanvas);
 
             [
-                ["huiskamer", "#ff0000"],
-                ["zolder", "#0000ff"],
-                ["tuinkamer", "#00ff00"]
+                ["huiskamer", temperatuurHuiskamerColor],
+                ["zolder", temperatuurZolderColor],
+                ["tuinkamer", temperatuurTuinkamerColor]
             ].forEach((set) => {
                 const [key, color] = set;
                 const series = result.get(key);

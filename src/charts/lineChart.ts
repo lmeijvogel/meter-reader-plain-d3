@@ -8,6 +8,7 @@ import { assertNever } from "../lib/assertNever";
 import { GraphDescription } from "../models/GraphDescription";
 import { getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
+import { white } from "../colors";
 
 type FillColors = {
     positive: string;
@@ -227,7 +228,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .attr("y2", "100%");
 
             areaGradient.append("stop").attr("offset", "40%").attr("stop-color", fill[areaRange]);
-            areaGradient.append("stop").attr("offset", "100%").attr("stop-color", "#fff");
+            areaGradient.append("stop").attr("offset", "100%").attr("stop-color", white);
         }
 
         selection

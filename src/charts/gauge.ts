@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { grey } from "../colors";
 
 type Store = {
     currentValue: number;
@@ -148,7 +149,7 @@ export function gauge() {
                 };
             });
 
-        svg.select("circle.needlePin").attr("cx", 0).attr("cy", 0).attr("r", "2px").attr("fill", "#888");
+        svg.select("circle.needlePin").attr("cx", 0).attr("cy", 0).attr("r", "2px").attr("fill", grey);
 
         svg.select("g.number")
             .selectAll("text")

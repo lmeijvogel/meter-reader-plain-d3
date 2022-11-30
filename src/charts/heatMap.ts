@@ -1,6 +1,6 @@
-// import classNames from "classnames";
 import * as d3 from "d3";
 import { format, getDate, getHours, getMonth, startOfDay, startOfMonth, subDays, subYears } from "date-fns";
+import { black, grey, white } from "../colors";
 import { monthNames } from "../lib/monthNames";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { hideTooltip, showTooltip } from "../tooltip";
@@ -44,9 +44,9 @@ export function formatMonthNames(domainValue: d3.NumberValue): string {
 
 export function heatMap(graphType: GraphType) {
     const store: Store = {
-        lightColor: "#ffffff",
-        midColor: "#808080",
-        darkColor: "000000",
+        lightColor: white,
+        midColor: grey,
+        darkColor: black,
         data: [],
         cellWidth: 10,
         cellHeight: 10,

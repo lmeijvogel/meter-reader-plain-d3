@@ -7,6 +7,7 @@ import { getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
 import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
 import { initScales, updateScales } from "./barChartHelpers/updateScales";
+import { grey, lightGrey } from "../colors";
 
 type Store = {
     periodDescription: PeriodDescription;
@@ -27,8 +28,8 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         tooltipDateFormat: periodDescription.timeFormatString(),
         relativeMinMax: true,
         data: [],
-        color: "#888888",
-        colorLight: "#bbbbbb",
+        color: grey,
+        colorLight: lightGrey,
         onValueClick: () => {},
         clearCanvas: false,
         firstDrawCall: true,
