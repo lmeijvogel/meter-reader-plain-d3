@@ -233,16 +233,13 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             areaGradient.append("stop").attr("offset", "100%").attr("stop-color", white);
         }
 
-        selection
-            .selectAll(`path.area_${areaRange}`)
-            .data([series])
-            .join("path")
-            .transition()
-            .duration(firstDrawCall ? 0 : 200)
+        const path = selection.selectAll(`path.area_${areaRange}`).data([series]).join("path");
 
-            .attr("class", `area_${areaRange}`)
-            .attr("fill", `url(#${gradientId})`)
-            .attr("d", area);
+        if (store.animate) {
+            path.transition().duration(firstDrawCall ? 0 : 200);
+        }
+
+        path.attr("class", `area_${areaRange}`).attr("fill", `url(#${gradientId})`).attr("d", area);
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
