@@ -204,25 +204,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         series: ValueWithTimestamp[],
         areaRange: "positive" | "negative"
     ) {
-        /* I can't think of a better way to store the random id.
-         * I want it to be random for these reasons:
-         * - I don't want name clashes,
-         * - I don't want to make it depend on the fieldName, because
-         *   I might want to add more graphs for the same field
-         *
-         * I need to define it per-graph, but only once, so I'm storing it
-         * in the DOM.
-         *
-         */
-        let randomId = selection.attr("data-gradient-random-id");
-
-        if (!randomId) {
-            randomId = uuid.v4();
-
-            selection.attr("data-gradient-random-id", randomId);
-        }
-
-        const gradientId = `areaGradient_${areaRange}_${randomId}`;
+        const randomId = getOrCreateRandomId(selection);
 
         const limitFunction =
             areaRange === "positive" ? (v: number) => Math.max(0.0, v) : (v: number) => Math.min(v, 0.0);
@@ -234,6 +216,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .y0(scaleY(-1.0))
             .y1((d) => scaleY(limitFunction(d.value)));
 
+        const gradientId = `areaGradient_${areaRange}_${randomId}`;
         const gradientExists = !!selection.select(`#${gradientId}`).node();
 
         if (!gradientExists) {
@@ -468,6 +451,30 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             /* Draw a vertical line as a visual aid */
             drawTooltipLine(selection, event);
         });
+    }
+
+    function getOrCreateRandomId(selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>) {
+        /* I can't think of a better way to store the random id.
+         * I want it to be random for these reasons:
+         * - I don't want name clashes,
+         * - I don't want to make it depend on the fieldName, because
+         *   I might want to add more graphs for the same field
+         *
+         * I need to define it per-graph, but only once, so I'm storing it
+         * in the DOM.
+         *
+         */
+        const existingId = selection.attr("data-gradient-random-id");
+
+        if (existingId) {
+            return existingId;
+        }
+
+        const newRandomId = uuid.v4();
+
+        selection.attr("data-gradient-random-id", newRandomId);
+
+        return newRandomId;
     }
 
     return api;
