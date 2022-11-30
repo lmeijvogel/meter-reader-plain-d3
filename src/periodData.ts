@@ -203,6 +203,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             } else {
                 api = barChart(periodDescription, graphDescription)
                     .data(valuesInKWhPer15m)
+                    .color(stroomGenerationColor)
                     .onClick(retrieveAndDrawPeriodCharts);
             }
 
