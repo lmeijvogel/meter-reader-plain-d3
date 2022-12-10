@@ -324,17 +324,20 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("class", "tooltipLine");
 
         /* Draw a circle on all matching lines */
-        const yValues = seriesCollectionValues.map((series, i) => series.series[closestIndices[i].index].value);
+        const yValues = seriesCollectionValues.map((series, i) => ({
+            value: series.series[closestIndices[i].index].value,
+            color: series.lineColor
+        }));
 
         tooltipLineSelector
             .selectAll("circle")
             .data(yValues)
             .join("circle")
             .attr("stroke", "black")
-            .attr("fill", "white")
+            .attr("fill", (d) => d.color)
             .attr("r", 4)
             .attr("cx", x)
-            .attr("cy", (d) => scaleY(d));
+            .attr("cy", (d) => scaleY(d.value));
     }
 
     function getHoverTooltipContents(event: any): string {
@@ -348,17 +351,19 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 var closestIndex = getClosestIndex(event, scaleX, series.series);
                 closestDate = closestIndex.timestamp;
 
-            return {
-                name: key,
-                value: series.series[closestIndex.index]?.value
-            };
-        });
+                return {
+                    name: key,
+                    value: series.series[closestIndex.index]?.value,
+                    color: series.lineColor
+                };
+            });
 
         const dateString = d3.timeFormat(periodDescription.timeFormatString())(closestDate);
 
         const valueLines = ys
             .map(
-                ({ name, value }) => `<tr>
+                ({ name, value, color }) => `<tr>
+                                            <td><div style="display: inline-block; width: 15px; height: 15px; border: 1px solid black; background-color: ${color}"></div></td>
                                             <td>${name}:</td>
                                             <td class="tableValue">${renderDisplayValue(value)}</td>
                                         </tr>`
