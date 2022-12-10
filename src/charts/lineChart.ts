@@ -6,7 +6,7 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { assertNever } from "../lib/assertNever";
 import { GraphDescription } from "../models/GraphDescription";
-import { getClosestIndex } from "../lib/getClosestIndex";
+import { ClosestIndex, getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
 import { white } from "../colors";
 
@@ -294,23 +294,24 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
         const tooltipLineSelector = selection.select(".tooltipLine");
 
-        const seriesCollectionValues = Array.from(store.seriesCollection.values());
+        // When measurements are missing, we of course don't want to try to include them.
+        const seriesCollectionValues = Array.from(store.seriesCollection.values()).filter(
+            (collection) => collection.series.length > 0
+        );
+
         const closestIndices = seriesCollectionValues.map((collection) =>
             getClosestIndex(event, scaleX, collection.series)
         );
 
-        const maxIndex = closestIndices.reduce(
-            (acc, el, index) => {
-                if (el.timestamp > acc.maxTimestamp) {
-                    return { maxTimestamp: el.timestamp, seriesIndexInArray: index };
-                } else {
-                    return acc;
-                }
-            },
-            { maxTimestamp: new Date(1970), seriesIndexInArray: -1 }
-        );
+        /* This is a bit of a dirty workaround for how we determine where to draw the line:
+         * Ideally, we would just use the cursor position, but because of how we're using
+         * d3, we first get the mouse position, then find the corresponding column and use that.
+         *
+         * Because we don't have the mouse position anymore, we have to determine it in a different way. :(
+         */
+        const timestamp = mostOccurringDate(closestIndices);
 
-        const x = scaleX(maxIndex.maxTimestamp);
+        const x = scaleX(timestamp);
 
         tooltipLineSelector
             .selectAll("line")
@@ -339,11 +340,13 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     function getHoverTooltipContents(event: any): string {
         let closestDate = new Date();
 
-        const ys = Array.from(store.seriesCollection.keys()).map((key) => {
-            const series = store.seriesCollection.get(key)!;
+        const ys = Array.from(store.seriesCollection.keys())
+            .filter((key) => store.seriesCollection.get(key)!.series.length > 0)
+            .map((key) => {
+                const series = store.seriesCollection.get(key)!;
 
-            var closestIndex = getClosestIndex(event, scaleX, series.series);
-            closestDate = closestIndex.timestamp;
+                var closestIndex = getClosestIndex(event, scaleX, series.series);
+                closestDate = closestIndex.timestamp;
 
             return {
                 name: key,
@@ -475,4 +478,30 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     return api;
+}
+
+function mostOccurringDate(closestIndices: ClosestIndex[]): Date {
+    const result = new Map<Date, number>();
+
+    for (const closestIndex of closestIndices) {
+        if (!result.has(closestIndex.timestamp)) {
+            result.set(closestIndex.timestamp, 0);
+        }
+
+        const count = result.get(closestIndex.timestamp)!;
+        result.set(closestIndex.timestamp, count + 1);
+    }
+
+    const entries = Array.from(result.entries());
+    const init: [Date, number] = [new Date(), -1];
+
+    const mostOccurringEntry = entries.reduce((acc, el) => {
+        if (el[1] > acc[1]) {
+            return el;
+        } else {
+            return acc;
+        }
+    }, init);
+
+    return mostOccurringEntry[0];
 }
