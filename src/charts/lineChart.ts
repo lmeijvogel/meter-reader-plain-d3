@@ -362,14 +362,14 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
         const valueLines = ys
             .map(
-                ({ name, value, color }) => `<tr>
-                                            <td><div style="display: inline-block; width: 15px; height: 15px; border: 1px solid black; background-color: ${color}"></div></td>
-                                            <td>${name}:</td>
-                                            <td class="tableValue">${renderDisplayValue(value)}</td>
-                                        </tr>`
+                ({ name, value, color }) => `
+                                            <span style="display: inline-block; width: 15px; height: 15px; border: 1px solid black; background-color: ${color}"></span>
+                                            <span>${name}:</span>
+                                            <span class="tableValue">${renderDisplayValue(value)}</span>
+                                        `
             )
             .join("");
-        return `<b>${dateString}</b><table><tbody>${valueLines}</tbody></table>`;
+        return `<b>${dateString}</b><div class="valueLinesTooltip">${valueLines}</div>`;
     }
 
     function getBrushTooltipContents(event: any): string {
