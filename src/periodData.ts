@@ -199,7 +199,8 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
                         negative: white // The values will never be negative
                     })
                     .setSeries("gemiddelde", averagesValues, lightGrey)
-                    .setSeries("max", maxValues, grey);
+                    .setSeries("max", maxValues, grey)
+                    .renderOutsideLightShading(true);
             } else {
                 api = barChart(periodDescription, graphDescription)
                     .data(valuesInKWhPer15m)

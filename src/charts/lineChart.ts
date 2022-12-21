@@ -9,6 +9,9 @@ import { GraphDescription } from "../models/GraphDescription";
 import { ClosestIndex, getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
 import { white } from "../colors";
+import { getTimes } from "suncalc";
+import { drawTimeBands } from "../drawTimeBands";
+import { addDays } from "date-fns";
 
 type FillColors = {
     positive: string;
@@ -26,6 +29,7 @@ type Store = {
     seriesCollection: SeriesCollection;
     domain?: [number, number];
     clearCanvas: boolean;
+    renderOutsideLightShading: boolean;
 };
 
 const padding = {
@@ -49,7 +53,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         minMaxCalculation: "explicit",
         minMaxCalculationField: undefined,
         seriesCollection: new Map(),
-        clearCanvas: false
+        clearCanvas: false,
+        renderOutsideLightShading: false
     };
 
     let firstDrawCall = true;
@@ -95,6 +100,12 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
         clearCanvas: (value: boolean) => {
             store.clearCanvas = value;
+
+            return api;
+        },
+
+        renderOutsideLightShading: (value: boolean) => {
+            store.renderOutsideLightShading = value;
 
             return api;
         },
@@ -161,9 +172,26 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 drawValues(series.series, series.lineColor, g, series.fill);
             });
 
+            if (store.renderOutsideLightShading) {
+                drawTimesOfDay(selection);
+            }
+
             return api;
         }
     };
+    function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        const [latitude, longitude] = [51.922909, 4.47059];
+
+        // For some reason, `getTimes` returns the times on the previous day.
+        // I don't know why so this fix will probably break soon.
+        const date = addDays(periodDescription.toDate(), 1);
+        const times = getTimes(date, latitude, longitude);
+
+        const g = svg.select("g.additionalInfo");
+        const bandHeight = scaleY(0) - padding.top;
+
+        drawTimeBands(g, times, scaleX, padding.top, bandHeight, padding.left + axisWidth, width - padding.right);
+    }
 
     function drawValues(
         series: ValueWithTimestamp[],
@@ -243,11 +271,13 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        ["gridLines", "values", "xAxis axis", "yAxis axis", "tooltipLine", "brush"].forEach((className) => {
-            const g = selection.append("g");
+        ["gridLines", "additionalInfo", "values", "xAxis axis", "yAxis axis", "tooltipLine", "brush"].forEach(
+            (className) => {
+                const g = selection.append("g");
 
-            g.attr("class", className);
-        });
+                g.attr("class", className);
+            }
+        );
     }
 
     function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
