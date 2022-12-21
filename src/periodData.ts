@@ -33,7 +33,6 @@ import {
     gasGraphColor,
     generationGraphColor,
     grey,
-    huiskamerColor,
     lightGrey,
     stroomGenerationColor,
     temperatuurHuiskamerColor,
