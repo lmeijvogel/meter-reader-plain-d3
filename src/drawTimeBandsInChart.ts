@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { GetTimesResult } from "suncalc";
 
-export function drawTimeBands(
+export function drawTimeBandsInChart(
     g: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
     times: GetTimesResult,
     scaleX: d3.ScaleTime<number, number, never>,

@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import * as uuid from "uuid";
 
-import { PeriodDescription } from "../models/PeriodDescription";
+import { DayDescription, PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { assertNever } from "../lib/assertNever";
@@ -9,9 +9,11 @@ import { GraphDescription } from "../models/GraphDescription";
 import { ClosestIndex, getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
 import { white } from "../colors";
-import { getTimes } from "suncalc";
-import { drawTimeBands } from "../drawTimeBands";
 import { addDays } from "date-fns";
+import { HouseLocation } from "../models/HouseLocation";
+import { getTimes } from "suncalc";
+import { drawTimeBandsInChart } from "../drawTimeBandsInChart";
+import { drawSolarIncidenceInChart } from "../drawSolarIncidenceInChart";
 
 type FillColors = {
     positive: string;
@@ -159,13 +161,15 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 .style("font-size", "13pt")
                 .call(yAxis as any);
 
+            const valuesSelection = selection.select(".values");
+
             store.seriesCollection.forEach((series, name) => {
                 const seriesGClassName = `series_${name}`;
 
-                let g = selection.select<SVGGElement>(`.${seriesGClassName}`);
+                let g = valuesSelection.select<SVGGElement>(`.${seriesGClassName}`);
 
                 if (!g.node()) {
-                    g = selection.insert("g", "g.xAxis");
+                    g = valuesSelection.insert("g", "g.xAxis");
                     g.attr("class", seriesGClassName).attr("width", width).attr("height", height);
                 }
 
@@ -179,18 +183,27 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             return api;
         }
     };
-    function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        const [latitude, longitude] = [51.922909, 4.47059];
 
+    function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         // For some reason, `getTimes` returns the times on the previous day.
         // I don't know why so this fix will probably break soon.
         const date = addDays(periodDescription.toDate(), 1);
-        const times = getTimes(date, latitude, longitude);
+        const times = getTimes(date, HouseLocation.latitude, HouseLocation.longitude);
 
-        const g = svg.select("g.additionalInfo");
+        const g = svg.select("g.daylightUnderlay");
         const bandHeight = scaleY(0) - padding.top;
 
-        drawTimeBands(g, times, scaleX, padding.top, bandHeight, padding.left + axisWidth, width - padding.right);
+        drawTimeBandsInChart(
+            g,
+            times,
+            scaleX,
+            padding.top,
+            bandHeight,
+            padding.left + axisWidth,
+            width - padding.right
+        );
+
+        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), periodDescription, minimumY, maximumY, scaleX);
     }
 
     function drawValues(
@@ -271,13 +284,20 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        ["gridLines", "additionalInfo", "values", "xAxis axis", "yAxis axis", "tooltipLine", "brush"].forEach(
-            (className) => {
-                const g = selection.append("g");
+        [
+            "gridLines",
+            "daylightUnderlay",
+            "values",
+            "solarIncidence",
+            "xAxis axis",
+            "yAxis axis",
+            "tooltipLine",
+            "brush"
+        ].forEach((className) => {
+            const g = selection.append("g");
 
-                g.attr("class", className);
-            }
-        );
+            g.attr("class", className);
+        });
     }
 
     function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
