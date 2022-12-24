@@ -24,6 +24,8 @@ import {
     white
 } from "./colors";
 
+const enabledGraphs: string[] = ["gas", "stroom", "water", "generation"];
+
 const cardsPerRow = [
     ["recent_current", "current_power_gauge"],
     ["gas_period_data", "stroom_period_data"],
@@ -55,107 +57,117 @@ function loadData(fieldName: UsageField, period: "last_30_days" | "last_year") {
     return fetchLastMonthHeatMapData(query);
 }
 
-loadData("gas", "last_year").then((result) => {
-    const chartContainer = d3.select("#gas_heatmap_yearly");
-    setCardTitle(chartContainer, "Gas laatste jaar");
+if (enabledGraphs.includes("gas")) {
+    loadData("gas", "last_year").then((result) => {
+        const chartContainer = d3.select("#gas_heatmap_yearly");
+        setCardTitle(chartContainer, "Gas laatste jaar");
 
-    heatMap("year")
-        .colors(white, gasGraphColor, darkGasGraphColor)
-        .data(result)
-        .unit("m³")
-        .tickFormat(formatMonthNames)
-        .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("year")
+            .colors(white, gasGraphColor, darkGasGraphColor)
+            .data(result)
+            .unit("m³")
+            .tickFormat(formatMonthNames)
+            .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
+            .draw(chartContainer.select(".chart"));
+    });
 
-loadData("stroom", "last_year").then((result) => {
-    const chartContainer = d3.select("#stroom_heatmap_yearly");
-    setCardTitle(chartContainer, "Stroom laatste jaar");
+    loadData("gas", "last_30_days").then((result) => {
+        const chartContainer = d3.select("#gas_heatmap_monthly");
+        setCardTitle(chartContainer, "Gas laatste 30 dagen");
 
-    heatMap("year")
-        .colors(white, stroomUsageColor, darkStroomUsageColor)
-        .data(result)
-        .unit("kWh")
-        .tickFormat(formatMonthNames)
-        .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("30_days")
+            .colors(white, gasGraphColor, darkGasGraphColor)
+            .data(result)
+            .unit("m³")
+            .tickFormat((value: Date) => getDate(value).toString())
+            .draw(chartContainer.select(".chart"));
+    });
+}
 
-loadData("generation", "last_year").then((result) => {
-    const chartContainer = d3.select("#opwekking_heatmap_yearly");
-    setCardTitle(chartContainer, "Opwek laatste jaar");
+if (enabledGraphs.includes("stroom")) {
+    loadData("stroom", "last_year").then((result) => {
+        const chartContainer = d3.select("#stroom_heatmap_yearly");
+        setCardTitle(chartContainer, "Stroom laatste jaar");
 
-    heatMap("year")
-        .colors(white, generationGraphColor, darkGenerationGraphColor)
-        .data(result)
-        .unit("Wh")
-        .tickFormat(formatMonthNames)
-        .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("year")
+            .colors(white, stroomUsageColor, darkStroomUsageColor)
+            .data(result)
+            .unit("kWh")
+            .tickFormat(formatMonthNames)
+            .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
+            .draw(chartContainer.select(".chart"));
+    });
 
-loadData("water", "last_year").then((result) => {
-    const chartContainer = d3.select("#water_heatmap_yearly");
-    setCardTitle(chartContainer, "Water laatste jaar");
+    loadData("stroom", "last_30_days").then((result) => {
+        const chartContainer = d3.select("#stroom_heatmap_monthly");
+        setCardTitle(chartContainer, "Stroom laatste 30 dagen");
 
-    heatMap("year")
-        .colors(white, waterGraphColor, darkWaterGraphColor)
-        .data(result)
-        .unit("L")
-        .tickFormat(formatMonthNames)
-        .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("30_days")
+            .colors(white, stroomUsageColor, darkStroomUsageColor)
+            .min(0.1)
+            .data(result)
+            .unit("kWh")
+            .tickFormat((value: Date) => getDate(value).toString())
+            .draw(chartContainer.select(".chart"));
+    });
+}
 
-loadData("gas", "last_30_days").then((result) => {
-    const chartContainer = d3.select("#gas_heatmap_monthly");
-    setCardTitle(chartContainer, "Gas laatste 30 dagen");
+if (enabledGraphs.includes("generation")) {
+    loadData("generation", "last_year").then((result) => {
+        const chartContainer = d3.select("#opwekking_heatmap_yearly");
+        setCardTitle(chartContainer, "Opwek laatste jaar");
 
-    heatMap("30_days")
-        .colors(white, gasGraphColor, darkGasGraphColor)
-        .data(result)
-        .unit("m³")
-        .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("year")
+            .colors(white, generationGraphColor, darkGenerationGraphColor)
+            .data(result)
+            .unit("Wh")
+            .tickFormat(formatMonthNames)
+            .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
+            .draw(chartContainer.select(".chart"));
+    });
 
-loadData("stroom", "last_30_days").then((result) => {
-    const chartContainer = d3.select("#stroom_heatmap_monthly");
-    setCardTitle(chartContainer, "Stroom laatste 30 dagen");
+    loadData("generation", "last_30_days").then((result) => {
+        const chartContainer = d3.select("#opwekking_heatmap_monthly");
+        setCardTitle(chartContainer, "Opwek laatste 30 dagen");
 
-    heatMap("30_days")
-        .colors(white, stroomUsageColor, darkStroomUsageColor)
-        .min(0.1)
-        .data(result)
-        .unit("kWh")
-        .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("30_days")
+            .colors(white, generationGraphColor, darkGenerationGraphColor)
+            .min(0.1)
+            .data(result)
+            .unit("Wh")
+            .tickFormat((value: Date) => getDate(value).toString())
+            .draw(chartContainer.select(".chart"));
+    });
+}
 
-loadData("generation", "last_30_days").then((result) => {
-    const chartContainer = d3.select("#opwekking_heatmap_monthly");
-    setCardTitle(chartContainer, "Opwek laatste 30 dagen");
+if (enabledGraphs.includes("water")) {
+    loadData("water", "last_year").then((result) => {
+        const chartContainer = d3.select("#water_heatmap_yearly");
+        setCardTitle(chartContainer, "Water laatste jaar");
 
-    heatMap("30_days")
-        .colors(white, generationGraphColor, darkGenerationGraphColor)
-        .min(0.1)
-        .data(result)
-        .unit("Wh")
-        .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("year")
+            .colors(white, waterGraphColor, darkWaterGraphColor)
+            .data(result)
+            .unit("L")
+            .tickFormat(formatMonthNames)
+            .onClick((date: Date) => selectPeriod(DayDescription.fromDate(date)))
+            .draw(chartContainer.select(".chart"));
+    });
 
-loadData("water", "last_30_days").then((result) => {
-    const chartContainer = d3.select("#water_heatmap_monthly");
-    setCardTitle(chartContainer, "Water laatste 30 dagen");
+    loadData("water", "last_30_days").then((result) => {
+        const chartContainer = d3.select("#water_heatmap_monthly");
+        setCardTitle(chartContainer, "Water laatste 30 dagen");
 
-    heatMap("30_days")
-        .colors(white, waterGraphColor, darkWaterGraphColor)
-        .data(result)
-        .unit("L")
-        .tickFormat((value: Date) => getDate(value).toString())
-        .draw(chartContainer.select(".chart"));
-});
+        heatMap("30_days")
+            .colors(white, waterGraphColor, darkWaterGraphColor)
+            .data(result)
+            .unit("L")
+            .tickFormat((value: Date) => getDate(value).toString())
+            .draw(chartContainer.select(".chart"));
+    });
+}
 
-retrieveAndDrawPeriodCharts(DayDescription.today());
+const startPeriod = DayDescription.today();
+
+retrieveAndDrawPeriodCharts(startPeriod);
 initializeCurrentCharts();
