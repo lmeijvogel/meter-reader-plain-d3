@@ -192,7 +192,7 @@ export function retrieveAndDrawPeriodCharts(periodDescription: PeriodDescription
             let api: any;
             if (periodDescription instanceof DayDescription) {
                 api = lineChart(periodDescription, graphDescription)
-                    .minMaxCalculation("minMax", "max")
+                    .minMaxCalculation("minMax")
                     .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, {
                         positive: generationGraphColor,
                         negative: white // The values will never be negative

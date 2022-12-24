@@ -27,7 +27,6 @@ type Store = {
     lineColors?: Map<string, string>;
     defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
-    minMaxCalculationField: string | undefined;
     seriesCollection: SeriesCollection;
     domain?: [number, number];
     clearCanvas: boolean;
@@ -53,7 +52,6 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         lineColors: new Map(),
         defaultLineColor: "black",
         minMaxCalculation: "explicit",
-        minMaxCalculationField: undefined,
         seriesCollection: new Map(),
         clearCanvas: false,
         renderOutsideLightShading: false
@@ -93,9 +91,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             return api;
         },
 
-        minMaxCalculation: (method: "minMax" | "quantile", field?: string | undefined) => {
+        minMaxCalculation: (method: "minMax" | "quantile") => {
             store.minMaxCalculation = method;
-            store.minMaxCalculationField = field;
 
             return api;
         },
@@ -147,11 +144,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             registerEventHandlers(selection);
 
             const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
-
             scaleX.domain(domainX);
 
-            const domainY = store.domain ?? getDomainY();
-
+            const domainY = getDomainY();
             scaleY.domain(domainY).range([maximumY, minimumY]);
 
             renderXAxis(selection.select(".xAxis"));
@@ -312,9 +307,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             return store.domain!;
         }
 
-        const relevantValues = !!store.minMaxCalculationField
-            ? store.seriesCollection.get(store.minMaxCalculationField)!.series.map((s) => s.value)
-            : Array.from(store.seriesCollection.values()).flatMap((series) => series.series.map((s) => s.value));
+        const relevantValues = Array.from(store.seriesCollection.values()).flatMap((series) =>
+            series.series.map((s) => s.value)
+        );
 
         if (store.minMaxCalculation === "quantile") {
             let min = d3.quantile(relevantValues, 0.05)!;
