@@ -4,8 +4,10 @@ import { getPosition } from "suncalc";
 import { HouseLocation } from "./models/HouseLocation";
 import { PeriodDescription } from "./models/PeriodDescription";
 
+type FieldNames = "east" | "west" | "total";
+
 export function drawSolarIncidenceInChart(
-    g: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+    selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
     periodDescription: PeriodDescription,
     minimumY: number,
     maximumY: number,
@@ -16,13 +18,13 @@ export function drawSolarIncidenceInChart(
 
     const rawData = quarters.map((q) => ({
         date: q,
-        eastValue: calculatePotentialIncidentSunlight(q, "east"),
-        westValue: calculatePotentialIncidentSunlight(q, "west")
+        east: calculatePotentialIncidentSunlight(q, "east"),
+        west: calculatePotentialIncidentSunlight(q, "west")
     }));
 
     const data = rawData.map((entry) => ({
         ...entry,
-        value: entry.eastValue + entry.westValue
+        total: entry.east + entry.west
     }));
 
     const scaleYForThisGraph = d3
@@ -37,13 +39,23 @@ export function drawSolarIncidenceInChart(
         .x((d) => scaleX(d.date))
         .y((d) => scaleYForThisGraph(d.value));
 
-    var path = g.selectAll(`path.line`).data([data]).join("path");
+    const fields: FieldNames[] = ["east", "west", "total"];
+    for (const field of fields) {
+        selection.select(`.${field}`).remove();
 
-    path.attr("class", `line`)
-        .attr("fill", "none")
-        .attr("stroke", "#f00")
-        .attr("stroke-width", 2)
-        .attr("d", lineGenerator);
+        const g = selection.append("g").attr("class", field);
+
+        var path = g
+            .selectAll(`path.line`)
+            .data([data.map((el) => ({ date: el.date, value: el[field] }))])
+            .join("path");
+
+        path.attr("class", `line`)
+            .attr("fill", "none")
+            .attr("stroke", field === "total" ? "#f00" : "#f80")
+            .attr("stroke-width", 2)
+            .attr("d", lineGenerator);
+    }
 }
 
 function calculatePotentialIncidentSunlight(date: Date, roofSide: "east" | "west") {
