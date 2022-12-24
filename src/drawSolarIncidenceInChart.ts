@@ -69,22 +69,29 @@ function calculatePotentialIncidentSunlight(date: Date, roofSide: "east" | "west
     // θ: theta: Sun azimuth angle
     // ψ: psi: Module azimuth angle
 
-    const panelOrientationDegrees = roofSide === "east" ? 90 : 270;
-    const panelAzimuthDegrees = 50;
+    const panelTiltDegrees = 50;
+    const panelAzimuthDegrees = roofSide === "east" ? 90 : 270;
 
-    const { azimuth, altitude } = getPosition(date, HouseLocation.latitude, HouseLocation.longitude);
+    const { azimuth: azimuthRad, altitude: altitudeRad } = getPosition(
+        date,
+        HouseLocation.latitude,
+        HouseLocation.longitude
+    );
 
-    if (altitude < 0) {
+    // If the sun is below the horizon, it will probably not hit the
+    // panels :)
+    if (altitudeRad < 0) {
         return 0;
     }
+
     // Calculate actual value: https://www.pveducation.org/pvcdrom/properties-of-sunlight/air-mass#formula
-    const airMass = 1 / Math.cos(Math.PI / 2 - altitude);
+    const airMass = 1 / Math.cos(Math.PI / 2 - altitudeRad);
 
     const factor =
-        Math.cos(altitude) *
-            Math.sin(deg2rad(panelAzimuthDegrees)) *
-            Math.cos(deg2rad(panelOrientationDegrees) - azimuth) +
-        Math.sin(altitude) * Math.cos(deg2rad(panelAzimuthDegrees));
+        Math.cos(altitudeRad) *
+            Math.sin(deg2rad(panelTiltDegrees)) *
+            Math.cos(deg2rad(panelAzimuthDegrees) - azimuthRad) +
+        Math.sin(altitudeRad) * Math.cos(deg2rad(panelTiltDegrees));
 
     return Math.max(0, factor / airMass);
 }
