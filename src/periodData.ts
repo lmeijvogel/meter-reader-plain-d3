@@ -377,9 +377,10 @@ export class PeriodDataTab {
     }
 
     private html(): string {
+        /* Note: The 'periodDataRows' section must be inside the navigation overlay, because
+         * otherwise it won't pick up the touch events for navigation.
+         */
         return `
-            <section id="periodDataRows">
-            </section>
             <div id="js-navigate-overlay" class="navigationOverlay js-navigate-overlay">
                 <div class="upButtonsContainer js-navigate-up js-buttons-top visible">
                     <button class="label"><i icon-name="chevron-up"></i></button>
@@ -390,6 +391,7 @@ export class PeriodDataTab {
                 <div class="sideButtonsContainer prevButton js-navigate-prev js-buttons-left">
                     <button class="label"><i icon-name="chevron-left"></i></button>
                 </div>
+                <section id="periodDataRows"></section>
                 <div class="sideButtonsContainer forwardButtons js-buttons-right">
                     <div class="forwardButton nextButton js-navigate-next">
                         <button class="label"><i icon-name="chevron-right"></i></button>

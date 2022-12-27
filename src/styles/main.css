@@ -39,6 +39,11 @@ body {
     justify-content: space-evenly;
 
     flex-grow: 0;
+
+    /* This prevents contents being visible in the "empty" lines
+     * above the tabs.
+     */
+    background-color: white;
 }
 
 .tab {
