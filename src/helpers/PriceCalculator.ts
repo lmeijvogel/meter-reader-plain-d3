@@ -54,6 +54,17 @@ const prices: RateForDateRange[] = [
         waterPrice: new Money(1.30037 / 1000),
         validFrom: new Date(2019, 11, 26),
         validUntil: new Date(2022, 11, 26) // 25 december: End of current contract
+    },
+    /* Below are the "new" prices as of the war with Russia, raising energy prices and
+     * removing the possibility of multi-year contracts.
+     */
+    {
+        gasPrice: new Money(1.93352 + 0.02988 + 0.00515 + 0.39591 + 0.09428),
+        stroomPrice: new Money(0.61864), // This is the "enkeltarief" price.
+        // Incl. BTW. Rate is given on the Vandebron website in per m3, but I'd like to show in liters, so divide by 1000.
+        waterPrice: new Money(1.30037 / 1000),
+        validFrom: new Date(2022, 11, 26),
+        validUntil: new Date(2023, 2, 31) // 1 april: Variable prices
     }
 ];
 
