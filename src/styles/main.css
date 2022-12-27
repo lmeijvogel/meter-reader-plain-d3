@@ -48,16 +48,19 @@ body {
 
 .tab {
     display: flex;
-    flex-grow: 1;
+    flex-grow: 1; /* Try to keep all tabs the same width */
 
     margin-top: 2px;
+
     border-top: 1px solid black;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+    border-bottom: 1px solid black;
+
+    background-color: #ddd;
+
     line-height: var(--tab-bar-height);
     justify-content: center;
-    border-bottom: 1px solid black;
-    background-color: #ddd;
 
     user-select: none;
 }
@@ -70,6 +73,12 @@ body {
     background-color: var(--background-color);
     border-bottom: 0;
     cursor: default;
+}
+
+/* Different background color for the period tab, since that has
+ * a white title bar. */
+.tab.active#periodTab {
+    background-color: white;
 }
 
 .tab:not(:first-of-type) {
