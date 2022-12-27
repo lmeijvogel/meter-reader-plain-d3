@@ -4,7 +4,7 @@ import VanillaSwipe, { EventData } from "vanilla-swipe";
 import { getWindowWidth } from "./lib/getWindowWidth";
 import { initIcons } from "./icons";
 
-const SideDisplayThresholdInPx = 200;
+const SideDisplayThresholdInPx = 60;
 let TopDisplayThresholdInPx = SideDisplayThresholdInPx; // Initial value
 
 let windowWidth = getWindowWidth();
@@ -68,9 +68,7 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
             }
         },
         onTap: (_e: Event, data: EventData) => {
-            if (isIPad()) {
-                setMouseCoords(data.positionX!, data.positionY!);
-            }
+            setMouseCoords(data.positionX!, data.positionY!);
         },
         delta: 50
     });
@@ -201,8 +199,4 @@ function hideAll() {
 
         element.classList.remove("visible");
     }
-}
-
-function isIPad() {
-    return navigator.userAgent.includes("iPad") || navigator.userAgent.includes("Safari");
 }
