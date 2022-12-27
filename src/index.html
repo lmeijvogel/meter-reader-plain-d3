@@ -12,27 +12,20 @@
         <link rel="stylesheet" href="./styles/vizCard.css" />
     </head>
     <body>
-        <div id="js-navigate-overlay" class="navigationOverlay js-navigate-overlay">
-            <div class="upButtonsContainer js-navigate-up js-buttons-top">
-                <button class="label"><i icon-name="chevron-up"></i></button>
-            </div>
-            <div class="title-container">
-                <h1 class="pageTitle js-page-title"></h1>
-            </div>
-            <div class="sideButtonsContainer prevButton js-navigate-prev js-buttons-left">
-                <button class="label"><i icon-name="chevron-left"></i></button>
-            </div>
-            <section id="rows">
+        <article>
+            <section class="navigation">
+                <ul class="tabs">
+                    <li id="currentTab" class="tab" data-page="currentPage">Current</li>
+                    <li id="periodTab" class="tab" data-page="periodPage">Per period</li>
+                    <li id="heatmapTab" class="tab" data-page="heatmapPage">Heatmaps</li>
+                </ul>
             </section>
-            <div class="sideButtonsContainer forwardButtons js-buttons-right">
-                <div class="forwardButton nextButton js-navigate-next">
-                    <button class="label"><i icon-name="chevron-right"></i></button>
-                </div>
-                <div class="forwardButton todayButton js-navigate-today">
-                    <button class="label"><i icon-name="chevron-last"></i></button>
-                </div>
-            </div>
-        </div>
+            <section class="pages">
+                <section id="currentPage" class="page"></section>
+                <section id="periodPage" class="page"></section>
+                <section id="heatmapPage" class="page"></section>
+            </section>
+        </article>
         <div id="tooltip"></div>
     </body>
 </html>

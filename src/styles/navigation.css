@@ -1,6 +1,8 @@
 .navigationOverlay {
     display: flex;
+    flex-direction: column;
 
+    align-items: center;
     justify-content: center;
 
     height: 100%;
@@ -12,10 +14,10 @@
 .title-container {
     position: fixed;
 
-    top: 0;
+    top: var(--tab-bar-height);
     right: 0;
     width: 100vw;
-    height: 60px;
+    height: var(--period-title-height);
 
     /* Flex display is for aligning the title inside */
     display: flex;
@@ -37,8 +39,8 @@ h3 {
     font-weight: bold;
 }
 
-#rows {
-    margin: 60px;
+#periodDataRows {
+    margin-top: 60px;
 }
 
 .pageTitle {
@@ -47,7 +49,7 @@ h3 {
 }
 
 .upButtonsContainer {
-    position: absolute;
+    position: fixed;
 
     background-color: #e0e0e0;
     height: 60px;
@@ -70,10 +72,9 @@ h3 {
 }
 
 .upButtonsContainer.visible {
-    position: fixed;
-    top: 0px;
+    top: var(--tab-bar-height);
 
-    z-index: 300;
+    /* z-index: 300; */
 }
 
 .sideButtonsContainer {

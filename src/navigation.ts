@@ -2,20 +2,38 @@ import { DayDescription, PeriodDescription, YearDescription } from "./models/Per
 
 import VanillaSwipe, { EventData } from "vanilla-swipe";
 import { getWindowWidth } from "./lib/getWindowWidth";
+import { initIcons } from "./icons";
 
-const displayThresholdInPx = 60;
+const SideDisplayThresholdInPx = 200;
+let TopDisplayThresholdInPx = SideDisplayThresholdInPx; // Initial value
 
 let windowWidth = getWindowWidth();
 
 let periodDescription: PeriodDescription | undefined;
 
-export function initializeNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
+export type NavigationApi = {
+    setPeriodDescription: (newPeriodDescription: PeriodDescription) => void;
+    hide: () => void;
+};
+
+export function initializeNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void): NavigationApi {
     initializeButtonEventHandlers(onPeriodChange);
-    return VanillaSwipe.isTouchEventsSupported()
+
+    const result = VanillaSwipe.isTouchEventsSupported()
         ? initializeMobileNavigation(onPeriodChange)
         : initializeDesktopNavigation();
+
+    initIcons();
+
+    TopDisplayThresholdInPx = document
+        .getElementsByClassName("js-page-title-container")
+        .item(0)!
+        .getBoundingClientRect().bottom;
+
+    return result;
 }
-function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void) {
+
+function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDescription) => void): NavigationApi {
     const swipeArea = document.getElementById("js-navigate-overlay");
 
     const swipe = new VanillaSwipe({
@@ -74,8 +92,10 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
 
             enableOrDisableNavigationButtons();
             setPageTitle(periodDescription.toTitle());
+        },
 
-            return api;
+        hide: () => {
+            hideAll();
         }
     };
 
@@ -102,6 +122,10 @@ function initializeDesktopNavigation() {
             setPageTitle(periodDescription.toTitle());
 
             return api;
+        },
+
+        hide: () => {
+            hideAll();
         }
     };
 
@@ -152,9 +176,9 @@ function setPageTitle(title: string) {
 }
 
 const setMouseCoords = (x: number, y: number) => {
-    const mouseAtLeftEdge = x <= displayThresholdInPx;
-    const mouseAtRightEdge = x >= windowWidth - displayThresholdInPx;
-    const mouseAtTopEdge = y <= displayThresholdInPx;
+    const mouseAtLeftEdge = x <= SideDisplayThresholdInPx;
+    const mouseAtRightEdge = x >= windowWidth - SideDisplayThresholdInPx;
+    const mouseAtTopEdge = y <= TopDisplayThresholdInPx;
 
     function showOrHideEdge(selector: string, isVisible: boolean) {
         const edge = document.getElementsByClassName(selector)[0];
@@ -170,6 +194,14 @@ const setMouseCoords = (x: number, y: number) => {
     showOrHideEdge("js-buttons-left", mouseAtLeftEdge);
     showOrHideEdge("js-buttons-right", mouseAtRightEdge);
 };
+
+function hideAll() {
+    for (const className of ["js-buttons-top", "js-buttons-left", "js-buttons-right"]) {
+        const element = document.getElementsByClassName(className)[0];
+
+        element.classList.remove("visible");
+    }
+}
 
 function isIPad() {
     return navigator.userAgent.includes("iPad") || navigator.userAgent.includes("Safari");

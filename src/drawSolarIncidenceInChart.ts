@@ -29,7 +29,7 @@ export function drawSolarIncidenceInChart(
 
     const scaleYForThisGraph = d3
         .scaleLinear()
-        .domain([0, d3.max(data, (v) => v.value) ?? 1])
+        .domain([0, 1]) // The practical maximum seems to be 1 (in the summer)
         .range([maximumY, minimumY])
         .clamp(true);
 

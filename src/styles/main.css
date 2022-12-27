@@ -1,11 +1,82 @@
+:root {
+    --background-color: #f8f8f8;
+
+    --tab-bar-height: 4rem;
+    --period-title-height: 60px;
+
+    --z-index-navigation: 1000;
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
-    background-color: #f8f8f8;
+    background-color: var(--background-color);
 
     margin: 0;
+}
+
+.navigation {
+    z-index: var(--z-index-navigation);
+    position: fixed;
+    width: 100%;
+    top: 0;
+}
+
+.pages {
+    margin-top: calc(var(--tab-bar-height) + var(--period-title-height));
+}
+
+.page {
+    display: flex;
+    flex-direction: column;
+}
+
+.tabs {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+
+    flex-grow: 0;
+}
+
+.tab {
+    display: flex;
+    flex-grow: 1;
+
+    margin-top: 2px;
+    border-top: 1px solid black;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    line-height: var(--tab-bar-height);
+    justify-content: center;
+    border-bottom: 1px solid black;
+    background-color: #ddd;
+
+    user-select: none;
+}
+
+.tab:not(.active) {
+    cursor: pointer;
+}
+
+.tab.active {
+    background-color: var(--background-color);
+    border-bottom: 0;
+    cursor: default;
+}
+
+.tab:not(:first-of-type) {
+    border-left: 1px solid black;
+}
+
+.page {
+    display: none;
+}
+
+.page.visible {
+    display: block;
 }
 
 .row {
