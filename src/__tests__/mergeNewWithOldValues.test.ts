@@ -1,9 +1,8 @@
-import assert from "assert";
 import { differenceInSeconds, isAfter, isBefore, isEqual, subMinutes } from "date-fns";
 import fs from "fs";
 
-import { mergeNewWithOldValues } from "../helpers/mergeNewWithOldValues";
-import { responseRowToValueWithTimestamp } from "../helpers/responseRowToValueWithTimestamp";
+import { mergeNewWithOldValues } from "../lib/mergeNewWithOldValues";
+import { responseRowToValueWithTimestamp } from "../lib/responseRowToValueWithTimestamp";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 type ResponseJson = {

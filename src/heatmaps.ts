@@ -12,7 +12,7 @@ import {
     waterGraphColor,
     white
 } from "./colors";
-import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
+import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";

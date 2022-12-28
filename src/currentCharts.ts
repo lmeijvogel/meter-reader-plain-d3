@@ -13,8 +13,8 @@ import {
     stroomGenerationColorForCurrentGraph,
     stroomUsageColorForCurrentGraph
 } from "./colors";
-import { mergeNewWithOldValues } from "./helpers/mergeNewWithOldValues";
-import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
+import { mergeNewWithOldValues } from "./lib/mergeNewWithOldValues";
+import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { LastHourDescription } from "./models/PeriodDescription";

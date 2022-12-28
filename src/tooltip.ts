@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { clamp } from "./helpers/clamp";
+import { clamp } from "./lib/clamp";
 import { getWindowWidth } from "./lib/getWindowWidth";
 
 let windowWidth = getWindowWidth();

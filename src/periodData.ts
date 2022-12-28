@@ -4,9 +4,9 @@ import { utcToZonedTime } from "date-fns-tz";
 import { barChart } from "./charts/barChart";
 import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
-import { padData } from "./helpers/padData";
-import { costsFor, PriceCategory } from "./helpers/PriceCalculator";
-import { responseRowToValueWithTimestamp } from "./helpers/responseRowToValueWithTimestamp";
+import { padData } from "./lib/padData";
+import { costsFor, PriceCategory } from "./lib/PriceCalculator";
+import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { titleForCategory } from "./lib/titleForCategory";
 import {
     GasGraphDescription,

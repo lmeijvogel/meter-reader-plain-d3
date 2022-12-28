@@ -1,4 +1,4 @@
-import { PriceCategory } from "../helpers/PriceCalculator";
+import { PriceCategory } from "./PriceCalculator";
 import { assertNever } from "./assertNever";
 
 export function titleForCategory(priceCategory: PriceCategory | "generation"): string {
