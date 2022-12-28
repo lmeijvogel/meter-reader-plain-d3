@@ -1,9 +1,19 @@
+import * as d3 from "d3";
+import { isEqual, min, setHours } from "date-fns";
 import { assertNever } from "../lib/assertNever";
 
 export type PriceCategory = "gas" | "stroom" | "water";
 
 export class Money {
-    constructor(private readonly euros: number) {}
+    constructor(readonly euros: number) {}
+
+    add(amount: number | Money): Money {
+        if (amount instanceof Money) {
+            return new Money(this.euros + amount.euros);
+        }
+
+        return new Money(this.euros + amount);
+    }
 
     multiply(amount: number): Money {
         return new Money(this.euros * amount);
@@ -89,37 +99,60 @@ const waterPrices: WaterRateForDateRange[] = [
     }
 ];
 
-export function costsFor(units: number, priceCategory: PriceCategory, date: Date): Money {
-    if (priceCategory === "water") {
-        return rateForDate(date, waterPrices).waterPrice.multiply(units);
+export class PriceCalculator {
+    costsForMultiple(input: { value: number; timestamp: Date }[], priceCategory: PriceCategory): Money {
+        const minTimestamp = d3.min(input, (element) => element.timestamp)!;
+        const maxTimestamp = d3.max(input, (element) => element.timestamp)!;
+
+        if (isEqual(setHours(minTimestamp, 0), setHours(maxTimestamp, 0))) {
+            return this.costsFor(
+                d3.sum(input, (el) => el.value),
+                priceCategory,
+                minTimestamp
+            );
+        }
+
+        let total = new Money(0);
+
+        for (const el of input) {
+            total = total.add(this.costsFor(el.value, priceCategory, el.timestamp));
+        }
+
+        return total;
     }
 
-    const currentRate = rateForDate(date, energyPrices);
+    private costsFor(units: number, priceCategory: PriceCategory, date: Date): Money {
+        if (priceCategory === "water") {
+            return this.rateForDate(date, waterPrices).waterPrice.multiply(units);
+        }
 
-    switch (priceCategory) {
-        case "gas":
-            return currentRate.gasPrice.multiply(units);
-        case "stroom":
-            return currentRate.stroomPrice.multiply(units);
-        default:
-            return assertNever(priceCategory);
-    }
-}
+        const currentRate = this.rateForDate(date, energyPrices);
 
-function rateForDate<T extends { validFrom: Date; validUntil: Date }>(date: Date, input: T[]): T {
-    const result = input.filter((price) => price.validFrom <= date && date < price.validUntil);
-
-    /* TODO: This type is awful! */
-    if (result.length === 0) {
-        console.error("No prices specified for the selected date");
-        return {
-            gasPrice: new Money(0),
-            stroomPrice: new Money(0),
-            waterPrice: new Money(0),
-            validFrom: new Date(2014, 0, 1),
-            validUntil: new Date(2038, 0, 1)
-        } as unknown as T;
+        switch (priceCategory) {
+            case "gas":
+                return currentRate.gasPrice.multiply(units);
+            case "stroom":
+                return currentRate.stroomPrice.multiply(units);
+            default:
+                return assertNever(priceCategory);
+        }
     }
 
-    return result[0];
+    private rateForDate<T extends { validFrom: Date; validUntil: Date }>(date: Date, input: T[]): T {
+        const result = input.filter((price) => price.validFrom <= date && date < price.validUntil);
+
+        /* TODO: This type is awful! */
+        if (result.length === 0) {
+            console.error("No prices specified for the selected date");
+            return {
+                gasPrice: new Money(0),
+                stroomPrice: new Money(0),
+                waterPrice: new Money(0),
+                validFrom: new Date(2014, 0, 1),
+                validUntil: new Date(2038, 0, 1)
+            } as unknown as T;
+        }
+
+        return result[0];
+    }
 }

@@ -5,7 +5,7 @@ import { barChart } from "./charts/barChart";
 import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 import { padData } from "./lib/padData";
-import { costsFor, PriceCategory } from "./lib/PriceCalculator";
+import { PriceCalculator, PriceCategory } from "./lib/PriceCalculator";
 import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { titleForCategory } from "./lib/titleForCategory";
 import {
@@ -50,6 +50,8 @@ export class PeriodDataTab {
     private navigation: NavigationApi | null = null;
 
     private previousPeriod: PeriodDescription | null = null;
+
+    private readonly priceCalculator = new PriceCalculator();
 
     /* Store the requested period to prevent older requests "overtaking" newer requests and being rendered
      * when the newer ones should be rendered.
@@ -145,7 +147,7 @@ export class PeriodDataTab {
                     .data(values)
                     .color(gasGraphColor);
 
-                const cardTitle = this.createPeriodDataCardTitle(values, "gas", graphDescription, periodDescription);
+                const cardTitle = this.createPeriodDataCardTitle(values, "gas", graphDescription);
                 setCardTitle(periodGasContainer, cardTitle);
 
                 api.call(periodGasContainer.select(".chart"));
@@ -167,7 +169,7 @@ export class PeriodDataTab {
                     .data(values)
                     .color(waterGraphColor);
 
-                const cardTitle = this.createPeriodDataCardTitle(values, "water", graphDescription, periodDescription);
+                const cardTitle = this.createPeriodDataCardTitle(values, "water", graphDescription);
                 setCardTitle(periodWaterContainer, cardTitle);
 
                 api.call(periodWaterContainer.select(".chart"));
@@ -244,12 +246,7 @@ export class PeriodDataTab {
 
                 api.clearCanvas(shouldClearCanvas);
 
-                const cardTitle = this.createPeriodDataCardTitle(
-                    valuesInKW,
-                    "generation",
-                    graphDescription,
-                    periodDescription
-                );
+                const cardTitle = this.createPeriodDataCardTitle(valuesInKW, "generation", graphDescription);
 
                 setCardTitle(periodGenerationContainer, cardTitle);
 
@@ -282,12 +279,7 @@ export class PeriodDataTab {
                     .clearCanvas(shouldClearCanvas)
                     .data(equalizedData);
 
-                const cardTitle = this.createPeriodDataCardTitle(
-                    stroomValues,
-                    "stroom",
-                    graphDescription,
-                    periodDescription
-                );
+                const cardTitle = this.createPeriodDataCardTitle(stroomValues, "stroom", graphDescription);
                 setCardTitle(periodStroomContainer, cardTitle);
 
                 api.call(periodStroomContainer.select(".chart"));
@@ -355,8 +347,7 @@ export class PeriodDataTab {
     private createPeriodDataCardTitle(
         values: ValueWithTimestamp[],
         priceCategory: PriceCategory | "generation",
-        graphDescription: GraphDescription,
-        periodDescription: PeriodDescription
+        graphDescription: GraphDescription
     ): string {
         const usage = d3.sum(values, (v) => v.value);
 
@@ -367,10 +358,9 @@ export class PeriodDataTab {
         let result = `${categoryName}: ${formattedAmount} ${graphDescription.displayableUnit}`;
 
         /* Use "stroom" for generation price as long as we have "saldering" */
-        const costs = costsFor(
-            usage,
-            priceCategory === "generation" ? "stroom" : priceCategory,
-            periodDescription.startOfPeriod()
+        const costs = this.priceCalculator.costsForMultiple(
+            values,
+            priceCategory === "generation" ? "stroom" : priceCategory
         );
 
         return result + ` (${costs})`;
