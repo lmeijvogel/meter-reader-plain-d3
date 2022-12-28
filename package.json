@@ -7,7 +7,7 @@
     "browserslist": "> 0.5%, last 2 versions, not dead",
     "source": "src/index.html",
     "scripts": {
-        "dev": "concurrently -n react,api \"npm:start\" \"npm:start-api\"",
+        "dev": "concurrently -n frontend,api \"npm:start\" \"npm:start-api\"",
         "start": "parcel",
         "start-api": "cd ../energie-api ; bundle exec ruby app.rb",
         "build": "parcel build",
