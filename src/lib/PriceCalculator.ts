@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { isEqual, min, setHours } from "date-fns";
+import { isEqual, setHours } from "date-fns";
 import { assertNever } from "../lib/assertNever";
 
 export type PriceCategory = "gas" | "stroom" | "water";
@@ -80,17 +80,17 @@ const waterPrices: WaterRateForDateRange[] = [
     {
         waterPrice: new Money((0.85 + 0.348) / 1000), // Not actually known
         validFrom: new Date(2014, 0, 1),
-        validUntil: new Date(2018, 10, 11)
+        validUntil: new Date(2020, 10, 16)
     },
     {
         waterPrice: new Money((0.85 + 0.348) / 1000),
         validFrom: new Date(2020, 10, 16),
-        validUntil: new Date(2020, 11, 31)
+        validUntil: new Date(2021, 0, 1)
     },
     {
         waterPrice: new Money((0.859 + 0.354) / 1000),
-        validFrom: new Date(2020, 0, 1),
-        validUntil: new Date(2021, 11, 31)
+        validFrom: new Date(2021, 0, 1),
+        validUntil: new Date(2022, 0, 1)
     },
     {
         waterPrice: new Money((0.863 + 0.35) / 1000),
@@ -121,12 +121,12 @@ export class PriceCalculator {
         return total;
     }
 
-    private costsFor(units: number, priceCategory: PriceCategory, date: Date): Money {
+    costsFor(units: number, priceCategory: PriceCategory, date: Date): Money {
         if (priceCategory === "water") {
-            return this.rateForDate(date, waterPrices).waterPrice.multiply(units);
+            return this.waterRateForDate(date).waterPrice.multiply(units);
         }
 
-        const currentRate = this.rateForDate(date, energyPrices);
+        const currentRate = this.energyRateForDate(date);
 
         switch (priceCategory) {
             case "gas":
@@ -138,21 +138,35 @@ export class PriceCalculator {
         }
     }
 
-    private rateForDate<T extends { validFrom: Date; validUntil: Date }>(date: Date, input: T[]): T {
-        const result = input.filter((price) => price.validFrom <= date && date < price.validUntil);
+    private waterRateForDate(date: Date): WaterRateForDateRange {
+        const result = waterPrices.find((price) => price.validFrom <= date && date < price.validUntil);
 
-        /* TODO: This type is awful! */
-        if (result.length === 0) {
-            console.error("No prices specified for the selected date");
-            return {
-                gasPrice: new Money(0),
-                stroomPrice: new Money(0),
-                waterPrice: new Money(0),
-                validFrom: new Date(2014, 0, 1),
-                validUntil: new Date(2038, 0, 1)
-            } as unknown as T;
+        if (result) {
+            return result;
         }
 
-        return result[0];
+        console.error("No known prices for water, date: ", date);
+        return {
+            waterPrice: new Money(0),
+            validFrom: new Date(2014, 0, 1),
+            validUntil: new Date(2038, 0, 1)
+        };
+    }
+
+    private energyRateForDate(date: Date): EnergyRateForDateRange {
+        const result = energyPrices.find((price) => price.validFrom <= date && date < price.validUntil);
+
+        if (result) {
+            return result;
+        }
+
+        console.error("No known prices for energy, date: ", date);
+
+        return {
+            gasPrice: new Money(0),
+            stroomPrice: new Money(0),
+            validFrom: new Date(2014, 0, 1),
+            validUntil: new Date(2038, 0, 1)
+        };
     }
 }
