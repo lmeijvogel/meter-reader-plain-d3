@@ -15,8 +15,8 @@ heatmapTab.initializeTab("heatmapPage", heatmapPeriodSelected);
 
 /* Initializing the currentTab is necessary for polling the current usage. */
 currentDataTab.startCurrentUsagePolling();
-periodDataTab.retrieveAndDrawPeriodCharts(DayDescription.today());
 selectTab("periodTab");
+periodDataTab.retrieveAndDrawPeriodCharts(DayDescription.today());
 
 function currentDataReceived(currentValueInW: number) {
     const element = document.getElementById("currentTab");
@@ -58,6 +58,10 @@ function showPage(name: string, previousTab: string) {
 
     if (name === "currentPage") {
         currentDataTab.initializeCurrentCharts();
+    }
+
+    if (name === "periodPage") {
+        periodDataTab.initializeNavigation();
     }
 
     if (previousTab === "currentTab" && name !== "currentPage") {

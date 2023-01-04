@@ -57,6 +57,7 @@ export class PeriodDataTab {
      * when the newer ones should be rendered.
      */
     private requestedStartOfPeriod: Date | null = null;
+    private _isNavigationInitialized = false;
 
     constructor() {
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.previousPeriod);
@@ -69,12 +70,6 @@ export class PeriodDataTab {
     initializeTab(elementId: string) {
         if (!this._isInitialized) {
             document.getElementById(elementId)!.innerHTML = this.html();
-
-            this.navigation = initializeNavigation(this.retrieveAndDrawPeriodCharts);
-
-            /* Hide navigation by default */
-            this.navigation.hide();
-
             createRowsWithCards(
                 [
                     ["gas_period_data", "stroom_period_data", "water_period_data"],
@@ -85,6 +80,17 @@ export class PeriodDataTab {
 
             this._isInitialized = true;
         }
+    }
+
+    initializeNavigation() {
+        if (!this._isNavigationInitialized) {
+            this.navigation = initializeNavigation(this.retrieveAndDrawPeriodCharts);
+
+            /* Hide navigation by default */
+            this.navigation.hide();
+        }
+
+        this._isNavigationInitialized = true;
     }
 
     retrieveAndDrawPeriodCharts = (periodDescription: PeriodDescription) => {
