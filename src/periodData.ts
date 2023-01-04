@@ -6,7 +6,7 @@ import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 import { padData } from "./lib/padData";
 import { PriceCalculator, PriceCategory } from "./lib/PriceCalculator";
-import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
+import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { titleForCategory } from "./lib/titleForCategory";
 import {
     GasGraphDescription,
@@ -66,7 +66,7 @@ export class PeriodDataTab {
         return this._isInitialized;
     }
 
-    initializeTab(elementId: string, periodDescription: PeriodDescription) {
+    initializeTab(elementId: string) {
         if (!this._isInitialized) {
             document.getElementById(elementId)!.innerHTML = this.html();
 
@@ -85,8 +85,6 @@ export class PeriodDataTab {
 
             this._isInitialized = true;
         }
-
-        this.retrieveAndDrawPeriodCharts(periodDescription);
     }
 
     retrieveAndDrawPeriodCharts = (periodDescription: PeriodDescription) => {
@@ -297,7 +295,7 @@ export class PeriodDataTab {
 
             try {
                 const response = await fetch(`/api/temperature/living_room${url}`);
-                const json: { [key: string]: ValueWithTimestamp[] } = await response.json();
+                const json: { [key: string]: JsonResponseRow[] } = await response.json();
 
                 Object.entries(json).forEach((keyAndSeries) => {
                     const [key, rawSeries] = keyAndSeries;

@@ -1,8 +1,8 @@
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
-type Row = [string, number];
+export type JsonResponseRow = [string, number];
 
-export function responseRowToValueWithTimestamp(row: Row): ValueWithTimestamp {
+export function responseRowToValueWithTimestamp(row: JsonResponseRow): ValueWithTimestamp {
     return {
         timestamp: new Date(Date.parse(row[0])),
         value: Number(row[1])

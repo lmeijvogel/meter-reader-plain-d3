@@ -6,14 +6,29 @@ import { Heatmaps } from "./heatmaps";
 let currentTab = "";
 
 let periodDataTab: PeriodDataTab = new PeriodDataTab();
-let currentDataTab: CurrentDataTab = new CurrentDataTab();
+let currentDataTab: CurrentDataTab = new CurrentDataTab(currentDataReceived);
 let heatmapTab: Heatmaps = new Heatmaps();
 
-selectTab("currentTab");
+periodDataTab.initializeTab("periodPage");
+currentDataTab.initializeTab("currentPage");
+heatmapTab.initializeTab("heatmapPage", heatmapPeriodSelected);
+
+/* Initializing the currentTab is necessary for polling the current usage. */
+currentDataTab.startCurrentUsagePolling();
+periodDataTab.retrieveAndDrawPeriodCharts(DayDescription.today());
+selectTab("periodTab");
+
+function currentDataReceived(currentValueInW: number) {
+    const element = document.getElementById("currentTab");
+
+    if (!!element) {
+        element.innerHTML = `Nu (${currentValueInW} W)`;
+    }
+}
 
 function heatmapPeriodSelected(periodDescription: PeriodDescription) {
     selectTab("periodTab");
-    periodDataTab?.initializeTab("periodPage", periodDescription);
+    periodDataTab.retrieveAndDrawPeriodCharts(periodDescription);
 }
 
 function selectTab(name: string) {
@@ -41,27 +56,12 @@ function showPage(name: string, previousTab: string) {
 
     document.getElementById(name)?.classList.add("visible");
 
-    switch (name) {
-        case "currentPage":
-            if (!currentDataTab?.isInitialized) {
-                currentDataTab?.initializeTab("currentPage");
-            }
-            currentDataTab.initializeCurrentCharts();
-            break;
-        case "periodPage":
-            if (!periodDataTab?.isInitialized) {
-                periodDataTab?.initializeTab("periodPage", DayDescription.today());
-            }
-            break;
-        case "heatmapPage":
-            if (!heatmapTab.isInitialized) {
-                heatmapTab.initializeTab("heatmapPage", heatmapPeriodSelected);
-            }
-            break;
+    if (name === "currentPage") {
+        currentDataTab.initializeCurrentCharts();
     }
 
     if (previousTab === "currentTab" && name !== "currentPage") {
-        currentDataTab.stopPolling();
+        currentDataTab.stopRecentPowerPolling();
     }
 }
 

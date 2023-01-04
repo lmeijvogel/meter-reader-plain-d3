@@ -19,7 +19,7 @@ import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { LastHourDescription } from "./models/PeriodDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
-import { createSvgCard, setCardTitle } from "./vizCard";
+import { setCardTitle } from "./vizCard";
 
 type CurrentFields = { current: ValueWithTimestamp[] };
 
@@ -47,6 +47,11 @@ export class CurrentDataTab {
 
     private powerGaugeTimer: NodeJS.Timer | undefined;
     private recentPowerGraphTimer: NodeJS.Timer | undefined;
+    private readonly onDataReceived: (currentValueInW: number) => void;
+
+    constructor(onDataReceived: (currentValueInW: number) => void) {
+        this.onDataReceived = onDataReceived;
+    }
 
     public get isInitialized(): boolean {
         return this._isInitialized;
@@ -64,8 +69,10 @@ export class CurrentDataTab {
 
             if (pageVisible) {
                 this.initializeCurrentCharts();
+                this.startCurrentUsagePolling();
             } else {
-                this.stopPolling();
+                this.stopRecentPowerPolling();
+                this.stopCurrentUsagePolling();
             }
         });
 
@@ -93,19 +100,26 @@ export class CurrentDataTab {
 
         this.pageInvisibleTimestamp = undefined;
 
-        if (!this.powerGaugeTimer) {
-            this.powerGaugeTimer = setInterval(this.getLatestPowerUsage, 1000);
-        }
-
         if (!this.recentPowerGraphTimer) {
             this.recentPowerGraphTimer = setInterval(this.updatePowerUsageGraph, 5000);
         }
     }
 
-    public stopPolling() {
-        clearInterval(this.powerGaugeTimer);
+    public startCurrentUsagePolling() {
+        if (!this.powerGaugeTimer) {
+            this.powerGaugeTimer = setInterval(this.getLatestPowerUsage, 1000);
+        }
+    }
+
+    private stopCurrentUsagePolling() {
+        if (this.powerGaugeTimer) {
+            clearInterval(this.powerGaugeTimer);
+            this.powerGaugeTimer = undefined;
+        }
+    }
+
+    public stopRecentPowerPolling() {
         clearInterval(this.recentPowerGraphTimer);
-        this.powerGaugeTimer = undefined;
         this.recentPowerGraphTimer = undefined;
 
         this.pageInvisibleTimestamp = new Date();
@@ -153,6 +167,7 @@ export class CurrentDataTab {
         const currentValueInW = newValues.current[0].value * 1000;
 
         this.updateCurrentUsageGauge(currentValueInW);
+        this.onDataReceived(currentValueInW);
     };
 
     private drawPowerUsage(fieldsKW: CurrentFields) {
