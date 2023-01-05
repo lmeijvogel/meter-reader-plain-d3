@@ -9,9 +9,9 @@ let periodDataTab: PeriodDataTab = new PeriodDataTab();
 let currentDataTab: CurrentDataTab = new CurrentDataTab(currentDataReceived);
 let heatmapTab: Heatmaps = new Heatmaps();
 
-periodDataTab.initializeTab("periodPage");
-currentDataTab.initializeTab("currentPage");
-heatmapTab.initializeTab("heatmapPage", heatmapPeriodSelected);
+periodDataTab.initializeTab("#periodPage");
+currentDataTab.initializeTab("#currentPage");
+heatmapTab.initializeTab("#heatmapPage", heatmapPeriodSelected);
 
 /* Initializing the currentTab is necessary for polling the current usage. */
 currentDataTab.startCurrentUsagePolling();
@@ -19,7 +19,7 @@ selectTab("periodTab");
 periodDataTab.retrieveAndDrawPeriodCharts(DayDescription.today());
 
 function currentDataReceived(currentValueInW: number) {
-    const element = document.getElementById("currentTab");
+    const element = document.querySelector("#currentTab");
 
     if (!!element) {
         element.innerHTML = `Nu (${currentValueInW} W)`;
@@ -37,7 +37,7 @@ function selectTab(name: string) {
         tab.classList.remove("active");
     }
 
-    const selectedTab = document.getElementById(name)!;
+    const selectedTab = document.querySelector("#" + name)!;
 
     selectedTab.classList.add("active");
 
@@ -54,7 +54,7 @@ function showPage(name: string, previousTab: string) {
         page.classList.remove("visible");
     }
 
-    document.getElementById(name)?.classList.add("visible");
+    document.querySelector("#" + name)?.classList.add("visible");
 
     if (name === "currentPage") {
         currentDataTab.initializeCurrentCharts();

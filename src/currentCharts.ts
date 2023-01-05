@@ -45,15 +45,11 @@ export class CurrentDataTab {
 
     private powerGaugeTimer: NodeJS.Timer | undefined;
     private recentPowerGraphTimer: NodeJS.Timer | undefined;
-    private readonly onDataReceived: (currentValueInW: number) => void;
 
-    constructor(onDataReceived: (currentValueInW: number) => void) {
-        this.onDataReceived = onDataReceived;
-    }
+    constructor(private readonly onDataReceived: (currentValueInW: number) => void) {}
 
-    initializeTab(elementId: string) {
-
-        createRowsWithCards([["recent_current", "current_power_gauge"]], elementId);
+    initializeTab(selector: string) {
+        createRowsWithCards([["recent_current", "current_power_gauge"]], selector);
 
         window.addEventListener("visibilitychange", () => {
             const pageVisible = document.visibilityState === "visible";

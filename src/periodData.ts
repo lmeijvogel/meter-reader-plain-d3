@@ -62,14 +62,14 @@ export class PeriodDataTab {
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.previousPeriod);
     }
 
-    initializeTab(elementId: string) {
-        document.getElementById(elementId)!.innerHTML = this.html();
+    initializeTab(selector: string) {
+        document.querySelector(selector)!.innerHTML = this.html();
         createRowsWithCards(
             [
                 ["gas_period_data", "stroom_period_data", "water_period_data"],
                 ["generation_period_data", "temperature_line_chart"]
             ],
-            "periodDataRows"
+            "#periodDataRows"
         );
     }
 

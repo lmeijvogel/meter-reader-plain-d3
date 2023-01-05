@@ -1,7 +1,7 @@
 import { createSvgCard } from "../vizCard";
 
-export function createRowsWithCards(rows: string[][], containerId: string) {
-    const cardsContainer = document.getElementById(containerId)!;
+export function createRowsWithCards(rows: string[][], containerSelector: string) {
+    const cardsContainer = document.querySelector(containerSelector)!;
 
     for (const itemsPerRow of rows) {
         const row = document.createElement("div");

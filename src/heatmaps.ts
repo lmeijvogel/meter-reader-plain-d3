@@ -30,8 +30,8 @@ const cardsPerRow = [
 
 export class Heatmaps {
 
-    initializeTab(elementId: string, periodSelected: (periodDescription: PeriodDescription) => void) {
-        createRowsWithCards(cardsPerRow, elementId);
+    initializeTab(selector: string, periodSelected: (periodDescription: PeriodDescription) => void) {
+        createRowsWithCards(cardsPerRow, selector);
 
         this.drawCards(periodSelected);
     }
