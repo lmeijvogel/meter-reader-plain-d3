@@ -46,7 +46,6 @@ const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")
 ];
 
 export class PeriodDataTab {
-    private _isInitialized = false;
     private navigation: NavigationApi | null = null;
 
     private previousPeriod: PeriodDescription | null = null;
@@ -63,23 +62,15 @@ export class PeriodDataTab {
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.previousPeriod);
     }
 
-    public get isInitialized(): boolean {
-        return this._isInitialized;
-    }
-
     initializeTab(elementId: string) {
-        if (!this._isInitialized) {
-            document.getElementById(elementId)!.innerHTML = this.html();
-            createRowsWithCards(
-                [
-                    ["gas_period_data", "stroom_period_data", "water_period_data"],
-                    ["generation_period_data", "temperature_line_chart"]
-                ],
-                "periodDataRows"
-            );
-
-            this._isInitialized = true;
-        }
+        document.getElementById(elementId)!.innerHTML = this.html();
+        createRowsWithCards(
+            [
+                ["gas_period_data", "stroom_period_data", "water_period_data"],
+                ["generation_period_data", "temperature_line_chart"]
+            ],
+            "periodDataRows"
+        );
     }
 
     initializeNavigation() {

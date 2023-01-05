@@ -24,8 +24,6 @@ import { setCardTitle } from "./vizCard";
 type CurrentFields = { current: ValueWithTimestamp[] };
 
 export class CurrentDataTab {
-    private _isInitialized = false;
-
     private readonly powerUsageGauge = gauge()
         .domain([-3000, 3000])
         .colors([
@@ -53,14 +51,7 @@ export class CurrentDataTab {
         this.onDataReceived = onDataReceived;
     }
 
-    public get isInitialized(): boolean {
-        return this._isInitialized;
-    }
-
     initializeTab(elementId: string) {
-        if (this._isInitialized) {
-            return;
-        }
 
         createRowsWithCards([["recent_current", "current_power_gauge"]], elementId);
 
@@ -75,8 +66,6 @@ export class CurrentDataTab {
                 this.stopCurrentUsagePolling();
             }
         });
-
-        this._isInitialized = true;
     }
 
     public async initializeCurrentCharts() {

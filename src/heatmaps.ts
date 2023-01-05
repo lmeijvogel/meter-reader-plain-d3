@@ -29,16 +29,9 @@ const cardsPerRow = [
 ];
 
 export class Heatmaps {
-    private _isInitialized = false;
-
-    get isInitialized(): boolean {
-        return this._isInitialized;
-    }
 
     initializeTab(elementId: string, periodSelected: (periodDescription: PeriodDescription) => void) {
         createRowsWithCards(cardsPerRow, elementId);
-
-        this._isInitialized = true;
 
         this.drawCards(periodSelected);
     }
