@@ -29,14 +29,19 @@ const cardsPerRow = [
 ];
 
 export class Heatmaps {
+    private _dataAlreadyLoaded = false;
 
-    initializeTab(selector: string, periodSelected: (periodDescription: PeriodDescription) => void) {
+    constructor(private periodSelected: (periodDescription: PeriodDescription) => void) {}
+
+    initializeTab(selector: string) {
         createRowsWithCards(cardsPerRow, selector);
-
-        this.drawCards(periodSelected);
     }
 
-    private drawCards(periodSelected: (periodDescription: PeriodDescription) => void) {
+    loadData() {
+        if (this._dataAlreadyLoaded) {
+            return;
+        }
+
         async function fetchLastMonthHeatMapData(query: string): Promise<ValueWithTimestamp[]> {
             return fetch(query)
                 .then((response) => response.json())
@@ -59,7 +64,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("m³")
                     .tickFormat(formatMonthNames)
-                    .onClick((date: Date) => periodSelected(DayDescription.fromDate(date)))
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
 
@@ -86,7 +91,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("kWh")
                     .tickFormat(formatMonthNames)
-                    .onClick((date: Date) => periodSelected(DayDescription.fromDate(date)))
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
 
@@ -114,7 +119,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("Wh")
                     .tickFormat(formatMonthNames)
-                    .onClick((date: Date) => periodSelected(DayDescription.fromDate(date)))
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
 
@@ -142,7 +147,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("L")
                     .tickFormat(formatMonthNames)
-                    .onClick((date: Date) => periodSelected(DayDescription.fromDate(date)))
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
 
@@ -158,5 +163,6 @@ export class Heatmaps {
                     .draw(chartContainer.select(".chart"));
             });
         }
+        this._dataAlreadyLoaded = true;
     }
 }

@@ -3,15 +3,17 @@ import { PeriodDataTab } from "./periodData";
 import { CurrentDataTab } from "./currentCharts";
 import { Heatmaps } from "./heatmaps";
 
+type TabName = "currentPage" | "periodPage" | "heatmapPage";
+
 let currentTab = "";
 
 let periodDataTab: PeriodDataTab = new PeriodDataTab();
 let currentDataTab: CurrentDataTab = new CurrentDataTab(currentDataReceived);
-let heatmapTab: Heatmaps = new Heatmaps();
+let heatmapTab: Heatmaps = new Heatmaps(heatmapPeriodSelected);
 
 periodDataTab.initializeTab("#periodPage");
 currentDataTab.initializeTab("#currentPage");
-heatmapTab.initializeTab("#heatmapPage", heatmapPeriodSelected);
+heatmapTab.initializeTab("#heatmapPage");
 
 /* Initializing the currentTab is necessary for polling the current usage. */
 currentDataTab.startCurrentUsagePolling();
@@ -41,13 +43,13 @@ function selectTab(name: string) {
 
     selectedTab.classList.add("active");
 
-    showPage(selectedTab.getAttribute("data-page")!, currentTab);
+    showPage(selectedTab.getAttribute("data-page") as TabName, currentTab);
 
     currentTab = name;
 }
 
 /* previousTab is the tab *before* the tab switch */
-function showPage(name: string, previousTab: string) {
+function showPage(name: TabName, previousTab: string) {
     const pages = document.getElementsByClassName("page");
 
     for (const page of pages) {
@@ -56,12 +58,16 @@ function showPage(name: string, previousTab: string) {
 
     document.querySelector("#" + name)?.classList.add("visible");
 
-    if (name === "currentPage") {
-        currentDataTab.initializeCurrentCharts();
-    }
-
-    if (name === "periodPage") {
-        periodDataTab.initializeNavigation();
+    switch (name) {
+        case "currentPage":
+            currentDataTab.initializeCurrentCharts();
+            break;
+        case "periodPage":
+            periodDataTab.initializeNavigation();
+            break;
+        case "heatmapPage":
+            heatmapTab.loadData();
+            break;
     }
 
     if (previousTab === "currentTab" && name !== "currentPage") {
