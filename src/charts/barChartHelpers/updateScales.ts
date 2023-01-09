@@ -70,6 +70,7 @@ export function updateScales<T>(
     const yAxis = d3.axisLeft(scaleY);
     selection
         .select(".yAxis")
+        .classed("axis", true)
         .attr("transform", `translate(${padding.left + axisWidth}, 0)`)
         .transition()
         .duration(200)

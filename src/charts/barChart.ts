@@ -190,7 +190,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["tooltipLine", "gridLines", "additionalInfo", "values", "xAxis axis", "yAxis axis"].forEach((name) => {
+    ["tooltipLine", "gridLines", "additionalInfo", "values", "lines", "xAxis", "yAxis"].forEach((name) => {
         if (!selection.select(`g.${name}`).node()) {
             selection.append("g").attr("class", name);
         }

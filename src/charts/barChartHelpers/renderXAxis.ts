@@ -41,13 +41,12 @@ export function renderXAxis(
         .ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()))
         .tickSizeOuter(0);
 
-    const renderedXAxisLabels = xAxisBase
+    xAxisBase
+        .classed("axis", true)
         .call(xAxis as any)
         .selectAll("text")
         .style("text-anchor", null)
         // Got the 0.71em from the browser
         .attr("dy", "0.71em")
         .attr("transform", null);
-
-    renderedXAxisLabels;
 }
