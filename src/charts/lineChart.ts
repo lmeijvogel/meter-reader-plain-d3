@@ -327,6 +327,10 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             // Always show a bit of margin around the range
             return [min - Math.abs(min * 0.1), max + Math.abs(max * 1.0)];
         } else if (store.minMaxCalculation === "minMax") {
+            if (relevantValues.length === 0) {
+                return [0, 1];
+            }
+
             const min = Math.min(...relevantValues) * 0.95;
             const max = Math.max(...relevantValues) * 1.1;
 
