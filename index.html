@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Energie</title>
+    <link rel="stylesheet" href="./styles/reset.css" />
+    <link rel="stylesheet" href="./styles/d3-tip.css" />
+    <link rel="stylesheet" href="./styles/main.css" />
+    <link rel="stylesheet" href="./styles/navigation.css" />
+    <link rel="stylesheet" href="./styles/vizCard.css" />
+  </head>
+  <body>
+        <article>
+            <section class="navigation">
+                <ul class="tabs">
+                    <li id="currentTab" class="tab current-tab-title" data-page="currentPage">
+                        Nu
+                    <li id="periodTab" class="tab" data-page="periodPage">Per periode</li>
+                    <li id="heatmapsTab" class="tab" data-page="heatmapsPage">Heatmaps</li>
+                </ul>
+            </section>
+            <section class="pages">
+                <section id="currentPage" class="page"></section>
+                <section id="periodPage" class="page"></section>
+                <section id="heatmapsPage" class="page"></section>
+            </section>
+        </article>
+        <div id="tooltip"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
