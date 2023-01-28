@@ -101,6 +101,10 @@ export class YearDescription extends PeriodDescription {
         return new YearDescription(new Date().getFullYear());
     }
 
+    /**
+     * @param year The year
+     * @param month The 0-based month
+     */
     constructor(year: number) {
         super();
         this.year = year;
@@ -185,6 +189,10 @@ export class MonthDescription extends PeriodDescription {
     year: number;
     month: number;
 
+    /**
+     * @param year The year
+     * @param month The 0-based month
+     */
     constructor(year: number, month: number) {
         super();
         this.year = year;
@@ -282,6 +290,11 @@ export class DayDescription extends PeriodDescription {
     month: number;
     day: number;
 
+    /**
+     * @param year The year
+     * @param month The 0-based month
+     * @param day The 1-based day
+     */
     constructor(year: number, month: number, day: number) {
         super();
         this.year = year;
