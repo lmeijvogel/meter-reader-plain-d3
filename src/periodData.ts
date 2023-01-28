@@ -37,13 +37,9 @@ import {
 } from "./colors";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 
-const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")[] = [
-    "gas",
-    "stroom",
-    "water",
-    "temperature",
-    "generation"
-];
+type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
+
+const enabledGraphs: Graphs[] = ["gas", "stroom", "water", "temperature", "generation"];
 
 export class PeriodDataTab {
     private navigation: NavigationApi | null = null;
