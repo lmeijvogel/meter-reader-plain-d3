@@ -97,7 +97,7 @@ export class CurrentDataTab {
 
     public startCurrentUsagePolling() {
         if (!this.powerGaugeTimer) {
-            this.powerGaugeTimer = setInterval(this.getLatestPowerUsage, 1000);
+            this.powerGaugeTimer = setInterval(this.getGaugeData, 1000);
         }
     }
 
@@ -151,7 +151,7 @@ export class CurrentDataTab {
         this.drawPowerUsage(this.powerUsage);
     };
 
-    private getLatestPowerUsage = async () => {
+    private getGaugeData = async () => {
         const newValues = await this.retrieveLatestPowerUsage();
 
         const currentValueInW = newValues.current[0].value * 1000;
