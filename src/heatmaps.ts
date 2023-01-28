@@ -31,13 +31,17 @@ const cardsPerRow = [
 export class Heatmaps {
     private _dataAlreadyLoaded = false;
 
-    constructor(private periodSelected: (periodDescription: PeriodDescription) => void) {}
+    constructor(
+        private periodSelected: (periodDescription: PeriodDescription) => void,
+        private readonly updateLocation: (newPath: string) => void
+    ) {}
 
     initializeTab(selector: string) {
         createRowsWithCards(cardsPerRow, selector);
     }
 
     loadData() {
+        this.updateLocation("/heatmaps");
         if (this._dataAlreadyLoaded) {
             return;
         }

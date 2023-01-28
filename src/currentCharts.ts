@@ -46,7 +46,10 @@ export class CurrentDataTab {
     private powerGaugeTimer: NodeJS.Timer | undefined;
     private recentPowerGraphTimer: NodeJS.Timer | undefined;
 
-    constructor(private readonly onDataReceived: (currentValueInW: number) => void) {}
+    constructor(
+        private readonly onDataReceived: (currentValueInW: number) => void,
+        private readonly updateLocation: (newPath: string) => void
+    ) {}
 
     initializeTab(selector: string) {
         createRowsWithCards([["recent_current", "current_power_gauge"]], selector);
@@ -66,6 +69,8 @@ export class CurrentDataTab {
 
     public async initializeCurrentCharts() {
         const pageVisible = document.visibilityState === "visible";
+
+        this.updateLocation("/now");
 
         /* This duplicates the check at the top, but we don't want the intervals
          * to be set if the page is loaded in the background.

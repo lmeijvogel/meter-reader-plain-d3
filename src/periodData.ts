@@ -16,7 +16,7 @@ import {
     GenerationGraphDescription,
     TemperatuurGraphDescription
 } from "./models/GraphDescription";
-import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
+import { DayDescription, PeriodDescription, serializePeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";
@@ -48,7 +48,7 @@ const enabledGraphs: ("gas" | "stroom" | "water" | "temperature" | "generation")
 export class PeriodDataTab {
     private navigation: NavigationApi | null = null;
 
-    private previousPeriod: PeriodDescription | null = null;
+    private periodDescription: PeriodDescription;
 
     private readonly priceCalculator = new PriceCalculator();
 
@@ -58,8 +58,12 @@ export class PeriodDataTab {
     private requestedStartOfPeriod: Date | null = null;
     private _isNavigationInitialized = false;
 
-    constructor() {
-        initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.previousPeriod);
+    wasLoaded = false;
+
+    constructor(initialPeriod: PeriodDescription, readonly updateLocation: (path: string) => void) {
+        this.periodDescription = initialPeriod;
+
+        initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
     }
 
     initializeTab(selector: string) {
@@ -71,6 +75,11 @@ export class PeriodDataTab {
             ],
             "#periodDataRows"
         );
+    }
+
+    initialize() {
+        this.initializeNavigation();
+        this.retrieveAndDrawPeriodCharts(this.periodDescription);
     }
 
     initializeNavigation() {
@@ -85,13 +94,24 @@ export class PeriodDataTab {
     }
 
     retrieveAndDrawPeriodCharts = (periodDescription: PeriodDescription) => {
-        if (this.previousPeriod && periodDescription.equals(this.previousPeriod)) {
+        this.updateLocation(`/period${periodDescription.toUrl()}`);
+
+        if (this.wasLoaded && this.periodDescription && periodDescription.equals(this.periodDescription)) {
             return;
         }
 
+        this.wasLoaded = true;
+
+        /* This gets a special place because the temperature
+         * is also used by the gas graph, and I don't want to retrieve
+         * the data twice.
+         */
+        const temperatureCard = d3.select("#temperature_line_chart");
+        const temperatureRequest = fetchTemperatureData(periodDescription, temperatureCard);
+
         this.navigation?.setPeriodDescription(periodDescription);
 
-        const shouldClearCanvas = this.previousPeriod?.periodSize !== periodDescription.periodSize;
+        const shouldClearCanvas = this.periodDescription?.periodSize !== periodDescription.periodSize;
 
         const fetchChartData = async (
             fieldName: UsageField,
@@ -337,7 +357,7 @@ export class PeriodDataTab {
             });
         }
 
-        this.previousPeriod = periodDescription;
+        this.periodDescription = periodDescription;
     };
 
     private createPeriodDataCardTitle(

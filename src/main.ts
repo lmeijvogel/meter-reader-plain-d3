@@ -2,23 +2,42 @@ import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { PeriodDataTab } from "./periodData";
 import { CurrentDataTab } from "./currentCharts";
 import { Heatmaps } from "./heatmaps";
+import { appStateFromLocation } from "./appStateFromLocation";
 
-type TabName = "currentPage" | "periodPage" | "heatmapPage";
+type TabName = "currentPage" | "periodPage" | "heatmapsPage";
 
 let currentTab = "";
 
-let periodDataTab: PeriodDataTab = new PeriodDataTab();
-let currentDataTab: CurrentDataTab = new CurrentDataTab(currentDataReceived);
-let heatmapTab: Heatmaps = new Heatmaps(heatmapPeriodSelected);
+const updateLocation = (newPath: string) => {
+    window.history.replaceState({}, "", newPath);
+};
+
+/* Any period except today */
+let periodDataTab = new PeriodDataTab(DayDescription.today(), updateLocation);
+let currentDataTab = new CurrentDataTab(currentDataReceived, updateLocation);
+let heatmapsTab = new Heatmaps(heatmapPeriodSelected, updateLocation);
 
 periodDataTab.initializeTab("#periodPage");
 currentDataTab.initializeTab("#currentPage");
-heatmapTab.initializeTab("#heatmapPage");
+heatmapsTab.initializeTab("#heatmapsPage");
 
 /* Initializing the currentTab is necessary for polling the current usage. */
 currentDataTab.startCurrentUsagePolling();
-selectTab("periodTab");
-periodDataTab.retrieveAndDrawPeriodCharts(DayDescription.today());
+
+const initialState = appStateFromLocation(window.location.pathname);
+
+switch (initialState.activeTab) {
+    case "now":
+        selectTab("currentTab");
+        break;
+    case "heatmaps":
+        selectTab("heatmapsTab");
+        break;
+    case "period":
+        selectTab("periodTab");
+        periodDataTab.retrieveAndDrawPeriodCharts(initialState.periodDescription);
+        break;
+}
 
 function currentDataReceived(currentValueInW: number) {
     const element = document.querySelector("#currentTab");
@@ -63,10 +82,10 @@ function showPage(name: TabName, previousTab: string) {
             currentDataTab.initializeCurrentCharts();
             break;
         case "periodPage":
-            periodDataTab.initializeNavigation();
+            periodDataTab.initialize();
             break;
-        case "heatmapPage":
-            heatmapTab.loadData();
+        case "heatmapsPage":
+            heatmapsTab.loadData();
             break;
     }
 
