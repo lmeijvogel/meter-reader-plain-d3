@@ -56,7 +56,7 @@ export class PeriodDataTab {
 
     wasLoaded = false;
 
-    constructor(initialPeriod: PeriodDescription, readonly updateLocation: (path: string) => void) {
+    constructor(initialPeriod: PeriodDescription, private readonly updateLocation: (path: string) => void) {
         this.periodDescription = initialPeriod;
 
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
