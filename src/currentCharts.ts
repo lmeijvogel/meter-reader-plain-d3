@@ -51,7 +51,7 @@ export class CurrentDataTab {
         private readonly updateLocation: (newPath: string) => void
     ) {}
 
-    initializeTab(selector: string) {
+    initializePage(selector: string) {
         createRowsWithCards([["recent_current", "current_power_gauge"]], selector);
 
         window.addEventListener("visibilitychange", () => {
@@ -67,7 +67,12 @@ export class CurrentDataTab {
         });
     }
 
-    public async initializeCurrentCharts() {
+    public async tabSelected() {
+        this.updateLocation("/now");
+        await this.initializeCurrentCharts();
+    }
+
+    private async initializeCurrentCharts() {
         const pageVisible = document.visibilityState === "visible";
 
         this.updateLocation("/now");

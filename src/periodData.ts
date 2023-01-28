@@ -66,7 +66,7 @@ export class PeriodDataTab {
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
     }
 
-    initializeTab(selector: string) {
+    initializePage(selector: string) {
         document.querySelector(selector)!.innerHTML = this.html();
         createRowsWithCards(
             [
@@ -77,7 +77,7 @@ export class PeriodDataTab {
         );
     }
 
-    initialize() {
+    tabSelected() {
         this.initializeNavigation();
         this.retrieveAndDrawPeriodCharts(this.periodDescription);
     }

@@ -12,14 +12,13 @@ const updateLocation = (newPath: string) => {
     window.history.replaceState({}, "", newPath);
 };
 
-/* Any period except today */
 let periodDataTab = new PeriodDataTab(DayDescription.today(), updateLocation);
 let currentDataTab = new CurrentDataTab(currentDataReceived, updateLocation);
 let heatmapsTab = new Heatmaps(heatmapPeriodSelected, updateLocation);
 
-periodDataTab.initializeTab("#periodPage");
-currentDataTab.initializeTab("#currentPage");
-heatmapsTab.initializeTab("#heatmapsPage");
+periodDataTab.initializePage("#periodPage");
+currentDataTab.initializePage("#currentPage");
+heatmapsTab.initializePage("#heatmapsPage");
 
 /* Initializing the currentTab is necessary for polling the current usage. */
 currentDataTab.startCurrentUsagePolling();
@@ -79,13 +78,13 @@ function showPage(name: TabName, previousTab: string) {
 
     switch (name) {
         case "currentPage":
-            currentDataTab.initializeCurrentCharts();
+            currentDataTab.tabSelected();
             break;
         case "periodPage":
-            periodDataTab.initialize();
+            periodDataTab.tabSelected();
             break;
         case "heatmapsPage":
-            heatmapsTab.loadData();
+            heatmapsTab.tabSelected();
             break;
     }
 

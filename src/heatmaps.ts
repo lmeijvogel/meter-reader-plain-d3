@@ -36,12 +36,17 @@ export class Heatmaps {
         private readonly updateLocation: (newPath: string) => void
     ) {}
 
-    initializeTab(selector: string) {
+    initializePage(selector: string) {
         createRowsWithCards(cardsPerRow, selector);
     }
 
-    loadData() {
+    tabSelected() {
         this.updateLocation("/heatmaps");
+
+        this.loadData();
+    }
+
+    private loadData() {
         if (this._dataAlreadyLoaded) {
             return;
         }
