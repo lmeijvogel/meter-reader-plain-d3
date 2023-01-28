@@ -90,8 +90,6 @@ export function gauge() {
             const textX = Math.sin(rotationRad) * (outerSize + 15);
             const textY = -Math.cos(rotationRad) * (outerSize + 15);
 
-            const marginX = value < 0 ? -10 : 10;
-
             ticksContainer
                 .append("text")
                 .attr("text-anchor", value < 0 ? "end" : value > 0 ? "start" : "middle")

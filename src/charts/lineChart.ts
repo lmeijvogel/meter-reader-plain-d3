@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import * as uuid from "uuid";
 
-import { DayDescription, PeriodDescription } from "../models/PeriodDescription";
+import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { assertNever } from "../lib/assertNever";

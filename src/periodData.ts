@@ -16,7 +16,7 @@ import {
     GenerationGraphDescription,
     TemperatuurGraphDescription
 } from "./models/GraphDescription";
-import { DayDescription, PeriodDescription, serializePeriodDescription } from "./models/PeriodDescription";
+import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";

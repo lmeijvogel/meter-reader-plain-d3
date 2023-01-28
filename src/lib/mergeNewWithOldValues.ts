@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { greatest, greatestIndex, leastIndex } from "d3";
 import { differenceInSeconds, subHours } from "date-fns";
 
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
