@@ -102,7 +102,7 @@ export class CurrentDataTab {
 
     public startCurrentUsagePolling() {
         if (!this.powerGaugeTimer) {
-            this.powerGaugeTimer = setInterval(this.getGaugeData, 1000);
+            this.powerGaugeTimer = setInterval(this.updateGaugeData, 1000);
         }
     }
 
@@ -132,7 +132,7 @@ export class CurrentDataTab {
             });
     };
 
-    private retrieveLatestPowerUsage = async () => {
+    private fetchGaugeData = async () => {
         return fetch("/api/stroom/last")
             .then((response) => response.json())
             .then((json) => {
@@ -156,12 +156,12 @@ export class CurrentDataTab {
         this.drawPowerUsage(this.powerUsage);
     };
 
-    private getGaugeData = async () => {
-        const newValues = await this.retrieveLatestPowerUsage();
+    private updateGaugeData = async () => {
+        const newValues = await this.fetchGaugeData();
 
         const currentValueInW = newValues.current[0].value * 1000;
 
-        this.updateCurrentUsageGauge(currentValueInW);
+        this.updateGauge(currentValueInW);
         this.onDataReceived(currentValueInW);
     };
 
@@ -182,7 +182,7 @@ export class CurrentDataTab {
         recentCurrentContainer.call(this.recentCurrentGraph.call);
     }
 
-    private updateCurrentUsageGauge(valueInW: number) {
+    private updateGauge(valueInW: number) {
         const gaugeCard = d3.select("#current_power_gauge");
         const gaugeContainer = gaugeCard.select(".chart");
         setCardTitle(gaugeCard, "Huidig stroomverbruik");
