@@ -36,6 +36,7 @@ import {
     white
 } from "./colors";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
+import { Thermometer } from "./charts/thermometer";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
@@ -147,18 +148,51 @@ export class PeriodDataTab {
         if (enabledGraphs.includes("gas")) {
             const periodGasContainer = d3.select("#gas_period_data");
 
-            fetchChartData("gas", periodGasContainer).then((values) => {
-                if (values === "stale") {
+            const temperatureDataFetcher = temperatureRequest;
+
+            // const priceCalculator = new PriceCalculator();
+            Promise.all([fetchChartData("gas", periodGasContainer), temperatureDataFetcher]).then((result) => {
+                const [gasValues, temperatureValues] = result;
+                if (gasValues === "stale") {
                     return;
                 }
 
                 const graphDescription = new GasGraphDescription(periodDescription);
+                // const eurosDescription = new EurosGraphDescription(periodDescription);
                 const api = barChart(periodDescription, graphDescription)
                     .onClick(this.retrieveAndDrawPeriodCharts)
-                    .data(values)
+                    .data(gasValues)
+                    // values.map((el) => ({
+                    // ...el,
+                    // value: priceCalculator.costsFor(el.value, "gas", el.timestamp).euros
+                    // }))
+                    // )
                     .color(gasGraphColor);
 
-                const cardTitle = this.createPeriodDataCardTitle(values, "gas", graphDescription);
+                const outsideTemperatures = temperatureValues.get("buiten");
+
+                if (outsideTemperatures) {
+                    let thermometerContainer: d3.Selection<d3.BaseType, unknown, HTMLElement, any> =
+                        periodGasContainer.select(".thermometer");
+
+                    if (periodDescription.periodSize === "day") {
+                        if (!thermometerContainer.node()) {
+                            thermometerContainer = periodGasContainer.append("svg") as any;
+                            thermometerContainer.attr("class", "thermometer");
+                        }
+
+                        const minimum = d3.min(outsideTemperatures, (el) => el.value) ?? 0;
+                        const maximum = d3.max(outsideTemperatures, (el) => el.value) ?? 0;
+
+                        new Thermometer(thermometerContainer).draw({ minimum, maximum });
+                        api.removeLineData();
+                    } else {
+                        thermometerContainer?.selectAll("*").remove();
+                        api.addLineData(outsideTemperatures, new TemperatuurGraphDescription(periodDescription));
+                    }
+                }
+
+                const cardTitle = this.createPeriodDataCardTitle(gasValues, "gas", graphDescription);
                 setCardTitle(periodGasContainer, cardTitle);
 
                 api.call(periodGasContainer.select(".chart"));
@@ -230,7 +264,10 @@ export class PeriodDataTab {
                 // To convert these to kWh, we need to multiply by 4 (15m => 1h)
                 // in addition to dividing by 1000.
                 const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
-                const valuesInKW = generationValues.map((value) => ({ ...value, value: value.value / 1000 }));
+                const valuesInKW = generationValues.map((value) => ({
+                    ...value,
+                    value: value.value / 1000
+                }));
 
                 const valuesInKWhPer15m = generationValues.map((value) => ({
                     ...value,
@@ -281,8 +318,14 @@ export class PeriodDataTab {
 
                 const equalizedData = {
                     consumption: stroomValues,
-                    generation: generationValues.map((el) => ({ ...el, value: el.value / 1000 })),
-                    backDelivery: backDeliveryValues.map((el) => ({ ...el, value: -el.value }))
+                    generation: generationValues.map((el) => ({
+                        ...el,
+                        value: el.value / 1000
+                    })),
+                    backDelivery: backDeliveryValues.map((el) => ({
+                        ...el,
+                        value: -el.value
+                    }))
                 };
 
                 const api = usageAndGenerationBarChart(periodDescription, graphDescription)
@@ -297,38 +340,18 @@ export class PeriodDataTab {
             });
         }
 
-        async function fetchTemperatureData(
-            card: d3.Selection<d3.BaseType, unknown, HTMLElement, any>
-        ): Promise<Map<string, ValueWithTimestamp[]>> {
-            card.classed("loading", true);
+        if (enabledGraphs.includes("temperature")) {
+            const temperatureCard = d3.select("#temperature_line_chart");
 
-            const url = periodDescription.toUrl();
-
-            const result = new Map();
-
-            try {
-                const response = await fetch(`/api/temperature/living_room${url}`);
-                const json: { [key: string]: JsonResponseRow[] } = await response.json();
-
-                Object.entries(json).forEach((keyAndSeries) => {
-                    const [key, rawSeries] = keyAndSeries;
-                    const series = rawSeries.map(responseRowToValueWithTimestamp);
-
-                    result.set(key, series);
-                });
-            } finally {
-                card.classed("loading", false);
+            if (!temperatureCard.select(".thermometer").node()) {
+                const thermometerCard = temperatureCard.select(".chart").append("g");
+                thermometerCard.attr("class", "thermometer");
             }
 
-            return result;
-        }
+            const chartContainer = temperatureCard.select(".chart");
+            setCardTitle(temperatureCard, "Binnentemperatuur");
 
-        if (enabledGraphs.includes("temperature")) {
-            const card = d3.select("#temperature_line_chart");
-            const chartContainer = card.select(".chart");
-            setCardTitle(card, "Binnentemperatuur");
-
-            fetchTemperatureData(card).then((result) => {
+            temperatureRequest.then((result) => {
                 const temperatureChart = lineChart(
                     periodDescription,
                     new TemperatuurGraphDescription(periodDescription)
@@ -345,7 +368,7 @@ export class PeriodDataTab {
                     const [key, color] = set;
                     const series = result.get(key);
 
-                    if (!!series) {
+                    if (series) {
                         temperatureChart.setSeries(key, series, color);
                     }
                 });
@@ -405,4 +428,31 @@ export class PeriodDataTab {
             </div>
         `;
     }
+}
+
+async function fetchTemperatureData(
+    periodDescription: PeriodDescription,
+    card: d3.Selection<d3.BaseType, unknown, HTMLElement, any>
+): Promise<Map<string, ValueWithTimestamp[]>> {
+    card.classed("loading", true);
+
+    const url = periodDescription.toUrl();
+
+    const result = new Map();
+
+    try {
+        const response = await fetch(`/api/temperature/living_room${url}`);
+        const json: { [key: string]: JsonResponseRow[] } = await response.json();
+
+        Object.entries(json).forEach((keyAndSeries) => {
+            const [key, rawSeries] = keyAndSeries;
+            const series = rawSeries.map(responseRowToValueWithTimestamp);
+
+            result.set(key, series);
+        });
+    } finally {
+        card.classed("loading", false);
+    }
+
+    return result;
 }

@@ -5,7 +5,7 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { getClosestIndex } from "../lib/getClosestIndex";
 import { hideTooltip, showTooltip } from "../tooltip";
-import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
+import { height, padding, xAxisHeight, width } from "./barChartHelpers/constants";
 import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { grey, lightGrey } from "../colors";
 
@@ -13,6 +13,7 @@ type Store = {
     periodDescription: PeriodDescription;
     tooltipDateFormat: string;
     data: ValueWithTimestamp[];
+    lineData: { data: ValueWithTimestamp[]; graphDescription: GraphDescription }[];
     color: string;
     colorLight: string;
     relativeMinMax: boolean;
@@ -28,6 +29,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         tooltipDateFormat: periodDescription.timeFormatString(),
         relativeMinMax: true,
         data: [],
+        lineData: [],
         color: grey,
         colorLight: lightGrey,
         onValueClick: () => {},
@@ -62,6 +64,41 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             .attr("fill", store.color)
             .attr("data-value", (el) => el.value)
             .attr("index", (_d: any, i: number) => i);
+    }
+
+    function drawLines(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        const data = store.lineData[0]?.data;
+
+        if (!data) {
+            selection.select("g.lines").selectAll("path").remove();
+            selection.select("g.lineYAxis").selectAll("*").remove();
+            return;
+        }
+
+        const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
+        const lineScaleX = d3.scaleTime().domain(domainX).range(scaleX.range());
+
+        const lineScaleY = d3.scaleLinear().domain([-5, 40]).range(scaleY.range());
+        const lineGenerator = d3
+            .line<ValueWithTimestamp>()
+            .x((d) => lineScaleX(d.timestamp)!)
+            .y((d) => lineScaleY(d.value));
+
+        selection
+            .select("g.lines")
+            .selectAll("path")
+            .data(store.lineData)
+            .join("path")
+            .attr("d", lineGenerator(data))
+            .attr("stroke", "black")
+            .attr("fill", "none");
+
+        const yAxis = d3.axisRight(lineScaleY);
+
+        selection
+            .select("g.lineYAxis")
+            .attr("transform", `translate(${width - padding.right}, 0)`)
+            .call(yAxis as any);
     }
 
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
@@ -143,6 +180,16 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             return api;
         },
 
+        addLineData(data: ValueWithTimestamp[], graphDescription: GraphDescription) {
+            store.lineData.push({ data, graphDescription });
+
+            return api;
+        },
+
+        removeLineData() {
+            store.lineData = [];
+        },
+
         color(color: string) {
             store.color = color;
             store.colorLight = d3.color(color)!.brighter(1.5).formatHex();
@@ -182,6 +229,8 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             updateScales(selection, store.firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
 
             drawBars(selection);
+            drawLines(selection);
+
             store.firstDrawCall = false;
         }
     };
@@ -190,7 +239,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
 }
 
 function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["tooltipLine", "gridLines", "additionalInfo", "values", "lines", "xAxis", "yAxis"].forEach((name) => {
+    ["tooltipLine", "gridLines", "additionalInfo", "values", "lines", "xAxis", "yAxis", "lineYAxis"].forEach((name) => {
         if (!selection.select(`g.${name}`).node()) {
             selection.append("g").attr("class", name);
         }
