@@ -7,11 +7,11 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 export function padData(
     data: ValueWithTimestamp[],
     startDate: Date,
-    periodSize: "day" | "month" | "year"
+    unitSize: "hour" | "day" | "month"
 ): ValueWithTimestamp[] {
     const result: ValueWithTimestamp[] = [];
 
-    if (periodSize === "day") {
+    if (unitSize === "hour") {
         let currentDate: Date = startDate;
 
         /* This seems like a roundabout way of iterating over the hours in the day,
@@ -40,7 +40,7 @@ export function padData(
         return result;
     }
 
-    if (periodSize === "month") {
+    if (unitSize === "day") {
         for (let day = 0; day < getDaysInMonth(startDate); day++) {
             const currentDate = addDays(startDate, day);
 

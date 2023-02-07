@@ -34,21 +34,21 @@ export function appStateFromLocation(pathName: string): AppState {
 function parsePath(path: string): PeriodDescription {
     let parts = path.split("/").slice(2);
 
-    const periodSize = parts.shift();
+    const period = parts.shift();
 
-    if (periodSize === "year") {
+    if (period === "year") {
         const year = parseInt(parts[0]);
 
         return new YearDescription(year);
     }
 
-    if (periodSize === "month") {
+    if (period === "month") {
         const [year, month] = parts.map((p) => parseInt(p, 10));
 
         return new MonthDescription(year, month - 1);
     }
 
-    if (periodSize === "day") {
+    if (period === "day") {
         const [year, month, day] = parts.map((p) => parseInt(p, 10));
 
         return new DayDescription(year, month - 1, day);

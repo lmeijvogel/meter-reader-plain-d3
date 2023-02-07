@@ -16,8 +16,9 @@ export abstract class GraphDescription {
         return ".2f";
     }
 
-    protected get periodSize(): "year" | "month" | "day" {
-        return this.periodDescription.periodSize;
+    // TODO: This should be unitSize because we use it to get the expected max per unit
+    protected get period(): "year" | "month" | "day" {
+        return this.periodDescription.period;
     }
 }
 
@@ -25,7 +26,7 @@ export class GasGraphDescription extends GraphDescription {
     readonly displayableUnit = "m³";
 
     get maxY() {
-        switch (this.periodSize) {
+        switch (this.period) {
             case "year":
                 return 400;
             case "month":
@@ -33,7 +34,24 @@ export class GasGraphDescription extends GraphDescription {
             case "day":
                 return 1;
             default:
-                return assertNever(this.periodSize);
+                return assertNever(this.period);
+        }
+    }
+}
+
+export class EurosGraphDescription extends GraphDescription {
+    readonly displayableUnit = "€";
+
+    get maxY() {
+        switch (this.period) {
+            case "year":
+                return 160;
+            case "month":
+                return 30;
+            case "day":
+                return 3;
+            default:
+                return assertNever(this.period);
         }
     }
 }
@@ -46,7 +64,7 @@ export class StroomGraphDescription extends GraphDescription {
     }
 
     get maxY() {
-        switch (this.periodSize) {
+        switch (this.period) {
             case "year":
                 return 600;
             case "month":
@@ -54,7 +72,7 @@ export class StroomGraphDescription extends GraphDescription {
             case "day":
                 return 1;
             default:
-                return assertNever(this.periodSize);
+                return assertNever(this.period);
         }
     }
 }
@@ -67,7 +85,7 @@ export class GenerationGraphDescription extends GraphDescription {
     }
 
     get maxY() {
-        switch (this.periodSize) {
+        switch (this.period) {
             case "year":
                 return 600;
             case "month":
@@ -75,7 +93,7 @@ export class GenerationGraphDescription extends GraphDescription {
             case "day":
                 return 1;
             default:
-                return assertNever(this.periodSize);
+                return assertNever(this.period);
         }
     }
 }
@@ -84,7 +102,7 @@ export class WaterGraphDescription extends GraphDescription {
     readonly displayableUnit = "L";
 
     get maxY() {
-        switch (this.periodSize) {
+        switch (this.period) {
             case "year":
                 return 30000;
             case "month":
@@ -92,7 +110,7 @@ export class WaterGraphDescription extends GraphDescription {
             case "day":
                 return 200;
             default:
-                return assertNever(this.periodSize);
+                return assertNever(this.period);
         }
     }
 

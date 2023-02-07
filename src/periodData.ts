@@ -108,7 +108,7 @@ export class PeriodDataTab {
 
         this.navigation?.setPeriodDescription(periodDescription);
 
-        const shouldClearCanvas = this.periodDescription?.periodSize !== periodDescription.periodSize;
+        const shouldClearCanvas = this.periodDescription?.period !== periodDescription.period;
 
         const fetchChartData = async (
             fieldName: UsageField,
@@ -122,7 +122,8 @@ export class PeriodDataTab {
 
                 let url = `/api/${fieldName}${periodDescription.toUrl()}`;
 
-                if (prefer15MinInterval && periodDescription.periodSize === "day") {
+                // TODO: set unitSize to 15m?
+                if (prefer15MinInterval && periodDescription.period === "day") {
                     url = `${url}/15m`;
                 }
 
@@ -139,7 +140,7 @@ export class PeriodDataTab {
                     return data;
                 }
 
-                return padData(data, periodDescription.startOfPeriod(), periodDescription.periodSize);
+                return padData(data, periodDescription.startOfPeriod(), periodDescription.unitSize);
             } finally {
                 card.classed("loading", false);
             }
@@ -175,7 +176,7 @@ export class PeriodDataTab {
                     let thermometerContainer: d3.Selection<d3.BaseType, unknown, HTMLElement, any> =
                         periodGasContainer.select(".thermometer");
 
-                    if (periodDescription.periodSize === "day") {
+                    if (periodDescription.period === "day") {
                         if (!thermometerContainer.node()) {
                             thermometerContainer = periodGasContainer.append("svg") as any;
                             thermometerContainer.attr("class", "thermometer");
@@ -260,10 +261,10 @@ export class PeriodDataTab {
                 const graphDescription = new GenerationGraphDescription(periodDescription);
 
                 // The API returns Wh. I prefer to show the "average wattage".
-                // When the periodSize === "day", values for every 15m are returned.
+                // When the period === "day", values for every 15m are returned.
                 // To convert these to kWh, we need to multiply by 4 (15m => 1h)
                 // in addition to dividing by 1000.
-                const kWMultiplicationFactor = periodDescription.periodSize === "day" ? 250 : 1000;
+                const kWMultiplicationFactor = periodDescription.period === "day" ? 250 : 1000;
                 const valuesInKW = generationValues.map((value) => ({
                     ...value,
                     value: value.value / 1000

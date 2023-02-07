@@ -38,7 +38,8 @@ const FULL_MONTH_NAMES = [
 const firstMeasurementDate = new Date(2014, 2, 3);
 
 export abstract class PeriodDescription {
-    abstract readonly periodSize: "year" | "month" | "day";
+    abstract readonly period: "year" | "month" | "day";
+    abstract readonly unitSize: "month" | "day" | "hour"; // Which single values for graphs
     abstract readonly graphTickPositions: GraphTickPositions;
 
     abstract toUrl(): string;
@@ -79,7 +80,7 @@ export abstract class PeriodDescription {
     }
 
     equals(other: PeriodDescription): boolean {
-        return this.periodSize === other.periodSize && isEqual(this.startOfPeriod(), other.startOfPeriod());
+        return this.period === other.period && isEqual(this.startOfPeriod(), other.startOfPeriod());
     }
 
     abstract startOfPeriod(): Date;
@@ -92,7 +93,9 @@ export abstract class PeriodDescription {
 }
 
 export class YearDescription extends PeriodDescription {
-    readonly periodSize = "year";
+    readonly period = "year";
+    readonly unitSize = "month";
+
     readonly graphTickPositions = "on_value";
 
     year: number;
@@ -183,7 +186,9 @@ export class YearDescription extends PeriodDescription {
 }
 
 export class MonthDescription extends PeriodDescription {
-    readonly periodSize = "month";
+    readonly period = "month";
+    readonly unitSize = "day";
+
     readonly graphTickPositions = "on_value";
 
     year: number;
@@ -283,7 +288,9 @@ export class MonthDescription extends PeriodDescription {
 }
 
 export class DayDescription extends PeriodDescription {
-    readonly periodSize = "day";
+    readonly period = "day";
+    readonly unitSize = "hour";
+
     readonly graphTickPositions = "between_values";
 
     year: number;
@@ -414,7 +421,9 @@ export class HourDescription extends PeriodDescription {
         super();
     }
 
-    readonly periodSize = "day"; // TODO: Should not be used!
+    readonly period = "day"; // TODO: Should not be used!
+    readonly unitSize = "hour"; // TODO: Should not be used!
+
     readonly graphTickPositions = "on_value";
 
     toUrl() {
@@ -542,7 +551,8 @@ export class LastHourDescription extends HourDescription {
 }
 
 export class MinuteDescription extends PeriodDescription {
-    readonly periodSize = "day";
+    readonly period = "day";
+    readonly unitSize = "hour";
 
     constructor(private readonly hour: number, private readonly minute: number) {
         super();
