@@ -469,14 +469,6 @@ export class HourDescription extends PeriodDescription {
         return addSeconds(date, -30);
     }
 
-    hasMeasurements(): boolean {
-        return !this.beforeFirstMeasurement() && !this.isInFuture();
-    }
-
-    beforeFirstMeasurement(): boolean {
-        return this.relevantDateParts(this.toDate()) < this.relevantDateParts(firstMeasurementDate);
-    }
-
     protected relevantDateParts(date: Date): Date {
         return date;
     }
