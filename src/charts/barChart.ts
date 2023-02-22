@@ -63,6 +63,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             .attr("width", scaleX.bandwidth())
             .attr("fill", store.color)
             .attr("data-value", (el) => el.value)
+            .attr("data-timestamp", (el) => el.timestamp.toString())
             .attr("index", (_d: any, i: number) => i);
     }
 
