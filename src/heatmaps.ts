@@ -86,6 +86,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("m³")
                     .tickFormat((value: Date) => getDate(value).toString())
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
         }
@@ -114,6 +115,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("kWh")
                     .tickFormat((value: Date) => getDate(value).toString())
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
         }
@@ -142,6 +144,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("Wh")
                     .tickFormat((value: Date) => getDate(value).toString())
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
         }
@@ -169,6 +172,7 @@ export class Heatmaps {
                     .data(result)
                     .unit("L")
                     .tickFormat((value: Date) => getDate(value).toString())
+                    .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
         }
