@@ -4,7 +4,7 @@ const MIN_TEMP = -10;
 const MAX_TEMP = 40;
 
 const centerX = 7;
-const gaugeWidth = 8;
+const gaugeWidth = 4;
 const reservoirRadius = gaugeWidth;
 const hgWidth = gaugeWidth - 2;
 const reservoirTop = gaugeWidth * 0.9;
@@ -109,13 +109,5 @@ export class Thermometer {
             .attr("y2", y)
             .style("stroke", colors.minimum)
             .style("strokeWidth", 1);
-
-        const text = valuesContainer.append("text");
-        text.text(`${Math.floor(value)} °C`);
-        text.style("fill", colors.minimum).style("stroke", "none").style("strokeWidth", 1).style("font-size", "9pt");
-
-        text.attr("dominant-baseline", "middle")
-            .attr("x", x + 12)
-            .attr("y", y);
     }
 }
