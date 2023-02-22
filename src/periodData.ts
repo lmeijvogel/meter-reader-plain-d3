@@ -172,10 +172,16 @@ export class PeriodDataTab {
 
                 const outsideTemperatures = temperatureValues.get("buiten");
 
-                if (outsideTemperatures) {
-                    let thermometerContainer: d3.Selection<d3.BaseType, unknown, HTMLElement, any> =
-                        periodGasContainer.select(".thermometer");
+                let thermometerContainer: d3.Selection<d3.BaseType, unknown, HTMLElement, any> =
+                    periodGasContainer.select(".thermometer");
 
+                thermometerContainer?.selectAll("*").remove();
+                api.removeLineData();
+
+                // If there aren't enough temperature measurements (which happens when
+                // KNMI didn't validate the measurements yet), the thermometer will show
+                // incomplete data, so don't show it then.
+                if (outsideTemperatures && outsideTemperatures.length > 12) {
                     if (periodDescription.period === "day") {
                         if (!thermometerContainer.node()) {
                             thermometerContainer = periodGasContainer.append("svg") as any;
@@ -186,9 +192,7 @@ export class PeriodDataTab {
                         const maximum = d3.max(outsideTemperatures, (el) => el.value) ?? 0;
 
                         new Thermometer(thermometerContainer).draw({ minimum, maximum });
-                        api.removeLineData();
                     } else {
-                        thermometerContainer?.selectAll("*").remove();
                         api.addLineData(outsideTemperatures, new TemperatuurGraphDescription(periodDescription));
                     }
                 }
