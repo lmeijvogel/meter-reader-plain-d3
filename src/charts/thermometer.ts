@@ -24,10 +24,10 @@ const colors = {
 export class Thermometer {
     constructor(private readonly selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {}
 
-    draw(values: RelevantValues) {
-        const scale = d3.scaleLinear().domain([MIN_TEMP, MAX_TEMP]).range([130, 10]);
+    scale = d3.scaleLinear().domain([MIN_TEMP, MAX_TEMP]).range([130, 10]);
 
-        const axis = d3.axisLeft(scale);
+    draw(values: RelevantValues) {
+        const axis = d3.axisLeft(this.scale);
 
         this.selection.selectAll("*").remove();
         this.selection.attr("viewBox", "0 0 10 150");
@@ -36,26 +36,26 @@ export class Thermometer {
 
         axisContainer.call(axis as any);
 
-        this.drawMinimumMarker(scale, values.minimum);
+        this.drawMinimumMarker(this.scale, values.minimum);
 
         const line = this.selection.append("line");
         line.attr("x1", centerX - gaugeWidth / 2)
             .attr("x2", centerX - gaugeWidth / 2)
-            .attr("y1", scale(MAX_TEMP))
-            .attr("y2", scale(MIN_TEMP))
+            .attr("y1", this.scale(MAX_TEMP))
+            .attr("y2", this.scale(MIN_TEMP))
             .style("stroke", "black");
 
         const line2 = this.selection.append("line");
         line2
             .attr("x1", centerX + gaugeWidth / 2)
             .attr("x2", centerX + gaugeWidth / 2)
-            .attr("y1", scale(MAX_TEMP))
-            .attr("y2", scale(MIN_TEMP))
+            .attr("y1", this.scale(MAX_TEMP))
+            .attr("y2", this.scale(MIN_TEMP))
             .style("stroke", "black");
 
         const top = this.selection.append("circle");
         top.attr("cx", centerX)
-            .attr("cy", scale(MAX_TEMP))
+            .attr("cy", this.scale(MAX_TEMP))
             .attr("r", gaugeWidth / 2)
             .style("fill", "white")
             .style("stroke", "black");
@@ -63,7 +63,7 @@ export class Thermometer {
         const reservoirEdge = this.selection.append("circle");
         reservoirEdge
             .attr("cx", centerX)
-            .attr("cy", scale(MIN_TEMP) + reservoirTop)
+            .attr("cy", this.scale(MIN_TEMP) + reservoirTop)
             .attr("r", reservoirRadius)
             .style("fill", "white")
             .style("stroke", "black");
@@ -72,14 +72,14 @@ export class Thermometer {
         background
             .attr("x", centerX - gaugeWidth / 2)
             .attr("width", gaugeWidth)
-            .attr("y", scale(MAX_TEMP))
-            .attr("height", scale(MIN_TEMP) - scale(MAX_TEMP))
+            .attr("y", this.scale(MAX_TEMP))
+            .attr("height", this.scale(MIN_TEMP) - this.scale(MAX_TEMP))
             .style("fill", "white");
 
         const reservoir = this.selection.append("circle");
         reservoir
             .attr("cx", centerX)
-            .attr("cy", scale(MIN_TEMP) + reservoirTop)
+            .attr("cy", this.scale(MIN_TEMP) + reservoirTop)
             .attr("r", reservoirRadius - 2)
             .style("fill", "#f00")
             .style("stroke", "none");
@@ -88,8 +88,8 @@ export class Thermometer {
         column
             .attr("x", centerX - hgWidth / 2)
             .attr("width", hgWidth)
-            .attr("y", scale(values.maximum))
-            .attr("height", scale(MIN_TEMP) - scale(values.maximum) + reservoirRadius)
+            .attr("y", this.scale(values.maximum))
+            .attr("height", this.scale(MIN_TEMP) - this.scale(values.maximum) + reservoirRadius)
             .style("fill", "#f00");
     }
 
