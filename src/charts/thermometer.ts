@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { scaleLinear } from "d3";
 
 const MIN_TEMP = -10;
 const MAX_TEMP = 40;
@@ -27,15 +28,15 @@ export class Thermometer {
     scale = d3.scaleLinear().domain([MIN_TEMP, MAX_TEMP]).range([130, 10]);
 
     draw(values: RelevantValues) {
-        const axis = d3.axisLeft(this.scale);
-
         this.selection.selectAll("*").remove();
         this.selection.attr("viewBox", "0 0 10 150");
+
         const axisContainer = this.selection.append("g").attr("class", "thermometerAxis");
         axisContainer.attr("transform", `translate(${centerX - gaugeWidth / 2}, 0)`);
 
-        axisContainer.call(axis as any);
+        const tickTransparencyScale = this.buildTickTransparencyScale(values);
 
+        this.drawAxis(tickTransparencyScale, axisContainer);
         this.drawMinimumMarker(this.scale, values.minimum);
 
         const line = this.selection.append("line");
@@ -109,5 +110,62 @@ export class Thermometer {
             .attr("y2", y)
             .style("stroke", colors.minimum)
             .style("strokeWidth", 1);
+    }
+
+    /* Because I want axis ticks to fade out, a regular d3.axis isn't sufficient:
+     * Every tick is always drawn inside a <text> element, so rendered verbatim (markdown
+     * and all).
+     */
+    private drawAxis(
+        tickTransparencyScale: d3.ScaleLinear<number, number, never>,
+        axisContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    ) {
+        const axisValues = d3.range(MIN_TEMP, MAX_TEMP, 5);
+
+        axisContainer
+            .selectAll("text.thermometerTick")
+            .data(axisValues)
+            .join("text")
+            .attr("class", "thermometerTick")
+            .text((d) => d.toString())
+            .style("width", 30)
+            .attr("dominant-baseline", "middle")
+            .attr("transform", (d) => `translate(-10, ${this.scale(d)})`)
+            .attr("text-anchor", "end")
+            .style("fill", (d) => this.colorForTick(d, tickTransparencyScale).formatRgb());
+
+        axisContainer
+            .selectAll("text.thermometerTickLine")
+            .data(axisValues)
+            .join("line")
+            .attr("class", "thermometerTickLine")
+            .attr("x1", -5)
+            .attr("x2", 0)
+            .attr("y1", (d) => this.scale(d))
+            .attr("y2", (d) => this.scale(d))
+            .attr("stroke", (d) => this.colorForTick(d, tickTransparencyScale).formatRgb());
+    }
+
+    private buildTickTransparencyScale(values: RelevantValues) {
+        /**
+         * The radius around current temperatures that are guaranteed to stay black.
+         * This is here because we'd like the tick directly outside of a value to
+         * be visible enough.
+         */
+        const ensureBlackRange = 2;
+        const fadeOutInterval = 10;
+
+        return scaleLinear()
+            .domain([
+                values.maximum + ensureBlackRange + fadeOutInterval,
+                values.maximum + ensureBlackRange,
+                values.minimum - ensureBlackRange,
+                values.minimum - ensureBlackRange - fadeOutInterval
+            ])
+            .range([0, 1, 1, 0]);
+    }
+
+    private colorForTick(tick: number, tickTransparencyScale: d3.ScaleLinear<number, number, never>): d3.Color {
+        return d3.rgb(0, 0, 0, tickTransparencyScale(tick));
     }
 }

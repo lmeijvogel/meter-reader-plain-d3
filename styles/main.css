@@ -215,3 +215,11 @@ body {
         margin-left: 240px;
     }
 }
+
+.thermometerTick {
+    font-size: 10px;
+    fill: #f0f;
+    stroke: none;
+
+    text-align: right;
+}
