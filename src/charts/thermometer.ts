@@ -104,7 +104,7 @@ export class Thermometer {
         valuesContainer
             .append("line")
             .attr("x1", x)
-            .attr("x2", x + 10)
+            .attr("x2", x + 5)
             .attr("y1", y)
             .attr("y2", y)
             .style("stroke", colors.minimum)
