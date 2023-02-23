@@ -367,10 +367,8 @@ export class PeriodDataTab {
                 [
                     ["huiskamer", temperatuurHuiskamerColor],
                     ["zolder", temperatuurZolderColor],
-                    ["tuinkamer", temperatuurTuinkamerColor],
-                    ["buiten", "black"]
-                ].forEach((set) => {
-                    const [key, color] = set;
+                    ["tuinkamer", temperatuurTuinkamerColor]
+                ].forEach(([key, color]) => {
                     const series = result.get(key);
 
                     if (series) {
