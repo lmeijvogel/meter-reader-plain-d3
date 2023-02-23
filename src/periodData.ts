@@ -136,7 +136,7 @@ export class PeriodDataTab {
 
                 const data = json.map(responseRowToValueWithTimestamp);
 
-                if (prefer15MinInterval) {
+                if (prefer15MinInterval && periodDescription.period === "day") {
                     return data;
                 }
 
