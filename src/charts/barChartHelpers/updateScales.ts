@@ -6,7 +6,6 @@ import { renderXAxis } from "./renderXAxis";
 
 type Store<T> = {
     periodDescription: PeriodDescription;
-    relativeMinMax: boolean;
     data: T[];
     minMaxCalculator: (data: T[]) => { min: number; max: number };
 };
@@ -65,7 +64,7 @@ export function updateScales<T>(
         .duration(firstDrawCall ? 0 : 200)
         .attr("transform", `translate(0, ${scaleY(0)})`);
 
-    renderXAxis(xAxisBase, store);
+    renderXAxis(xAxisBase, store.periodDescription);
 
     const yAxis = d3.axisLeft(scaleY);
     selection

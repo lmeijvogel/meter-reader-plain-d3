@@ -9,9 +9,19 @@ import { height, padding, xAxisHeight, width } from "./barChartHelpers/constants
 import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { grey, lightGrey } from "../colors";
 
+export type BarChartApi = {
+    data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: ValueWithTimestamp[]): any;
+    addLineData(data: ValueWithTimestamp[], graphDescription: GraphDescription): any;
+    removeLineData(): void;
+    color(color: string): any;
+    onClick: (handler: (periodDescription: PeriodDescription) => void) => any;
+    clearCanvas: (value: boolean) => any;
+    call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => void;
+};
+
 type Store = {
     periodDescription: PeriodDescription;
-    tooltipDateFormat: string;
+    graphDescription: GraphDescription;
     data: ValueWithTimestamp[];
     lineData: { data: ValueWithTimestamp[]; graphDescription: GraphDescription }[];
     color: string;
@@ -23,10 +33,13 @@ type Store = {
     minMaxCalculator: (data: ValueWithTimestamp[]) => { min: number; max: number };
 };
 
-export function barChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
+export function barChart(
+    initialPeriodDescription: PeriodDescription,
+    initialGraphDescription: GraphDescription
+): BarChartApi {
     const store: Store = {
-        periodDescription: periodDescription,
-        tooltipDateFormat: periodDescription.timeFormatString(),
+        periodDescription: initialPeriodDescription,
+        graphDescription: initialGraphDescription,
         relativeMinMax: true,
         data: [],
         lineData: [],
@@ -35,12 +48,12 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         onValueClick: () => {},
         clearCanvas: false,
         firstDrawCall: true,
-        minMaxCalculator: () => ({ min: graphDescription.minY, max: graphDescription.maxY })
+        minMaxCalculator: () => ({ min: store.graphDescription.minY, max: store.graphDescription.maxY })
     };
     const { scaleX, scaleXForInversion, scaleY } = initScales();
 
     const calculateBarXPosition = (date: Date) => {
-        const pos = scaleX(periodDescription.normalize(date));
+        const pos = scaleX(store.periodDescription.normalize(date));
 
         return !!pos ? pos : 0;
     };
@@ -48,11 +61,12 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
     function drawBars(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         selection
             .select("g.values")
-            .selectAll("rect")
-            .data(store.data)
+            .selectAll("rect.bar")
+            .data<ValueWithTimestamp>(store.data)
             .join("rect")
+            .classed("bar", true)
             .on("click", (_event: any, d) => {
-                const clickedPeriod = periodDescription.atDate(d.timestamp);
+                const clickedPeriod = store.periodDescription.atDate(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
             .transition()
@@ -76,7 +90,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
             return;
         }
 
-        const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
+        const domainX = [store.periodDescription.startOfPeriod(), store.periodDescription.endOfPeriod()];
         const lineScaleX = d3.scaleTime().domain(domainX).range(scaleX.range());
 
         const lineScaleY = d3.scaleLinear().domain([-5, 40]).range(scaleY.range());
@@ -133,13 +147,15 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         const closestDate = closestIndex.timestamp;
         const value = data[closestIndex.index].value;
 
-        const dateString = d3.timeFormat(store.tooltipDateFormat)(closestDate);
+        const dateString = d3.timeFormat(store.periodDescription.timeFormatString())(closestDate);
 
         return `${dateString}: <b>${renderDisplayValue(value)}</b>`;
     }
 
     function renderDisplayValue(value: number) {
-        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit}`;
+        return `${d3.format(store.graphDescription.tooltipValueFormat)(value)} ${
+            store.graphDescription.displayableUnit
+        }`;
     }
 
     function highlightActiveBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
@@ -161,7 +177,7 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         const data = store.data;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(periodDescription.normalize(closestIndex.timestamp))!;
+        const x = scaleX(store.periodDescription.normalize(closestIndex.timestamp))!;
 
         tooltipLineSelector
             .selectAll("line")
@@ -175,7 +191,9 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
     }
 
     const api = {
-        data(data: ValueWithTimestamp[]) {
+        data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: ValueWithTimestamp[]) {
+            store.periodDescription = periodDescription;
+            store.graphDescription = graphDescription;
             store.data = data;
 
             return api;
@@ -194,12 +212,6 @@ export function barChart(periodDescription: PeriodDescription, graphDescription:
         color(color: string) {
             store.color = color;
             store.colorLight = d3.color(color)!.brighter(1.5).formatHex();
-            return api;
-        },
-
-        tooltipDateFormat: (format: string) => {
-            store.tooltipDateFormat = format;
-
             return api;
         },
 

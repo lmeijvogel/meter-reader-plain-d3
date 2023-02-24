@@ -4,9 +4,7 @@ import { padding, axisWidth, width } from "./constants";
 
 export function renderXAxis(
     xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-    store: {
-        periodDescription: PeriodDescription;
-    }
+    periodDescription: PeriodDescription
 ) {
     /* The reasonable assumption would be that creating a scale for a bar chart
      * would just reuse the band scale, but that has the downside that the ticks will
@@ -21,8 +19,6 @@ export function renderXAxis(
 
     // Sadly, I also can't use the same logic as in the LineChart here, by using
     // scaleTime and using .ticks(), since bandScale does not support .ticks().
-
-    const { periodDescription } = store;
 
     let domain = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
 

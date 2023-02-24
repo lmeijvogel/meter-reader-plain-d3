@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { isEqual } from "date-fns";
 import { utcToZonedTime } from "date-fns-tz";
-import { barChart } from "./charts/barChart";
+import { barChart, BarChartApi } from "./charts/barChart";
 import { lineChart } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 import { padData } from "./lib/padData";
@@ -57,8 +57,28 @@ export class PeriodDataTab {
 
     wasLoaded = false;
 
+    waterChartApi: BarChartApi;
+    gasChartApi: BarChartApi;
+    generationBarChartApi: BarChartApi;
+
     constructor(initialPeriod: PeriodDescription, private readonly updateLocation: (path: string) => void) {
         this.periodDescription = initialPeriod;
+
+        const gasGraphDescription = new GasGraphDescription(this.periodDescription);
+        const waterGraphDescription = new WaterGraphDescription(this.periodDescription);
+        const generationGraphDescription = new GenerationGraphDescription(this.periodDescription);
+
+        this.waterChartApi = barChart(this.periodDescription, waterGraphDescription)
+            .onClick(this.retrieveAndDrawPeriodCharts)
+            .color(waterGraphColor);
+
+        this.gasChartApi = barChart(this.periodDescription, gasGraphDescription)
+            .onClick(this.retrieveAndDrawPeriodCharts)
+            .color(gasGraphColor);
+
+        this.generationBarChartApi = barChart(this.periodDescription, generationGraphDescription)
+            .onClick(this.retrieveAndDrawPeriodCharts)
+            .color(stroomGenerationColor);
 
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
     }
@@ -151,7 +171,6 @@ export class PeriodDataTab {
 
             const temperatureDataFetcher = temperatureRequest;
 
-            // const priceCalculator = new PriceCalculator();
             Promise.all([fetchChartData("gas", periodGasContainer), temperatureDataFetcher]).then((result) => {
                 const [gasValues, temperatureValues] = result;
                 if (gasValues === "stale") {
@@ -159,24 +178,15 @@ export class PeriodDataTab {
                 }
 
                 const graphDescription = new GasGraphDescription(periodDescription);
-                // const eurosDescription = new EurosGraphDescription(periodDescription);
-                const api = barChart(periodDescription, graphDescription)
-                    .onClick(this.retrieveAndDrawPeriodCharts)
-                    .data(gasValues)
-                    // values.map((el) => ({
-                    // ...el,
-                    // value: priceCalculator.costsFor(el.value, "gas", el.timestamp).euros
-                    // }))
-                    // )
-                    .color(gasGraphColor);
 
+                this.gasChartApi.clearCanvas(shouldClearCanvas).data(periodDescription, graphDescription, gasValues);
                 const outsideTemperatures = temperatureValues.get("buiten");
 
                 let thermometerContainer: d3.Selection<d3.BaseType, unknown, HTMLElement, any> =
                     periodGasContainer.select(".thermometer");
 
                 thermometerContainer?.selectAll("*").remove();
-                api.removeLineData();
+                this.gasChartApi.removeLineData();
 
                 // If there aren't enough temperature measurements (which happens when
                 // KNMI didn't validate the measurements yet), the thermometer will show
@@ -193,14 +203,17 @@ export class PeriodDataTab {
 
                         new Thermometer(thermometerContainer).draw({ minimum, maximum });
                     } else {
-                        api.addLineData(outsideTemperatures, new TemperatuurGraphDescription(periodDescription));
+                        this.gasChartApi.addLineData(
+                            outsideTemperatures,
+                            new TemperatuurGraphDescription(periodDescription)
+                        );
                     }
                 }
 
                 const cardTitle = this.createPeriodDataCardTitle(gasValues, "gas", graphDescription);
                 setCardTitle(periodGasContainer, cardTitle);
 
-                api.call(periodGasContainer.select(".chart"));
+                this.gasChartApi.call(periodGasContainer.select(".chart"));
             });
         }
 
@@ -213,16 +226,14 @@ export class PeriodDataTab {
                 }
 
                 const graphDescription = new WaterGraphDescription(periodDescription);
-                const api = barChart(periodDescription, graphDescription)
-                    .onClick(this.retrieveAndDrawPeriodCharts)
-                    .clearCanvas(shouldClearCanvas)
-                    .data(values)
-                    .color(waterGraphColor);
 
                 const cardTitle = this.createPeriodDataCardTitle(values, "water", graphDescription);
                 setCardTitle(periodWaterContainer, cardTitle);
 
-                api.call(periodWaterContainer.select(".chart"));
+                this.waterChartApi
+                    .clearCanvas(shouldClearCanvas)
+                    .data(periodDescription, graphDescription, values)
+                    .call(periodWaterContainer.select(".chart"));
             });
         }
 
@@ -279,9 +290,9 @@ export class PeriodDataTab {
                     value: value.value / kWMultiplicationFactor
                 }));
 
-                let api: any;
+                let generationBarChartApi: any;
                 if (periodDescription instanceof DayDescription) {
-                    api = lineChart(periodDescription, graphDescription)
+                    generationBarChartApi = lineChart(periodDescription, graphDescription)
                         .minMaxCalculation("minMax")
                         .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, {
                             positive: generationGraphColor,
@@ -291,19 +302,17 @@ export class PeriodDataTab {
                         .setSeries("max", maxValues, grey)
                         .renderOutsideLightShading(true);
                 } else {
-                    api = barChart(periodDescription, graphDescription)
-                        .data(valuesInKWhPer15m)
-                        .color(stroomGenerationColor)
-                        .onClick(this.retrieveAndDrawPeriodCharts);
+                    generationBarChartApi = this.generationBarChartApi;
+                    generationBarChartApi.data(periodDescription, graphDescription, valuesInKWhPer15m);
                 }
 
-                api.clearCanvas(shouldClearCanvas);
+                generationBarChartApi.clearCanvas(shouldClearCanvas);
 
                 const cardTitle = this.createPeriodDataCardTitle(valuesInKW, "generation", graphDescription);
 
                 setCardTitle(periodGenerationContainer, cardTitle);
 
-                api.call(periodGenerationContainer.select(".chart"));
+                generationBarChartApi.call(periodGenerationContainer.select(".chart"));
             });
         }
 
