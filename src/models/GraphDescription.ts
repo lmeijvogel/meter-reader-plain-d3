@@ -4,7 +4,22 @@ import { assertNever } from "../lib/assertNever";
 export abstract class GraphDescription {
     constructor(protected readonly periodDescription: PeriodDescription) {}
 
+    /**
+     * The unit that is relevant for single data points.
+     *
+     * For example, this differs for the generation graphs,
+     * since I want to show 'kW' instead of 'kWh' for the data points.
+     *
+     * That feels more appropriate for a line chart.
+     */
     abstract readonly displayableUnit: string;
+
+    /**
+     * The unit that can be displayed e.g. above a chart.
+     */
+    get displayableTotalsUnit(): string {
+        return this.displayableUnit;
+    }
 
     get minY(): number {
         return 0;
@@ -78,7 +93,16 @@ export class StroomGraphDescription extends GraphDescription {
 }
 
 export class GenerationGraphDescription extends GraphDescription {
-    readonly displayableUnit = "kWh";
+    get displayableUnit(): string {
+        if (this.periodDescription.period === "day") {
+            return "kW";
+        }
+        return "kWh";
+    }
+
+    get displayableTotalsUnit(): string {
+        return "kWh";
+    }
 
     get minY() {
         return 0;

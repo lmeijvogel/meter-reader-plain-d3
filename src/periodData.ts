@@ -402,7 +402,7 @@ export class PeriodDataTab {
 
         const formattedAmount = d3.format(graphDescription.tooltipValueFormat)(usage);
 
-        let result = `${categoryName}: ${formattedAmount} ${graphDescription.displayableUnit}`;
+        let result = `${categoryName}: ${formattedAmount} ${graphDescription.displayableTotalsUnit}`;
 
         /* Use "stroom" for generation price as long as we have "saldering" */
         const costs = this.priceCalculator.costsForMultiple(
