@@ -10,13 +10,17 @@ import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { grey, lightGrey } from "../colors";
 
 export type BarChartApi = {
-    data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: ValueWithTimestamp[]): any;
-    addLineData(data: ValueWithTimestamp[], graphDescription: GraphDescription): any;
-    removeLineData(): void;
-    color(color: string): any;
-    onClick: (handler: (periodDescription: PeriodDescription) => void) => any;
-    clearCanvas: (value: boolean) => any;
-    call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => void;
+    data(
+        periodDescription: PeriodDescription,
+        graphDescription: GraphDescription,
+        data: ValueWithTimestamp[]
+    ): BarChartApi;
+    addLineData(data: ValueWithTimestamp[], graphDescription: GraphDescription): BarChartApi;
+    removeLineData(): BarChartApi;
+    color(color: string): BarChartApi;
+    onClick: (handler: (periodDescription: PeriodDescription) => void) => BarChartApi;
+    clearCanvas: (value: boolean) => BarChartApi;
+    call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, BarChartApi>) => void;
 };
 
 type Store = {
@@ -207,6 +211,8 @@ export function barChart(
 
         removeLineData() {
             store.lineData = [];
+
+            return api;
         },
 
         color(color: string) {
