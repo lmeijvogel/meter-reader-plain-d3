@@ -15,6 +15,28 @@ import { getTimes } from "suncalc";
 import { drawTimeBandsInChart } from "../drawTimeBandsInChart";
 import { drawSolarIncidenceInChart } from "../drawSolarIncidenceInChart";
 
+export type LineChartApi = {
+    periodDescription: (periodDescription: PeriodDescription) => LineChartApi;
+    graphDescription: (graphDescription: GraphDescription) => LineChartApi;
+    setSeries(
+        name: string,
+        series: ValueWithTimestamp[],
+        lineColor: string,
+        fill?:
+            | {
+                  positive: string;
+                  negative: string;
+              }
+            | undefined
+    ): LineChartApi;
+    animate: (value: boolean) => LineChartApi;
+    domain(domain: [number, number]): LineChartApi;
+    minMaxCalculation: (method: "minMax" | "quantile") => LineChartApi;
+    clearCanvas: (value: boolean) => LineChartApi;
+    renderOutsideLightShading: (value: boolean) => LineChartApi;
+    call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => LineChartApi;
+};
+
 type FillColors = {
     positive: string;
     negative: string;
@@ -23,6 +45,8 @@ type FillColors = {
 type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string; fill?: FillColors }>;
 
 type Store = {
+    periodDescription: PeriodDescription;
+    graphDescription: GraphDescription;
     animate: boolean;
     lineColors?: Map<string, string>;
     defaultLineColor: string;
@@ -46,8 +70,10 @@ const height = 240;
 const xAxisHeight = 20;
 const axisWidth = 50;
 
-export function lineChart(periodDescription: PeriodDescription, graphDescription: GraphDescription) {
+export function lineChart(initialPeriodDescription: PeriodDescription, initialGraphDescription: GraphDescription) {
     const store: Store = {
+        periodDescription: initialPeriodDescription,
+        graphDescription: initialGraphDescription,
         animate: true,
         lineColors: new Map(),
         defaultLineColor: "black",
@@ -71,7 +97,19 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
     let isBrushVisible = false;
 
-    const api = {
+    const api: LineChartApi = {
+        periodDescription: (periodDescription: PeriodDescription) => {
+            store.periodDescription = periodDescription;
+
+            return api;
+        },
+
+        graphDescription: (graphDescription: GraphDescription) => {
+            store.graphDescription = graphDescription;
+
+            return api;
+        },
+
         setSeries(name: string, series: ValueWithTimestamp[], lineColor: string, fill?: FillColors) {
             store.seriesCollection.set(name, { series, lineColor, fill });
 
@@ -143,7 +181,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
 
             registerEventHandlers(selection);
 
-            const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
+            const domainX = [store.periodDescription.startOfPeriod(), store.periodDescription.endOfPeriod()];
             scaleX.domain(domainX);
 
             const domainY = getDomainY();
@@ -182,7 +220,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
         // For some reason, `getTimes` returns the times on the previous day.
         // I don't know why so this fix will probably break soon.
-        const date = addDays(periodDescription.toDate(), 1);
+        const date = addDays(store.periodDescription.toDate(), 1);
         const times = getTimes(date, HouseLocation.latitude, HouseLocation.longitude);
 
         const g = svg.select("g.daylightUnderlay");
@@ -198,7 +236,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             width - padding.right
         );
 
-        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), periodDescription, minimumY, maximumY, scaleX);
+        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), store.periodDescription, minimumY, maximumY, scaleX);
     }
 
     function drawValues(
@@ -231,6 +269,8 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             .attr("fill", "none")
             .attr("stroke", lineColor)
             .attr("stroke-width", fill ? 1 : 2)
+            .transition()
+            .duration(200)
             .attr("d", lineGenerator);
     }
 
@@ -296,8 +336,10 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        const ticks = periodDescription.getChartTicks();
-        const xAxis = d3.axisBottom(scaleX as any).ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()));
+        const ticks = store.periodDescription.getChartTicks();
+        const xAxis = d3
+            .axisBottom(scaleX as any)
+            .ticks(ticks, d3.timeFormat(store.periodDescription.tickFormatString()));
 
         xAxisBase.attr("transform", `translate(0, ${scaleY(0)})`).call(xAxis as any);
     }
@@ -407,7 +449,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
                 };
             });
 
-        const dateString = d3.timeFormat(periodDescription.timeFormatString())(closestDate);
+        const dateString = d3.timeFormat(store.periodDescription.timeFormatString())(closestDate);
 
         const valueLines = ys
             .map(
@@ -442,7 +484,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
             });
         }
 
-        const formatString = periodDescription.timeFormatString();
+        const formatString = store.periodDescription.timeFormatString();
         const startDateString = d3.timeFormat(formatString)(pointerStartDate);
         const endDateString = d3.timeFormat(formatString)(pointerEndDate);
 
@@ -462,7 +504,7 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
         result.push("</tr></thead>");
 
         result.push("<tbody>");
-        const tooltipValueFormat = graphDescription.tooltipValueFormat;
+        const tooltipValueFormat = store.graphDescription.tooltipValueFormat;
         for (const [name, values] of displayValues) {
             result.push(`<tr><th scope="row">${name}</th>`);
             result.push(`<td class="tableValue">${d3.format(tooltipValueFormat)(values.min)}</td>
@@ -474,7 +516,9 @@ export function lineChart(periodDescription: PeriodDescription, graphDescription
     }
 
     function renderDisplayValue(value: number) {
-        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit}`;
+        return `${d3.format(store.graphDescription.tooltipValueFormat)(value)} ${
+            store.graphDescription.displayableUnit
+        }`;
     }
 
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {

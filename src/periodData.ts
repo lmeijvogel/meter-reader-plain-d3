@@ -2,7 +2,7 @@ import * as d3 from "d3";
 import { isEqual } from "date-fns";
 import { utcToZonedTime } from "date-fns-tz";
 import { barChart, BarChartApi } from "./charts/barChart";
-import { lineChart } from "./charts/lineChart";
+import { lineChart, LineChartApi } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 import { padData } from "./lib/padData";
 import { PriceCalculator, PriceCategory } from "./lib/PriceCalculator";
@@ -60,6 +60,7 @@ export class PeriodDataTab {
     waterChartApi: BarChartApi;
     gasChartApi: BarChartApi;
     generationBarChartApi: BarChartApi;
+    temperatureChartApi: LineChartApi;
 
     constructor(initialPeriod: PeriodDescription, private readonly updateLocation: (path: string) => void) {
         this.periodDescription = initialPeriod;
@@ -67,6 +68,7 @@ export class PeriodDataTab {
         const gasGraphDescription = new GasGraphDescription(this.periodDescription);
         const waterGraphDescription = new WaterGraphDescription(this.periodDescription);
         const generationGraphDescription = new GenerationGraphDescription(this.periodDescription);
+        const temperatureGraphDescription = new TemperatuurGraphDescription(this.periodDescription);
 
         this.waterChartApi = barChart(this.periodDescription, waterGraphDescription)
             .onClick(this.retrieveAndDrawPeriodCharts)
@@ -79,6 +81,10 @@ export class PeriodDataTab {
         this.generationBarChartApi = barChart(this.periodDescription, generationGraphDescription)
             .onClick(this.retrieveAndDrawPeriodCharts)
             .color(stroomGenerationColor);
+
+        this.temperatureChartApi = lineChart(this.periodDescription, temperatureGraphDescription).minMaxCalculation(
+            "minMax"
+        );
 
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
     }
@@ -366,12 +372,9 @@ export class PeriodDataTab {
             setCardTitle(temperatureCard, "Binnentemperatuur");
 
             temperatureRequest.then((result) => {
-                const temperatureChart = lineChart(
-                    periodDescription,
-                    new TemperatuurGraphDescription(periodDescription)
-                )
-                    .minMaxCalculation("minMax")
-                    .clearCanvas(shouldClearCanvas);
+                const graphDescription = new TemperatuurGraphDescription(periodDescription);
+
+                this.temperatureChartApi.periodDescription(periodDescription).graphDescription(graphDescription);
 
                 [
                     ["huiskamer", temperatuurHuiskamerColor],
@@ -381,10 +384,10 @@ export class PeriodDataTab {
                     const series = result.get(key);
 
                     if (series) {
-                        temperatureChart.setSeries(key, series, color);
+                        this.temperatureChartApi.setSeries(key, series, color);
                     }
                 });
-                chartContainer.call(temperatureChart.call);
+                chartContainer.call(this.temperatureChartApi.call);
             });
         }
 
