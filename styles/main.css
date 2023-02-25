@@ -151,11 +151,16 @@ body {
 }
 
 .spinner-icon {
+    position: absolute;
+
     transform-origin: center;
 
+    top: 15px;
+    left: 65px;
+
     color: #bbb;
-    width: 100px;
-    height: 100px;
+    width: 30px;
+    height: 30px;
 }
 
 @keyframes spin {
