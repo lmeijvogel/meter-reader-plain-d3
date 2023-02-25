@@ -108,9 +108,11 @@ export function barChart(
             .selectAll("path")
             .data(store.lineData)
             .join("path")
-            .attr("d", lineGenerator(data))
             .attr("stroke", "black")
-            .attr("fill", "none");
+            .attr("fill", "none")
+            .transition()
+            .duration(200)
+            .attr("d", lineGenerator(data));
 
         const yAxis = d3.axisRight(lineScaleY);
 

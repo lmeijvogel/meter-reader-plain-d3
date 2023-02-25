@@ -57,10 +57,12 @@ export class PeriodDataTab {
 
     wasLoaded = false;
 
-    waterChartApi: BarChartApi;
-    gasChartApi: BarChartApi;
-    generationBarChartApi: BarChartApi;
-    temperatureChartApi: LineChartApi;
+    private readonly waterChartApi: BarChartApi;
+    private readonly gasChartApi: BarChartApi;
+    private readonly generationBarChartApi: BarChartApi;
+    private readonly temperatureChartApi: LineChartApi;
+
+    private readonly thermometer = new Thermometer();
 
     constructor(initialPeriod: PeriodDescription, private readonly updateLocation: (path: string) => void) {
         this.periodDescription = initialPeriod;
@@ -188,10 +190,19 @@ export class PeriodDataTab {
                 this.gasChartApi.clearCanvas(shouldClearCanvas).data(periodDescription, graphDescription, gasValues);
                 const outsideTemperatures = temperatureValues.get("buiten");
 
-                let thermometerContainer: d3.Selection<d3.BaseType, unknown, HTMLElement, any> =
-                    periodGasContainer.select(".thermometer");
+                let thermometerContainer = periodGasContainer.select(".thermometer");
 
-                thermometerContainer?.selectAll("*").remove();
+                if (periodDescription.period === "day") {
+                    if (!thermometerContainer.node()) {
+                        thermometerContainer = periodGasContainer.append("svg") as any;
+                        thermometerContainer.attr("class", "thermometer");
+                        this.thermometer.prepare(thermometerContainer);
+                        this.thermometer.hide(thermometerContainer);
+                    }
+                } else {
+                    this.thermometer.hide(thermometerContainer);
+                }
+
                 this.gasChartApi.removeLineData();
 
                 // If there aren't enough temperature measurements (which happens when
@@ -199,21 +210,20 @@ export class PeriodDataTab {
                 // incomplete data, so don't show it then.
                 if (outsideTemperatures && outsideTemperatures.length > 12) {
                     if (periodDescription.period === "day") {
-                        if (!thermometerContainer.node()) {
-                            thermometerContainer = periodGasContainer.append("svg") as any;
-                            thermometerContainer.attr("class", "thermometer");
-                        }
-
                         const minimum = d3.min(outsideTemperatures, (el) => el.value) ?? 0;
                         const maximum = d3.max(outsideTemperatures, (el) => el.value) ?? 0;
 
-                        new Thermometer(thermometerContainer).draw({ minimum, maximum });
+                        this.thermometer.show(thermometerContainer);
+                        this.thermometer.draw({ minimum, maximum }, thermometerContainer);
                     } else {
+                        this.thermometer.hide(thermometerContainer);
                         this.gasChartApi.addLineData(
                             outsideTemperatures,
                             new TemperatuurGraphDescription(periodDescription)
                         );
                     }
+                } else {
+                    this.thermometer.hide(thermometerContainer);
                 }
 
                 const cardTitle = this.createPeriodDataCardTitle(gasValues, "gas", graphDescription);
