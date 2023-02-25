@@ -42,7 +42,7 @@ function currentDataReceived(currentValueInW: number) {
     const element = document.querySelector("#currentTab");
 
     if (!!element) {
-        element.innerHTML = `Nu (${currentValueInW} W)`;
+        element.innerHTML = `Nu (${Math.round(currentValueInW)} W)`;
     }
 }
 
