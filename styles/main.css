@@ -5,6 +5,11 @@
     --period-title-height: 60px;
 
     --z-index-navigation: 1000;
+
+    --color-night: #009;
+    --color-twilight: #559;
+    --color-sun: #dd6;
+    --color-day: #fff;
 }
 
 * {
@@ -223,7 +228,6 @@ body {
 
 .thermometerTick {
     font-size: 10px;
-    fill: #f0f;
     stroke: none;
 
     text-align: right;
