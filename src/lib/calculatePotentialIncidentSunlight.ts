@@ -4,7 +4,7 @@ import { getPosition } from "suncalc";
 
 import { HouseLocation } from "../models/HouseLocation";
 
-const solarRigMultiplier = 2.4;
+const solarRigMultiplier = 4;
 
 export function calculatePotentialIncidentSunlight(date: Date, roofSide: "east" | "west"): number {
     // From: https://www.pveducation.org/pvcdrom/properties-of-sunlight/arbitrary-orientation-and-tilt
@@ -18,7 +18,7 @@ export function calculatePotentialIncidentSunlight(date: Date, roofSide: "east" 
     // ψ: psi: Module azimuth angle
 
     const panelTilt = deg2rad(50);
-    const panelAzimuth = deg2rad(roofSide === "east" ? 92 : 268);
+    const panelAzimuth = deg2rad(roofSide === "east" ? 268 : 92);
 
     const { azimuth: sunAzimuth, altitude: sunAltitude } = getPosition(
         date,
@@ -35,15 +35,27 @@ export function calculatePotentialIncidentSunlight(date: Date, roofSide: "east" 
     // Calculate actual value: https://www.pveducation.org/pvcdrom/properties-of-sunlight/air-mass#formula
     const airMass = 1 / Math.cos(Math.PI / 2 - sunAltitude);
 
-    // Moet de formule niet S_incident omvatten?
-    // S_horiz = S_incident * sin α
-    // Dus S_incident = S_horiz / sin α
+    /**
+     * The amount of direct sunlight on a panel
+     */
+    const I_direct = 1.353 * 0.7 ** (airMass ** 0.678);
+
+    /**
+     * The amount of direct and indirect sunlight on a panel
+     */
+    const I_global = I_direct * 1.1;
+
+    const S_incident = I_global;
 
     const factor =
         Math.cos(sunAltitude) * Math.sin(panelTilt) * Math.cos(panelAzimuth - sunAzimuth) +
         Math.sin(sunAltitude) * Math.cos(panelTilt);
 
-    return Math.max(0, (solarRigMultiplier * factor) / airMass);
+    if (factor <= 0) {
+        return 0;
+    }
+
+    return solarRigMultiplier * factor * S_incident;
 }
 
 export function getMaximumIncidentSunlight(date: Date) {
@@ -62,6 +74,11 @@ export function getMaximumIncidentSunlight(date: Date) {
     }, 0);
 }
 
+const radConversionFactor = (2 * Math.PI) / 360;
 function deg2rad(degrees: number): number {
-    return (2 * Math.PI * degrees) / 360;
+    return degrees * radConversionFactor;
+}
+
+function rad2deg(rad: number): number {
+    return rad / radConversionFactor;
 }

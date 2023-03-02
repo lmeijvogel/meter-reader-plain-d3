@@ -14,6 +14,7 @@ import { HouseLocation } from "../models/HouseLocation";
 import { getTimes } from "suncalc";
 import { drawTimeBandsInChart } from "../drawTimeBandsInChart";
 import { drawSolarIncidenceInChart } from "../drawSolarIncidenceInChart";
+import { getMaximumIncidentSunlight } from "../lib/calculatePotentialIncidentSunlight";
 
 export type LineChartApi = {
     periodDescription: (periodDescription: PeriodDescription) => LineChartApi;
@@ -236,7 +237,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
             width - padding.right
         );
 
-        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), store.periodDescription, minimumY, maximumY, scaleX);
+        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), store.periodDescription, scaleX, scaleY);
     }
 
     function drawValues(
@@ -345,6 +346,10 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     }
 
     function getDomainY(): number[] {
+        if (store.renderOutsideLightShading) {
+            return [0, getMaximumIncidentSunlight(store.periodDescription.startOfPeriod())];
+        }
+
         if (store.minMaxCalculation === "explicit") {
             return store.domain!;
         }
