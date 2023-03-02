@@ -23,6 +23,7 @@ export type LineChartApi = {
         name: string,
         series: ValueWithTimestamp[],
         lineColor: string,
+        strokeWidth?: number,
         fill?:
             | {
                   positive: string;
@@ -43,7 +44,10 @@ type FillColors = {
     negative: string;
 };
 
-type SeriesCollection = Map<string, { series: ValueWithTimestamp[]; lineColor: string; fill?: FillColors }>;
+type SeriesCollection = Map<
+    string,
+    { series: ValueWithTimestamp[]; lineColor: string; strokeWidth?: number; fill?: FillColors }
+>;
 
 type Store = {
     periodDescription: PeriodDescription;
@@ -111,8 +115,14 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
             return api;
         },
 
-        setSeries(name: string, series: ValueWithTimestamp[], lineColor: string, fill?: FillColors) {
-            store.seriesCollection.set(name, { series, lineColor, fill });
+        setSeries(
+            name: string,
+            series: ValueWithTimestamp[],
+            lineColor: string,
+            strokeWidth?: number,
+            fill?: FillColors
+        ) {
+            store.seriesCollection.set(name, { series, lineColor, strokeWidth, fill });
 
             return api;
         },
@@ -207,7 +217,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
                     g.attr("class", seriesGClassName).attr("width", width).attr("height", height);
                 }
 
-                drawValues(series.series, series.lineColor, g, series.fill);
+                drawValues(series.series, series.lineColor, g, series.strokeWidth, series.fill);
             });
 
             if (store.renderOutsideLightShading) {
@@ -244,6 +254,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         series: ValueWithTimestamp[],
         lineColor: string,
         selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+        strokeWidth?: number,
         fill?: FillColors
     ) {
         const lineGenerator = d3
@@ -269,7 +280,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         path.attr("class", `line`)
             .attr("fill", "none")
             .attr("stroke", lineColor)
-            .attr("stroke-width", fill ? 1 : 2)
+            .attr("stroke-width", strokeWidth ?? (fill ? 1 : 2))
             .transition()
             .duration(200)
             .attr("d", lineGenerator);

@@ -310,12 +310,12 @@ export class PeriodDataTab {
                 if (periodDescription instanceof DayDescription) {
                     generationBarChartApi = lineChart(periodDescription, graphDescription)
                         .minMaxCalculation("minMax")
-                        .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, {
+                        .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, 1, {
                             positive: generationGraphColor,
                             negative: white // The values will never be negative
                         })
-                        .setSeries("gemiddelde", averagesValues, lightGrey)
-                        .setSeries("max", maxValues, grey)
+                        .setSeries("gemiddelde", averagesValues, lightGrey, 1)
+                        .setSeries("max", maxValues, grey, 1)
                         .renderOutsideLightShading(true);
                 } else {
                     generationBarChartApi = this.generationBarChartApi;
