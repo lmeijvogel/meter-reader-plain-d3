@@ -20,11 +20,20 @@ export class Money {
     }
 
     toString(): string {
-        const wholeEuros = Math.floor(this.euros);
-        const cents = Math.floor(100 * (this.euros - wholeEuros));
+        /*
+         * To make calculations easier (with Math.floor(), etc.),
+         * do the formatting on on the absolute value and then add a minus.
+         */
+        const absEuros = Math.abs(this.euros);
+
+        const wholeEuros = Math.floor(absEuros);
+        const cents = Math.floor(100 * (absEuros - wholeEuros));
 
         const paddedCents = cents < 10 ? `0${cents}` : cents;
-        return `€ ${Intl.NumberFormat("nl-NL").format(wholeEuros)},${paddedCents}`;
+
+        const minus = absEuros * this.euros < 0 ? -1 : 1;
+
+        return `€ ${Intl.NumberFormat("nl-NL").format(wholeEuros * minus)},${paddedCents}`;
     }
 }
 
