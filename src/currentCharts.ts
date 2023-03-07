@@ -173,7 +173,7 @@ export class CurrentDataTab {
         const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
         this.recentCurrentGraph
-            .setSeries("current", currentInW, black, {
+            .setSeries("current", currentInW, black, undefined, {
                 positive: stroomUsageColorForCurrentGraph,
                 negative: stroomGenerationColorForCurrentGraph
             })
