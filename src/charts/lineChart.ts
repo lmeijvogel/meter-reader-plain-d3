@@ -237,15 +237,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         const g = svg.select("g.daylightUnderlay");
         const bandHeight = scaleY(0) - padding.top;
 
-        drawTimeBandsInChart(
-            g,
-            times,
-            scaleX,
-            padding.top,
-            bandHeight,
-            padding.left + axisWidth,
-            width - padding.right
-        );
+        drawTimeBandsInChart(g, times, scaleX, padding.top, bandHeight);
 
         drawSolarIncidenceInChart(svg.select("g.solarIncidence"), store.periodDescription, scaleX, scaleY);
     }
