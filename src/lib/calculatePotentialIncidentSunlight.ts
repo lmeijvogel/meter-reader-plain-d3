@@ -75,10 +75,7 @@ export function getMaximumIncidentSunlight(date: Date) {
 }
 
 const radConversionFactor = (2 * Math.PI) / 360;
+
 function deg2rad(degrees: number): number {
     return degrees * radConversionFactor;
-}
-
-function rad2deg(rad: number): number {
-    return rad / radConversionFactor;
 }
