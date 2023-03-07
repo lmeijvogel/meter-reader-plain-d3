@@ -232,3 +232,79 @@ body {
 
     text-align: right;
 }
+
+.stroomCardTitle {
+    display: flex;
+    justify-content: center;
+}
+
+.stroomCardData {
+    width: 80%;
+    display: grid;
+    grid-template-areas:
+        "a b c"
+        "d e f"
+        "g h i";
+    grid-column-gap: 3px;
+}
+
+.stroomCardData .consumptionCaption {
+    grid-area: a;
+
+    text-align: left;
+}
+
+.stroomCardData .consumptionAmount {
+    grid-area: b;
+}
+
+.stroomCardData .consumptionCosts {
+    grid-area: c;
+}
+
+.stroomCardData .backDeliveryCaption {
+    grid-area: d;
+
+    text-align: left;
+}
+
+.stroomCardData .backDeliveryAmount {
+    grid-area: e;
+}
+
+.stroomCardData .backDeliveryCosts {
+    grid-area: f;
+}
+
+.stroomCardData .netUsageCaption {
+    grid-area: g;
+
+    text-align: left;
+
+    font-weight: bold;
+}
+
+.stroomCardData .netUsageAmount {
+    grid-area: h;
+
+    font-weight: bold;
+}
+
+.stroomCardData .netUsageCosts {
+    grid-area: i;
+
+    font-weight: bold;
+}
+
+.stroomCardData .total {
+    vertical-align: middle;
+    grid-area: total;
+}
+
+.stroomCardTitle td {
+    padding: 0 3px;
+}
+
+.stroomCardTitle td.number {
+    text-align: right;
+}

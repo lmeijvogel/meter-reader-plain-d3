@@ -20,7 +20,7 @@ import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";
-import { setCardTitle } from "./vizCard";
+import { setCardTitle, setCardTitleRaw } from "./vizCard";
 import { initKeyboardListener } from "./initKeyboardListener";
 import {
     darkGenerationGraphColor,
@@ -41,6 +41,18 @@ import { Thermometer } from "./charts/thermometer";
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
 const enabledGraphs: Graphs[] = ["gas", "stroom", "water", "temperature", "generation"];
+
+type EqualizedStroomData = {
+    consumption: ValueWithTimestamp[];
+    generation: {
+        value: number;
+        timestamp: Date;
+    }[];
+    backDelivery: {
+        value: number;
+        timestamp: Date;
+    }[];
+};
 
 export class PeriodDataTab {
     private navigation: NavigationApi | null = null;
@@ -346,7 +358,7 @@ export class PeriodDataTab {
 
                 const graphDescription = new StroomGraphDescription(periodDescription);
 
-                const equalizedData = {
+                const equalizedData: EqualizedStroomData = {
                     consumption: stroomValues,
                     generation: generationValues.map((el) => ({
                         ...el,
@@ -363,8 +375,8 @@ export class PeriodDataTab {
                     .clearCanvas(shouldClearCanvas)
                     .data(equalizedData);
 
-                const cardTitle = this.createPeriodDataCardTitle(stroomValues, "stroom", graphDescription);
-                setCardTitle(periodStroomContainer, cardTitle);
+                const cardTitle = this.createStroomGraphCardTitle(equalizedData, "stroom", graphDescription);
+                setCardTitleRaw(periodStroomContainer, cardTitle, "stroomCardTitle");
 
                 api.call(periodStroomContainer.select(".chart"));
             });
@@ -403,6 +415,62 @@ export class PeriodDataTab {
 
         this.periodDescription = periodDescription;
     };
+    private createStroomGraphCardTitle(
+        equalizedData: EqualizedStroomData,
+        priceCategory: PriceCategory,
+        graphDescription: GraphDescription
+    ) {
+        const totalConsumption = this.formatPrice(
+            equalizedData,
+            "consumption",
+            "Levering",
+            priceCategory,
+            graphDescription
+        );
+        const totalBackDelivery = this.formatPrice(
+            equalizedData,
+            "backDelivery",
+            "Teruglevering",
+            priceCategory,
+            graphDescription
+        );
+
+        const consumptionPrice = this.priceCalculator.costsForMultiple(equalizedData.consumption, priceCategory);
+        const backDeliveryCredit = this.priceCalculator.costsForMultiple(equalizedData.backDelivery, priceCategory);
+        console.log({ consumptionPrice, backDeliveryCredit });
+
+        const netUsage =
+            d3.sum(equalizedData.consumption, (v) => v.value) + d3.sum(equalizedData.backDelivery, (v) => v.value);
+
+        const netCosts = consumptionPrice.add(backDeliveryCredit);
+
+        return `<section class="stroomCardData">
+                  ${totalConsumption}
+                  ${totalBackDelivery}
+                  <div class="netUsageCaption">Netto:</div><div class="number netUsageAmount">${d3.format(
+                      graphDescription.tooltipValueFormat
+                  )(netUsage)} ${
+            graphDescription.displayableTotalsUnit
+        }</div><div class="number netUsageCosts">(${netCosts})</div>
+                </section>`;
+    }
+
+    formatPrice(
+        data: EqualizedStroomData,
+        field: keyof EqualizedStroomData,
+        caption: string,
+        priceCategory: PriceCategory,
+        graphDescription: GraphDescription
+    ): string {
+        const total = d3.sum(data[field], (v) => v.value);
+        console.log({ field, total });
+
+        const formattedAmount = d3.format(graphDescription.tooltipValueFormat)(total);
+
+        const costs = this.priceCalculator.costsForMultiple(data[field], priceCategory);
+
+        return `<div class="${field}Caption">${caption}:</div><div class="number ${field}Amount">${formattedAmount} ${graphDescription.displayableTotalsUnit}</div><div class="number ${field}Costs">(${costs})</div>`;
+    }
 
     private createPeriodDataCardTitle(
         values: ValueWithTimestamp[],
