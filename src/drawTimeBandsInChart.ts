@@ -2,12 +2,25 @@ import * as d3 from "d3";
 import { endOfDay, set, startOfDay } from "date-fns";
 import { GetTimesResult } from "suncalc";
 
+type LinearGradient = {
+    type: "linear";
+    fromColor: string;
+    toColor: string;
+};
+
+type ParameterizedGradient = {
+    type: "parameterized";
+    colors: {
+        stop: string;
+        color: string;
+    }[];
+};
+
 type TimeBand = {
     name: string;
     start: Date;
     end: Date;
-    fromColor: string;
-    toColor: string;
+    gradient: LinearGradient | ParameterizedGradient;
 };
 
 export function drawTimeBandsInChart(
@@ -27,24 +40,37 @@ export function drawTimeBandsInChart(
         name: "dawn",
         start: times.dawn,
         end: times.sunrise,
-        fromColor: "twilight",
-        toColor: "sun"
+        gradient: {
+            type: "linear",
+            fromColor: "twilight",
+            toColor: "sun"
+        }
     };
 
     const day: TimeBand = {
         name: "day",
         start: times.sunriseEnd,
         end: times.sunsetStart,
-        fromColor: "sun",
-        toColor: "day"
+        gradient: {
+            type: "parameterized",
+            colors: [
+                { stop: "0%", color: "sun" },
+                { stop: "7%", color: "day" },
+                { stop: "93%", color: "day" },
+                { stop: "100%", color: "sun" }
+            ]
+        }
     };
 
     const preDusk: TimeBand = {
         name: "pre-dusk",
         start: times.sunset,
         end: times.dusk,
-        fromColor: "sun",
-        toColor: "twilight"
+        gradient: {
+            type: "linear",
+            fromColor: "sun",
+            toColor: "twilight"
+        }
     };
 
     let bands: TimeBand[] = [];
@@ -52,37 +78,49 @@ export function drawTimeBandsInChart(
     const hasNight = !isNaN(times.night.getTime());
 
     if (hasNight) {
-        const preDawn = {
+        const preDawn: TimeBand = {
             name: "pre-dawn",
             start: times.nightEnd,
             end: times.dawn,
-            fromColor: "night",
-            toColor: "twilight"
+            gradient: {
+                type: "linear",
+                fromColor: "night",
+                toColor: "twilight"
+            }
         };
 
         if (sameDay(times.night, dayStart)) {
             // Night starts in the evening, so no early dusk
-            const earlyNight = {
+            const earlyNight: TimeBand = {
                 name: "early-night",
                 start: dayStart,
                 end: times.nightEnd,
-                fromColor: "night",
-                toColor: "night"
+                gradient: {
+                    type: "linear",
+                    fromColor: "night",
+                    toColor: "night"
+                }
             };
 
-            const lateDusk = {
+            const lateDusk: TimeBand = {
                 name: "late-dusk",
                 start: times.dusk,
                 end: times.night,
-                fromColor: "twilight",
-                toColor: "night"
+                gradient: {
+                    type: "linear",
+                    fromColor: "twilight",
+                    toColor: "night"
+                }
             };
-            const lateNight = {
+            const lateNight: TimeBand = {
                 name: "late-night",
                 start: times.night,
                 end: dayEnd,
-                fromColor: "night",
-                toColor: "night"
+                gradient: {
+                    type: "linear",
+                    fromColor: "night",
+                    toColor: "night"
+                }
             };
 
             bands = [earlyNight, preDawn, dawn, day, preDusk, lateDusk, lateNight];
@@ -90,46 +128,62 @@ export function drawTimeBandsInChart(
             // Night start after midnight, so no late night
             const nightStart = toToday(times.night, dayStart);
 
-            const earlyDusk = {
+            const earlyDusk: TimeBand = {
                 name: "early-dusk",
                 start: dayStart,
                 end: nightStart,
-                fromColor: "twilight",
-                toColor: "night"
+                gradient: {
+                    type: "linear",
+                    fromColor: "twilight",
+                    toColor: "night"
+                }
             };
-            const earlyNight = {
+
+            const earlyNight: TimeBand = {
                 name: "early-night",
                 start: nightStart,
                 end: times.nightEnd,
-                fromColor: "night",
-                toColor: "night"
+                gradient: {
+                    type: "linear",
+                    fromColor: "night",
+                    toColor: "night"
+                }
             };
 
-            const lateDusk = {
+            const lateDusk: TimeBand = {
                 name: "late-dusk",
                 start: times.dusk,
                 end: dayEnd,
-                fromColor: "twilight",
-                toColor: "twilight"
+                gradient: {
+                    type: "linear",
+                    fromColor: "twilight",
+                    toColor: "twilight"
+                }
             };
 
             bands = [earlyDusk, earlyNight, preDawn, dawn, day, preDusk, lateDusk];
         }
     } else {
         /* In summer, there is no "deep" night */
-        const earlyDusk = {
+        const earlyDusk: TimeBand = {
             name: "early-dusk",
             start: dayStart,
             end: times.dawn,
-            fromColor: "twilight",
-            toColor: "twilight"
+            gradient: {
+                type: "linear",
+                fromColor: "twilight",
+                toColor: "twilight"
+            }
         };
-        const lateDusk = {
+        const lateDusk: TimeBand = {
             name: "late-dusk",
             start: times.dusk,
             end: dayEnd,
-            fromColor: "twilight",
-            toColor: "twilight"
+            gradient: {
+                type: "linear",
+                fromColor: "twilight",
+                toColor: "twilight"
+            }
         };
 
         bands = [earlyDusk, dawn, day, preDusk, lateDusk];
@@ -154,8 +208,18 @@ function addTimeBand(
 
     const gradient = g.select("defs").append("linearGradient").attr("id", gradientId);
 
-    gradient.append("stop").attr("offset", "0%").attr("stop-color", `var(--color-${timeBand.fromColor})`);
-    gradient.append("stop").attr("offset", "100%").attr("stop-color", `var(--color-${timeBand.toColor})`);
+    const gradientSpec = timeBand.gradient;
+
+    switch (gradientSpec.type) {
+        case "linear":
+            gradient.append("stop").attr("offset", "0%").attr("stop-color", `var(--color-${gradientSpec.fromColor})`);
+            gradient.append("stop").attr("offset", "100%").attr("stop-color", `var(--color-${gradientSpec.toColor})`);
+            break;
+        case "parameterized":
+            for (const { stop, color } of gradientSpec.colors) {
+                gradient.append("stop").attr("offset", stop).attr("stop-color", `var(--color-${color})`);
+            }
+    }
 
     g.append("rect")
         .attr("x", startX)
@@ -170,6 +234,7 @@ function addTimeBand(
 function sameDay(one: Date, two: Date): boolean {
     return one.getDate() === two.getDate();
 }
+
 function toToday(date: Date, current: Date): Date {
     return set(date, { year: current.getFullYear(), month: current.getMonth(), date: current.getDate() });
 }
