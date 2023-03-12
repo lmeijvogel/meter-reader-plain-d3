@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { addDays } from "date-fns";
 import { calculatePotentialIncidentSunlight } from "./lib/calculatePotentialIncidentSunlight";
-import { PeriodDescription } from "./models/PeriodDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
 
 type FieldNames = "east" | "west" | "total";
 

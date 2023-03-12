@@ -1,7 +1,6 @@
 import * as d3 from "d3";
 import * as uuid from "uuid";
 
-import { PeriodDescription } from "../models/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { assertNever } from "../lib/assertNever";
@@ -15,6 +14,7 @@ import { getTimes } from "suncalc";
 import { drawTimeBandsInChart } from "../drawTimeBandsInChart";
 import { drawSolarIncidenceInChart } from "../drawSolarIncidenceInChart";
 import { getMaximumIncidentSunlight } from "../lib/calculatePotentialIncidentSunlight";
+import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
 export type LineChartApi = {
     periodDescription: (periodDescription: PeriodDescription) => LineChartApi;

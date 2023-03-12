@@ -1,4 +1,7 @@
-import { DayDescription, MonthDescription, PeriodDescription, YearDescription } from "./models/PeriodDescription";
+import { DayDescription } from "./models/periodDescriptions/DayDescription";
+import { MonthDescription } from "./models/periodDescriptions/MonthDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
+import { YearDescription } from "./models/periodDescriptions/YearDescription";
 
 export type AppState =
     | {

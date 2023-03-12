@@ -22,9 +22,10 @@ import { mergeNewWithOldValues } from "./lib/mergeNewWithOldValues";
 import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { CurrentPowerUsageGraphDescription, CurrentWaterUsageGraphDescription } from "./models/GraphDescription";
-import { HourDescription, LastHourDescription } from "./models/PeriodDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { setCardTitle } from "./vizCard";
+import { HourDescription } from "./models/periodDescriptions/HourDescription";
+import { LastHourDescription } from "./models/periodDescriptions/LastHourDescription";
 
 type CurrentFields = { current: ValueWithTimestamp[] };
 type WaterFields = { water: ValueWithTimestamp[] };

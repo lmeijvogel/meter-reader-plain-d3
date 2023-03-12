@@ -16,7 +16,6 @@ import {
     GenerationGraphDescription,
     TemperatuurGraphDescription
 } from "./models/GraphDescription";
-import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";
@@ -37,6 +36,8 @@ import {
 } from "./colors";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { Thermometer } from "./charts/thermometer";
+import { DayDescription } from "./models/periodDescriptions/DayDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 

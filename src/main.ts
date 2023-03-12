@@ -1,8 +1,9 @@
-import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { PeriodDataTab } from "./periodData";
 import { CurrentDataTab } from "./currentCharts";
 import { Heatmaps } from "./heatmaps";
 import { appStateFromLocation } from "./appStateFromLocation";
+import { DayDescription } from "./models/periodDescriptions/DayDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
 
 type TabName = "currentPage" | "periodPage" | "heatmapsPage";
 

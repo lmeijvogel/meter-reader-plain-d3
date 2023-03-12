@@ -14,10 +14,11 @@ import {
 } from "./colors";
 import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
-import { DayDescription, PeriodDescription } from "./models/PeriodDescription";
 import { UsageField } from "./models/UsageData";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { setCardTitle } from "./vizCard";
+import { DayDescription } from "./models/periodDescriptions/DayDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
 
 const enabledGraphs: string[] = ["gas", "stroom", "water", "generation"];
 

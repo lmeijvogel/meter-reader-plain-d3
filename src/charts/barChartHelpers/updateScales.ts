@@ -1,6 +1,6 @@
 import * as d3 from "d3";
+import { PeriodDescription } from "../../models/periodDescriptions/PeriodDescription";
 
-import { PeriodDescription } from "../../models/PeriodDescription";
 import { axisWidth, height, padding, width, xAxisHeight } from "./constants";
 import { renderXAxis } from "./renderXAxis";
 

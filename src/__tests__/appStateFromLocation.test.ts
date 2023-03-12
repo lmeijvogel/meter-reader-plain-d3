@@ -1,5 +1,7 @@
 import { appStateFromLocation } from "../appStateFromLocation";
-import { DayDescription, MonthDescription, YearDescription } from "../models/PeriodDescription";
+import { DayDescription } from "../models/periodDescriptions/DayDescription";
+import { MonthDescription } from "../models/periodDescriptions/MonthDescription";
+import { YearDescription } from "../models/periodDescriptions/YearDescription";
 
 describe("appStateFromLocation", () => {
     it("returns the default when no path is set", () => {

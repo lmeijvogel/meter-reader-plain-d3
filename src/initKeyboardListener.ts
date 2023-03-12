@@ -1,4 +1,6 @@
-import { DayDescription, PeriodDescription, YearDescription } from "./models/PeriodDescription";
+import { DayDescription } from "./models/periodDescriptions/DayDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
+import { YearDescription } from "./models/periodDescriptions/YearDescription";
 
 export function initKeyboardListener(
     periodSelected: (periodDescription: PeriodDescription) => void,

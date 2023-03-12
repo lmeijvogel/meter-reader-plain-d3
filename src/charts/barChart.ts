@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import { GraphDescription } from "../models/GraphDescription";
-import { PeriodDescription } from "../models/PeriodDescription";
+import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 import { getClosestIndex } from "../lib/getClosestIndex";

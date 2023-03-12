@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 import { GraphDescription } from "../models/GraphDescription";
-import { PeriodDescription } from "../models/PeriodDescription";
 
 import { isEqual } from "date-fns";
 import { getClosestIndex } from "../lib/getClosestIndex";
@@ -10,6 +9,7 @@ import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { PowerSourcesAndBackDelivery } from "./barChartHelpers/Types";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageColor } from "../colors";
+import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
 type Data = {
     consumption: ValueWithTimestamp[];

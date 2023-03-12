@@ -1,8 +1,9 @@
-import { DayDescription, PeriodDescription, YearDescription } from "./models/PeriodDescription";
-
 import VanillaSwipe, { EventData } from "vanilla-swipe";
 import { getWindowWidth } from "./lib/getWindowWidth";
 import { initIcons } from "./icons";
+import { DayDescription } from "./models/periodDescriptions/DayDescription";
+import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
+import { YearDescription } from "./models/periodDescriptions/YearDescription";
 
 const SideDisplayThresholdInPx = 60;
 let TopDisplayThresholdInPx = SideDisplayThresholdInPx; // Initial value

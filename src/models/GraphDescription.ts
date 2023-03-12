@@ -1,5 +1,5 @@
-import { PeriodDescription } from "./PeriodDescription";
 import { assertNever } from "../lib/assertNever";
+import { PeriodDescription } from "./periodDescriptions/PeriodDescription";
 
 export abstract class GraphDescription {
     constructor(protected readonly periodDescription: PeriodDescription) {}

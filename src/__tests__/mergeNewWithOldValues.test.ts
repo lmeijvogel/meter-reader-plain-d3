@@ -1,4 +1,4 @@
-import { differenceInSeconds, isAfter, isBefore, isEqual, subMinutes } from "date-fns";
+import { differenceInSeconds, isAfter, isBefore, isEqual } from "date-fns";
 import fs from "fs";
 
 import { mergeNewWithOldValues } from "../lib/mergeNewWithOldValues";
