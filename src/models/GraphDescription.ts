@@ -155,6 +155,18 @@ export class CurrentPowerUsageGraphDescription extends GraphDescription {
     }
 }
 
+export class CurrentWaterUsageGraphDescription extends GraphDescription {
+    readonly displayableUnit = "L/min";
+
+    get maxY() {
+        return 20; // We only support a single period anyway
+    }
+
+    get tooltipValueFormat() {
+        return "d";
+    }
+}
+
 export class TemperatuurGraphDescription extends GraphDescription {
     readonly fieldName = "temperatuur";
 

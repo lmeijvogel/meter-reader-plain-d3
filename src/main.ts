@@ -21,7 +21,7 @@ currentDataTab.initializePage("#currentPage");
 heatmapsTab.initializePage("#heatmapsPage");
 
 /* Initializing the currentTab is necessary for polling the current usage. */
-currentDataTab.startCurrentUsagePolling();
+currentDataTab.startGaugesPolling();
 
 const initialState = appStateFromLocation(window.location.pathname);
 
@@ -38,11 +38,11 @@ switch (initialState.activeTab) {
         break;
 }
 
-function currentDataReceived(currentValueInW: number) {
+function currentDataReceived(values: { current: number; water: number }) {
     const element = document.querySelector("#currentTab");
 
     if (!!element) {
-        element.innerHTML = `Nu (${Math.round(currentValueInW)} W)`;
+        element.innerHTML = `Nu (${Math.round(values.current)} W)`;
     }
 }
 
@@ -89,7 +89,7 @@ function showPage(name: TabName, previousTab: string) {
     }
 
     if (previousTab === "currentTab" && name !== "currentPage") {
-        currentDataTab.stopRecentPowerPolling();
+        currentDataTab.stopGraphsPolling();
     }
 }
 

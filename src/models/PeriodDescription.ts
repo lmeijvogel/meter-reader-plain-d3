@@ -5,7 +5,6 @@ import {
     addMinutes,
     addSeconds,
     endOfDay,
-    endOfHour,
     endOfMonth,
     endOfYear,
     getDaysInMonth,
@@ -13,7 +12,8 @@ import {
     startOfDay,
     startOfMinute,
     startOfMonth,
-    sub
+    sub,
+    subHours
 } from "date-fns";
 
 export type GraphTickPositions = "on_value" | "between_values";
@@ -412,13 +412,12 @@ export class DayDescription extends PeriodDescription {
 }
 
 export class HourDescription extends PeriodDescription {
-    constructor(
-        public readonly year: number,
-        public readonly month: number,
-        public readonly day: number,
-        public readonly hour: number
-    ) {
+    protected _endOfPeriod: Date;
+
+    constructor(props: { endOfPeriod: Date }) {
         super();
+
+        this._endOfPeriod = props.endOfPeriod;
     }
 
     readonly period = "day"; // TODO: Should not be used!
@@ -430,10 +429,11 @@ export class HourDescription extends PeriodDescription {
         return "";
     }
     toTitle() {
-        return `${this.up().toTitle} ${this.hour}:00`;
+        return `${this.up().toTitle} ${this._endOfPeriod.getHours()}:${this._endOfPeriod}.getMinutes()}`;
     }
+
     toDate() {
-        return new Date(this.year, this.month - 1, this.day, this.hour, 0);
+        return this._endOfPeriod;
     }
 
     previous() {
@@ -446,11 +446,15 @@ export class HourDescription extends PeriodDescription {
     }
 
     up(): DayDescription {
-        return new DayDescription(this.year, this.month, this.day);
+        return new DayDescription(
+            this._endOfPeriod.getFullYear(),
+            this._endOfPeriod.getMonth(),
+            this._endOfPeriod.getDate()
+        );
     }
 
     tickFormatString() {
-        return "%M";
+        return "%H:%M";
     }
 
     timeFormatString() {
@@ -458,10 +462,10 @@ export class HourDescription extends PeriodDescription {
     }
 
     getExpectedDomainValues(): d3.TimeInterval {
-        return d3.timeHour;
+        return d3.timeMinute.every(5)!;
     }
 
-    getChartTicks() {
+    getChartTicks(): d3.TimeInterval {
         return this.getExpectedDomainValues();
     }
 
@@ -474,11 +478,11 @@ export class HourDescription extends PeriodDescription {
     }
 
     startOfPeriod() {
-        return new Date(this.year, this.month - 1, this.day, this.hour, 0);
+        return subHours(this._endOfPeriod, 1);
     }
 
     endOfPeriod() {
-        return endOfHour(this.startOfPeriod());
+        return this._endOfPeriod;
     }
 
     atDate(date: Date) {
@@ -486,8 +490,8 @@ export class HourDescription extends PeriodDescription {
     }
 
     toShortTitle() {
-        const nextHour = (this.hour + 1) % 24;
-        const hourDisplay = `${this.hour}:00-${nextHour}:00`;
+        const nextHour = this._endOfPeriod.getHours();
+        const hourDisplay = `${subHours(this._endOfPeriod, 1)}:00-${nextHour}:00`;
         return `${hourDisplay}`;
     }
 
@@ -504,7 +508,8 @@ export class HourDescription extends PeriodDescription {
             return false;
         }
 
-        return 0 <= this.hour && this.hour <= 23;
+        const hour = subHours(this._endOfPeriod, 1).getHours();
+        return 0 <= hour && hour <= 23;
     }
 }
 
@@ -512,7 +517,7 @@ export class LastHourDescription extends HourDescription {
     constructor() {
         const now = new Date();
 
-        super(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
+        super({ endOfPeriod: addHours(now, 1) });
     }
 
     override endOfPeriod() {
@@ -528,13 +533,12 @@ export class LastHourDescription extends HourDescription {
     }
 
     toShortTitle() {
-        const nextHour = (this.hour + 1) % 24;
-        const hourDisplay = `${this.hour}:00-${nextHour}:00`;
-        return `${hourDisplay}`;
-    }
+        const nextHour = this._endOfPeriod.getHours();
+        const currentHour = subHours(this._endOfPeriod, 1).getHours();
 
-    getChartTicks() {
-        return d3.timeMinute.every(5)!;
+        const hourDisplay = `${currentHour}:00-${nextHour}:00`;
+
+        return `${hourDisplay}`;
     }
 
     isValid() {

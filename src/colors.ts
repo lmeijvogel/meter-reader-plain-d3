@@ -18,11 +18,18 @@ export const gaugeMildColor = "#ffff00";
 export const gaugeBadColor = "#ffbb33";
 export const gaugeWorseColor = "#ff3333";
 
+export const gaugeWaterMin = "#ddf";
+export const gaugeWaterQuart = "#aaf";
+export const gaugeWaterHalf = "#88f";
+export const gaugeWaterThreeQuart = "#55f";
+
 export const gasGraphColor = "#e73710";
 export const darkGasGraphColor = "#791d09";
 
 export const waterGraphColor = "#428bca";
 export const darkWaterGraphColor = "#224767";
+
+export const waterUsageColorForWaterGraph = waterGraphColor;
 
 export const generationGraphColor = "#88ff22";
 export const darkGenerationGraphColor = "#22aa08";
