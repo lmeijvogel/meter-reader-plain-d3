@@ -53,7 +53,7 @@ export function usageAndGenerationBarChart(
         periodDescription: initialPeriodDescription,
         relativeMinMax: true,
         data: [],
-        onValueClick: () => {},
+        onValueClick: () => { /* no-op */ },
         clearCanvas: false,
         minMaxCalculator: (data: PowerSourcesAndBackDelivery[]): { min: number; max: number } => {
             const min = d3.min(data, (el) => el.backDelivery) ?? 0;
@@ -68,7 +68,7 @@ export function usageAndGenerationBarChart(
         const { periodDescription } = store;
         const pos = scaleX(periodDescription.normalize(date));
 
-        return !!pos ? pos : 0;
+        return pos ? pos : 0;
     };
 
     function drawBars(
@@ -105,14 +105,14 @@ export function usageAndGenerationBarChart(
 
     function buildTooltip(event: any) {
         const unit = graphDescription.displayableUnit;
-        var bisect = d3.bisector((d: PowerSourcesAndBackDelivery) => d.timestamp).right;
+        const bisect = d3.bisector((d: PowerSourcesAndBackDelivery) => d.timestamp).right;
 
         const pointerX = d3.pointer(event)[0];
         const pointerDate = scaleXForInversion.invert(pointerX);
 
         const data = store.data;
 
-        var closestIndex = bisect(data, pointerDate, 1) - 1;
+        const closestIndex = bisect(data, pointerDate, 1) - 1;
 
         const d = data[closestIndex];
 

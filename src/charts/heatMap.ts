@@ -56,7 +56,7 @@ export function heatMap(graphType: GraphType) {
         min: 0,
         mapX: () => 0,
         mapY: () => 0,
-        onClick: () => {},
+        onClick: () => { /* no-op */ },
         tickFormat: (value) => value.toString()
     };
 

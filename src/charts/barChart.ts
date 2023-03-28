@@ -59,7 +59,7 @@ export function barChart(
     const calculateBarXPosition = (date: Date) => {
         const pos = scaleX(store.periodDescription.normalize(date));
 
-        return !!pos ? pos : 0;
+        return pos ? pos : 0;
     };
 
     function drawBars(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
@@ -148,7 +148,7 @@ export function barChart(
     function getHoverTooltipContents(event: any): string {
         const data = store.data;
 
-        var closestIndex = getClosestIndex(event, scaleXForInversion, data);
+        const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
         const closestDate = closestIndex.timestamp;
         const value = data[closestIndex.index].value;

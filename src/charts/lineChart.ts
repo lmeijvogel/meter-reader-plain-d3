@@ -255,7 +255,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
             .x((d) => scaleX(d.timestamp))
             .y((d) => scaleY(d.value));
 
-        if (!!fill) {
+        if (fill) {
             selection.select("defs").remove();
             selection.append("defs");
 
@@ -263,7 +263,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
             drawGradient(selection, fill, series, "negative");
         }
 
-        var path = selection.selectAll(`path.line`).data([series]).join("path");
+        const path = selection.selectAll(`path.line`).data([series]).join("path");
 
         if (store.animate) {
             path.transition().duration(firstDrawCall ? 0 : 200);
@@ -447,7 +447,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
             .map((key) => {
                 const series = store.seriesCollection.get(key)!;
 
-                var closestIndex = getClosestIndex(event, scaleX, series.series);
+                const closestIndex = getClosestIndex(event, scaleX, series.series);
                 closestDate = closestIndex.timestamp;
 
                 return {
@@ -503,7 +503,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     }
 
     function renderBrushTooltipDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
-        let result: string[] = [];
+        const result: string[] = [];
 
         const headers = ["min", "gem.", "max"];
 

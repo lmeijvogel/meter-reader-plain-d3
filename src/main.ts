@@ -13,9 +13,9 @@ const updateLocation = (newPath: string) => {
     window.history.replaceState({}, "", newPath);
 };
 
-let periodDataTab = new PeriodDataTab(DayDescription.today(), updateLocation);
-let currentDataTab = new CurrentDataTab(currentDataReceived, updateLocation);
-let heatmapsTab = new Heatmaps(heatmapPeriodSelected, updateLocation);
+const periodDataTab = new PeriodDataTab(DayDescription.today(), updateLocation);
+const currentDataTab = new CurrentDataTab(currentDataReceived, updateLocation);
+const heatmapsTab = new Heatmaps(heatmapPeriodSelected, updateLocation);
 
 periodDataTab.initializePage("#periodPage");
 currentDataTab.initializePage("#currentPage");
@@ -42,7 +42,7 @@ switch (initialState.activeTab) {
 function currentDataReceived(values: { current: number; water: number }) {
     const element = document.querySelector("#currentTab");
 
-    if (!!element) {
+    if (element) {
         element.innerHTML = `Nu (${Math.round(values.current)} W)`;
     }
 }
@@ -58,7 +58,11 @@ function selectTab(name: string) {
         tab.classList.remove("active");
     }
 
-    const selectedTab = document.querySelector("#" + name)!;
+    const selectedTab = document.querySelector("#" + name);
+
+    if (!selectedTab) {
+        return;
+    }
 
     selectedTab.classList.add("active");
 
@@ -75,7 +79,14 @@ function showPage(name: TabName, previousTab: string) {
         page.classList.remove("visible");
     }
 
-    document.querySelector("#" + name)?.classList.add("visible");
+    const page = document.getElementById(name);
+
+    if (!page) {
+        console.warn(`Page with id '${name}' not found.`); 
+        return;
+    }
+
+    page.classList.add("visible");
 
     switch (name) {
         case "currentPage":
