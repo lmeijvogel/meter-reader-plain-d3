@@ -1,21 +1,19 @@
 import * as d3 from "d3";
-import { isEqual } from "date-fns";
 import { barChart, BarChartApi } from "./charts/barChart";
 import { lineChart, LineChartApi } from "./charts/lineChart";
 import { usageAndGenerationBarChart, UsageAndGenerationBarChartApi } from "./charts/usageAndGenerationBarChart";
-import { PriceCalculator, PriceCategory } from "./lib/PriceCalculator";
+import { PriceCalculator } from "./lib/PriceCalculator";
 import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import {
     GasGraphDescription,
     WaterGraphDescription,
     StroomGraphDescription,
-    GraphDescription,
     GenerationGraphDescription,
     TemperatuurGraphDescription
 } from "./models/GraphDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";
-import { setCardTitle, setCardTitleRaw } from "./vizCard";
+import { setCardTitle } from "./vizCard";
 import { initKeyboardListener } from "./initKeyboardListener";
 import {
     gasGraphColor,
@@ -28,8 +26,6 @@ import {
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { Thermometer } from "./charts/thermometer";
 import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
-import { ChartDataResult, fetchChartData } from "./periodDataFetchers/fetchChartData";
-import { createPeriodDataCardTitle } from "./createPeriodDataCardTitle";
 import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGenerationGraph";
 import { fetchAndDrawWaterChart } from "./periodDataFetchers/fetchAndDrawWaterChart";
 import { fetchAndDrawGasChart } from "./periodDataFetchers/fetchAndDrawGasGraph";
@@ -46,14 +42,11 @@ export class PeriodDataTab {
 
     private readonly priceCalculator = new PriceCalculator();
 
-    /* Store the requested period to prevent older requests "overtaking" newer requests and being rendered
-     * when the newer ones should be rendered.
-     */
-    private requestedStartOfPeriod: Date | null = null;
     private _isNavigationInitialized = false;
 
     wasLoaded = false;
 
+    private readonly stroomChartApi: UsageAndGenerationBarChartApi;
     private readonly waterChartApi: BarChartApi;
     private readonly gasChartApi: BarChartApi;
     private readonly generationBarChartApi: BarChartApi;
@@ -139,8 +132,6 @@ export class PeriodDataTab {
 
         const shouldClearCanvas = this.periodDescription?.period !== periodDescription.period;
 
-        this.requestedStartOfPeriod = periodDescription.startOfPeriod();
-
         if (enabledGraphs.includes("gas")) {
             fetchAndDrawGasChart(periodDescription, temperatureRequest, this.gasChartApi, this.thermometer, shouldClearCanvas, this.priceCalculator);
         }
@@ -191,13 +182,6 @@ export class PeriodDataTab {
         this.periodDescription = periodDescription;
     };
 
-    private isMeasurementValid(values: ChartDataResult) {
-        if (!this.requestedStartOfPeriod) {
-            return false;
-        }
-
-        return isEqual(this.requestedStartOfPeriod, values.requestedPeriodDescription.startOfPeriod());
-    }
     private html(): string {
         /* Note: The 'periodDataRows' section must be inside the navigation overlay, because
          * otherwise it won't pick up the touch events for navigation.
