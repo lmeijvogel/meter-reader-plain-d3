@@ -2,7 +2,7 @@ import * as d3 from "d3";
 import { isEqual } from "date-fns";
 import { barChart, BarChartApi } from "./charts/barChart";
 import { lineChart, LineChartApi } from "./charts/lineChart";
-import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
+import { usageAndGenerationBarChart, UsageAndGenerationBarChartApi } from "./charts/usageAndGenerationBarChart";
 import { PriceCalculator, PriceCategory } from "./lib/PriceCalculator";
 import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import {
@@ -33,22 +33,11 @@ import { createPeriodDataCardTitle } from "./createPeriodDataCardTitle";
 import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGenerationGraph";
 import { fetchAndDrawWaterChart } from "./periodDataFetchers/fetchAndDrawWaterChart";
 import { fetchAndDrawGasChart } from "./periodDataFetchers/fetchAndDrawGasGraph";
+import { fetchAndDrawStroomGraph } from "./periodDataFetchers/fetchAndDrawStroomGraph";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
 const enabledGraphs: Graphs[] = ["gas", "stroom", "water", "temperature", "generation"];
-
-type EqualizedStroomData = {
-    consumption: ValueWithTimestamp[];
-    generation: {
-        value: number;
-        timestamp: Date;
-    }[];
-    backDelivery: {
-        value: number;
-        timestamp: Date;
-    }[];
-};
 
 export class PeriodDataTab {
     private navigation: NavigationApi | null = null;
@@ -75,10 +64,14 @@ export class PeriodDataTab {
     constructor(initialPeriod: PeriodDescription, private readonly updateLocation: (path: string) => void) {
         this.periodDescription = initialPeriod;
 
+        const stroomGraphDescription = new StroomGraphDescription(this.periodDescription);
+
         const gasGraphDescription = new GasGraphDescription(this.periodDescription);
         const waterGraphDescription = new WaterGraphDescription(this.periodDescription);
         const generationGraphDescription = new GenerationGraphDescription(this.periodDescription);
         const temperatureGraphDescription = new TemperatuurGraphDescription(this.periodDescription);
+
+        this.stroomChartApi = usageAndGenerationBarChart(this.periodDescription, stroomGraphDescription);
 
         this.waterChartApi = barChart(this.periodDescription, waterGraphDescription)
             .onClick(this.retrieveAndDrawPeriodCharts)
@@ -161,43 +154,7 @@ export class PeriodDataTab {
         }
 
         if (enabledGraphs.includes("stroom")) {
-            const periodStroomContainer = d3.select("#stroom_period_data");
-
-            Promise.all<ChartDataResult>([
-                fetchChartData("stroom", periodDescription, periodStroomContainer),
-                fetchChartData("generation", periodDescription, periodStroomContainer),
-                fetchChartData("back_delivery", periodDescription, periodStroomContainer)
-            ]).then(([stroomValues, generationValues, backDeliveryValues]) => {
-                const allValid = [stroomValues, generationValues, backDeliveryValues].every(values => this.isMeasurementValid(values));
-
-                if (!allValid) {
-                    return;
-                }
-
-                const graphDescription = new StroomGraphDescription(periodDescription);
-
-                const equalizedData: EqualizedStroomData = {
-                    consumption: stroomValues.result,
-                    generation: generationValues.result.map((el) => ({
-                        ...el,
-                        value: el.value / 1000
-                    })),
-                    backDelivery: backDeliveryValues.result.map((el) => ({
-                        ...el,
-                        value: -el.value
-                    }))
-                };
-
-                const api = usageAndGenerationBarChart(periodDescription, graphDescription)
-                    .onClick(this.retrieveAndDrawPeriodCharts)
-                    .clearCanvas(shouldClearCanvas)
-                    .data(equalizedData);
-
-                const cardTitle = this.createStroomGraphCardTitle(equalizedData, "stroom", graphDescription);
-                setCardTitleRaw(periodStroomContainer, cardTitle, "stroomCardTitle");
-
-                api.call(periodStroomContainer.select(".chart"));
-            });
+            fetchAndDrawStroomGraph(periodDescription, this.stroomChartApi, shouldClearCanvas, this.priceCalculator);
         }
 
         if (enabledGraphs.includes("temperature")) {
@@ -241,61 +198,6 @@ export class PeriodDataTab {
 
         return isEqual(this.requestedStartOfPeriod, values.requestedPeriodDescription.startOfPeriod());
     }
-
-    private createStroomGraphCardTitle(
-        equalizedData: EqualizedStroomData,
-        priceCategory: PriceCategory,
-        graphDescription: GraphDescription
-    ) {
-        const totalConsumption = this.formatPrice(
-            equalizedData,
-            "consumption",
-            "Levering",
-            priceCategory,
-            graphDescription
-        );
-        const totalBackDelivery = this.formatPrice(
-            equalizedData,
-            "backDelivery",
-            "Teruglevering",
-            priceCategory,
-            graphDescription
-        );
-
-        const consumptionPrice = this.priceCalculator.costsForMultiple(equalizedData.consumption, priceCategory);
-        const backDeliveryCredit = this.priceCalculator.costsForMultiple(equalizedData.backDelivery, priceCategory);
-
-        const netUsage =
-            d3.sum(equalizedData.consumption, (v) => v.value) + d3.sum(equalizedData.backDelivery, (v) => v.value);
-
-        const netCosts = consumptionPrice.add(backDeliveryCredit);
-
-        return `<section class="stroomCardData">
-                  ${totalConsumption}
-                  ${totalBackDelivery}
-                  <div class="netUsageCaption">Netto:</div><div class="number netUsageAmount">${d3.format(
-            graphDescription.tooltipValueFormat
-        )(netUsage)} ${graphDescription.displayableTotalsUnit
-            }</div><div class="number netUsageCosts">(${netCosts})</div>
-                </section>`;
-    }
-
-    formatPrice(
-        data: EqualizedStroomData,
-        field: keyof EqualizedStroomData,
-        caption: string,
-        priceCategory: PriceCategory,
-        graphDescription: GraphDescription
-    ): string {
-        const total = d3.sum(data[field], (v) => v.value);
-
-        const formattedAmount = d3.format(graphDescription.tooltipValueFormat)(total);
-
-        const costs = this.priceCalculator.costsForMultiple(data[field], priceCategory);
-
-        return `<div class="${field}Caption">${caption}:</div><div class="number ${field}Amount">${formattedAmount} ${graphDescription.displayableTotalsUnit}</div><div class="number ${field}Costs">(${costs})</div>`;
-    }
-
     private html(): string {
         /* Note: The 'periodDataRows' section must be inside the navigation overlay, because
          * otherwise it won't pick up the touch events for navigation.

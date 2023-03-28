@@ -11,6 +11,16 @@ import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageColor } from "../colors";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
+export type UsageAndGenerationBarChartApi = {
+    data(periodDescription: PeriodDescription, data: Data): UsageAndGenerationBarChartApi;
+
+    onClick(handler: (periodDescription: PeriodDescription) => void): UsageAndGenerationBarChartApi;
+
+    clearCanvas(value: boolean): UsageAndGenerationBarChartApi;
+
+    call(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>): void;
+};
+
 type Data = {
     consumption: ValueWithTimestamp[];
     generation: ValueWithTimestamp[];
@@ -173,8 +183,9 @@ export function usageAndGenerationBarChart(
         });
     }
 
-    const api = {
-        data(data: Data) {
+    const api: UsageAndGenerationBarChartApi  = {
+        data(periodDescription: PeriodDescription, data: Data) {
+            store.periodDescription = periodDescription;
             store.data = splitSolarSourceData(groupValuesByDate(data));
 
             return api;
