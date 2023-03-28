@@ -5,7 +5,6 @@ import { lineChart, LineChartApi } from "./charts/lineChart";
 import { usageAndGenerationBarChart } from "./charts/usageAndGenerationBarChart";
 import { PriceCalculator, PriceCategory } from "./lib/PriceCalculator";
 import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
-import { titleForCategory } from "./lib/titleForCategory";
 import {
     GasGraphDescription,
     WaterGraphDescription,
@@ -19,24 +18,19 @@ import { initializeNavigation, NavigationApi } from "./navigation";
 import { setCardTitle, setCardTitleRaw } from "./vizCard";
 import { initKeyboardListener } from "./initKeyboardListener";
 import {
-    darkGenerationGraphColor,
     gasGraphColor,
-    generationGraphColor,
-    grey,
-    lightGrey,
     stroomGenerationColor,
     temperatuurHuiskamerColor,
     temperatuurTuinkamerColor,
     temperatuurZolderColor,
     waterGraphColor,
-    white,
 } from "./colors";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { Thermometer } from "./charts/thermometer";
 import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
 import { ChartDataResult, fetchChartData } from "./periodDataFetchers/fetchChartData";
-import { DayDescription } from "./models/periodDescriptions/DayDescription";
-import { utcToZonedTime } from "date-fns-tz";
+import { createPeriodDataCardTitle } from "./createPeriodDataCardTitle";
+import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGenerationGraph";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
@@ -166,7 +160,7 @@ export class PeriodDataTab {
 
                 const graphDescription = new WaterGraphDescription(periodDescription);
 
-                const cardTitle = this.createPeriodDataCardTitle(values.result, "water", graphDescription);
+                const cardTitle = createPeriodDataCardTitle(values.result, "water", graphDescription, this.priceCalculator);
                 setCardTitle(periodWaterContainer, cardTitle);
 
                 this.waterChartApi
@@ -177,83 +171,7 @@ export class PeriodDataTab {
         }
 
         if (enabledGraphs.includes("generation")) {
-            const periodGenerationContainer = d3.select("#generation_period_data");
-
-            const fetchAggregate = (field: "mean" | "max") =>
-                periodDescription instanceof DayDescription
-                    ? fetch(`/api/generation/aggregate/${field}${periodDescription.toUrl()}`)
-                          .then((r) => r.json())
-                          .then((r) =>
-                              r.map((row: [number, number, number]) => {
-                                  const timestamp = new Date(
-                                      Date.UTC(
-                                          periodDescription.year,
-                                          periodDescription.month,
-                                          periodDescription.day,
-                                          row[0],
-                                          row[1]
-                                      )
-                                  );
-
-                                  return {
-                                      value: row[2] / 250,
-                                      timestamp: utcToZonedTime(timestamp, "Europe/Amsterdam")
-                                  };
-                              })
-                          )
-                    : Promise.resolve([]);
-
-            Promise.all([
-                fetchChartData("generation", periodDescription, periodGenerationContainer, true),
-                fetchAggregate("mean"),
-                fetchAggregate("max")
-            ]).then(([generationValues, averagesValues, maxValues]) => {
-                if (!this.isMeasurementValid(generationValues)) {
-                    return;
-                }
-
-                const graphDescription = new GenerationGraphDescription(periodDescription);
-
-                // The API returns Wh. I prefer to show the "average wattage".
-                // When the period === "day", values for every 15m are returned.
-                // To convert these to kWh, we need to multiply by 4 (15m => 1h)
-                // in addition to dividing by 1000.
-                const kWMultiplicationFactor = periodDescription.period === "day" ? 250 : 1000;
-                const valuesInKW = generationValues.result.map((value) => ({
-                    ...value,
-                    value: value.value / 1000
-                }));
-
-                const valuesInKWhPer15m = generationValues.result.map((value) => ({
-                    ...value,
-                    value: value.value / kWMultiplicationFactor
-                }));
-
-                let generationBarChartApi: any;
-
-                if (periodDescription instanceof DayDescription) {
-                    generationBarChartApi = lineChart(periodDescription, graphDescription)
-                        .minMaxCalculation("minMax")
-                        .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, 1, {
-                            positive: generationGraphColor,
-                            negative: white // The values will never be negative
-                        })
-                        .setSeries("gemiddelde", averagesValues, lightGrey, 1)
-                        .setSeries("max", maxValues, grey, 1)
-                        .renderOutsideLightShading(true);
-                } else {
-                    generationBarChartApi = this.generationBarChartApi;
-                    generationBarChartApi.data(periodDescription, graphDescription, valuesInKWhPer15m);
-                }
-
-                generationBarChartApi.clearCanvas(shouldClearCanvas);
-
-                const cardTitle = this.createPeriodDataCardTitle(valuesInKW, "generation", graphDescription);
-
-                setCardTitle(periodGenerationContainer, cardTitle);
-
-                generationBarChartApi.call(periodGenerationContainer.select(".chart"));
-            });
+            fetchAndDrawGenerationGraph(periodDescription, this.generationBarChartApi, this.priceCalculator, shouldClearCanvas);
         }
 
         if (enabledGraphs.includes("stroom")) {
@@ -381,7 +299,7 @@ export class PeriodDataTab {
                 this.thermometer.hide(thermometerContainer);
             }
 
-            const cardTitle = this.createPeriodDataCardTitle(gasValues.result, "gas", graphDescription);
+            const cardTitle = createPeriodDataCardTitle(gasValues.result, "gas", graphDescription, this.priceCalculator);
             setCardTitle(periodGasContainer, cardTitle);
 
             this.gasChartApi.call(periodGasContainer.select(".chart"));
@@ -418,7 +336,6 @@ export class PeriodDataTab {
 
         const consumptionPrice = this.priceCalculator.costsForMultiple(equalizedData.consumption, priceCategory);
         const backDeliveryCredit = this.priceCalculator.costsForMultiple(equalizedData.backDelivery, priceCategory);
-        console.log({ consumptionPrice, backDeliveryCredit });
 
         const netUsage =
             d3.sum(equalizedData.consumption, (v) => v.value) + d3.sum(equalizedData.backDelivery, (v) => v.value);
@@ -429,10 +346,9 @@ export class PeriodDataTab {
                   ${totalConsumption}
                   ${totalBackDelivery}
                   <div class="netUsageCaption">Netto:</div><div class="number netUsageAmount">${d3.format(
-                      graphDescription.tooltipValueFormat
-                  )(netUsage)} ${
-            graphDescription.displayableTotalsUnit
-        }</div><div class="number netUsageCosts">(${netCosts})</div>
+            graphDescription.tooltipValueFormat
+        )(netUsage)} ${graphDescription.displayableTotalsUnit
+            }</div><div class="number netUsageCosts">(${netCosts})</div>
                 </section>`;
     }
 
@@ -444,35 +360,12 @@ export class PeriodDataTab {
         graphDescription: GraphDescription
     ): string {
         const total = d3.sum(data[field], (v) => v.value);
-        console.log({ field, total });
 
         const formattedAmount = d3.format(graphDescription.tooltipValueFormat)(total);
 
         const costs = this.priceCalculator.costsForMultiple(data[field], priceCategory);
 
         return `<div class="${field}Caption">${caption}:</div><div class="number ${field}Amount">${formattedAmount} ${graphDescription.displayableTotalsUnit}</div><div class="number ${field}Costs">(${costs})</div>`;
-    }
-
-    private createPeriodDataCardTitle(
-        values: ValueWithTimestamp[],
-        priceCategory: PriceCategory | "generation",
-        graphDescription: GraphDescription
-    ): string {
-        const usage = d3.sum(values, (v) => v.value);
-
-        const categoryName = titleForCategory(priceCategory);
-
-        const formattedAmount = d3.format(graphDescription.tooltipValueFormat)(usage);
-
-        let result = `${categoryName}: ${formattedAmount} ${graphDescription.displayableTotalsUnit}`;
-
-        /* Use "stroom" for generation price as long as we have "saldering" */
-        const costs = this.priceCalculator.costsForMultiple(
-            values,
-            priceCategory === "generation" ? "stroom" : priceCategory
-        );
-
-        return result + ` (${costs})`;
     }
 
     private html(): string {
