@@ -23,8 +23,6 @@ const colors = {
 };
 
 export class Thermometer {
-    constructor() {}
-
     private firstDrawCall = true;
 
     private readonly scale = d3.scaleLinear().domain([MIN_TEMP, MAX_TEMP]).range([130, 10]);

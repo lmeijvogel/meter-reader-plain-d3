@@ -32,6 +32,7 @@ import { ChartDataResult, fetchChartData } from "./periodDataFetchers/fetchChart
 import { createPeriodDataCardTitle } from "./createPeriodDataCardTitle";
 import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGenerationGraph";
 import { fetchAndDrawWaterChart } from "./periodDataFetchers/fetchAndDrawWaterChart";
+import { fetchAndDrawGasChart } from "./periodDataFetchers/fetchAndDrawGasGraph";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
@@ -148,7 +149,7 @@ export class PeriodDataTab {
         this.requestedStartOfPeriod = periodDescription.startOfPeriod();
 
         if (enabledGraphs.includes("gas")) {
-            this.fetchAndDrawGasChart(periodDescription, temperatureRequest, shouldClearCanvas);
+            fetchAndDrawGasChart(periodDescription, temperatureRequest, this.gasChartApi, this.thermometer, shouldClearCanvas, this.priceCalculator);
         }
 
         if (enabledGraphs.includes("water")) {
@@ -232,64 +233,6 @@ export class PeriodDataTab {
 
         this.periodDescription = periodDescription;
     };
-
-    private fetchAndDrawGasChart(periodDescription: PeriodDescription, temperatureRequest: Promise<Map<string, ValueWithTimestamp[]>>, shouldClearCanvas: boolean) {
-        const periodGasContainer = d3.select("#gas_period_data");
-
-        Promise.all([fetchChartData("gas", periodDescription, periodGasContainer), temperatureRequest]).then((result) => {
-            const [gasValues, temperatureValues] = result;
-
-            if (!this.isMeasurementValid(gasValues)) {
-                return;
-            }
-
-            const graphDescription = new GasGraphDescription(periodDescription);
-
-            this.gasChartApi.clearCanvas(shouldClearCanvas).data(periodDescription, graphDescription, gasValues.result);
-            const outsideTemperatures = temperatureValues.get("buiten");
-
-            let thermometerContainer = periodGasContainer.select(".thermometer");
-
-            if (periodDescription.period === "day") {
-                if (!thermometerContainer.node()) {
-                    thermometerContainer = periodGasContainer.append("svg") as any;
-                    thermometerContainer.attr("class", "thermometer");
-                    this.thermometer.prepare(thermometerContainer);
-                    this.thermometer.hide(thermometerContainer);
-                }
-            } else {
-                this.thermometer.hide(thermometerContainer);
-            }
-
-            this.gasChartApi.removeLineData();
-
-            // If there aren't enough temperature measurements (which happens when
-            // KNMI didn't validate the measurements yet), the thermometer will show
-            // incomplete data, so don't show it then.
-            if (outsideTemperatures && outsideTemperatures.length > 12) {
-                if (periodDescription.period === "day") {
-                    const minimum = d3.min(outsideTemperatures, (el) => el.value) ?? 0;
-                    const maximum = d3.max(outsideTemperatures, (el) => el.value) ?? 0;
-
-                    this.thermometer.show(thermometerContainer);
-                    this.thermometer.draw({ minimum, maximum }, thermometerContainer);
-                } else {
-                    this.thermometer.hide(thermometerContainer);
-                    this.gasChartApi.addLineData(
-                        outsideTemperatures,
-                        new TemperatuurGraphDescription(periodDescription)
-                    );
-                }
-            } else {
-                this.thermometer.hide(thermometerContainer);
-            }
-
-            const cardTitle = createPeriodDataCardTitle(gasValues.result, "gas", graphDescription, this.priceCalculator);
-            setCardTitle(periodGasContainer, cardTitle);
-
-            this.gasChartApi.call(periodGasContainer.select(".chart"));
-        });
-    }
 
     private isMeasurementValid(values: ChartDataResult) {
         if (!this.requestedStartOfPeriod) {
