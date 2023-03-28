@@ -31,6 +31,7 @@ import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription
 import { ChartDataResult, fetchChartData } from "./periodDataFetchers/fetchChartData";
 import { createPeriodDataCardTitle } from "./createPeriodDataCardTitle";
 import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGenerationGraph";
+import { fetchAndDrawWaterChart } from "./periodDataFetchers/fetchAndDrawWaterChart";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
@@ -151,23 +152,7 @@ export class PeriodDataTab {
         }
 
         if (enabledGraphs.includes("water")) {
-            const periodWaterContainer = d3.select("#water_period_data");
-
-            fetchChartData("water", periodDescription, periodWaterContainer).then((values) => {
-                if (!this.isMeasurementValid(values)) {
-                    return;
-                }
-
-                const graphDescription = new WaterGraphDescription(periodDescription);
-
-                const cardTitle = createPeriodDataCardTitle(values.result, "water", graphDescription, this.priceCalculator);
-                setCardTitle(periodWaterContainer, cardTitle);
-
-                this.waterChartApi
-                    .clearCanvas(shouldClearCanvas)
-                    .data(periodDescription, graphDescription, values.result)
-                    .call(periodWaterContainer.select(".chart"));
-            });
+            fetchAndDrawWaterChart(periodDescription, this.waterChartApi, shouldClearCanvas, this.priceCalculator);
         }
 
         if (enabledGraphs.includes("generation")) {
