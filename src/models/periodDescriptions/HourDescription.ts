@@ -55,11 +55,12 @@ export class HourDescription extends PeriodDescription {
     }
 
     getExpectedDomainValues(): d3.TimeInterval {
-        return d3.timeMinute.every(5)!;
+        return d3.timeMinute;
     }
 
     getChartTicks(): d3.TimeInterval {
-        return this.getExpectedDomainValues();
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return d3.timeMinute.every(5)!;
     }
 
     shiftHalfTick(date: Date) {
