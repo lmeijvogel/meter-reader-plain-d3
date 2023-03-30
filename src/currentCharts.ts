@@ -68,7 +68,7 @@ export class CurrentDataTab {
     constructor(
         private readonly onDataReceived: (values: { current: number; water: number }) => void,
         private readonly updateLocation: (newPath: string) => void
-    ) {}
+    ) { }
 
     initializePage(selector: string) {
         createRowsWithCards(
@@ -151,43 +151,34 @@ export class CurrentDataTab {
     }
 
     private retrievePowerUsage = async (minutes = 10) => {
-        return fetch(`/api/stroom/recent?minutes=${minutes}`)
-            .then((response) => response.json())
-            .then((json) => {
-                const fieldsKW: CurrentFields = {
-                    current: json["current"].map(responseRowToValueWithTimestamp)
-                };
+        const response = await fetch(`/api/stroom/recent?minutes=${minutes}`);
+        const json = await response.json();
 
-                return fieldsKW;
-            });
+        return {
+            current: json["current"].map(responseRowToValueWithTimestamp)
+        };
     };
 
     private retrieveWaterUsage = async (minutes = 10) => {
-        return fetch(`/api/water/recent?minutes=${minutes}`)
-            .then((response) => response.json())
-            .then((json) => {
-                const fieldsKW: WaterFields = {
-                    water: json.map(responseRowToValueWithTimestamp)
-                };
+        const response = await fetch(`/api/water/recent?minutes=${minutes}`);
+        const json = await response.json();
 
-                return fieldsKW;
-            });
+        return {
+            water: json.map(responseRowToValueWithTimestamp)
+        };
     };
 
     /**
      * @returns the current in kW and water usage in L/min
      */
     private fetchGaugeData = async () => {
-        return fetch("/api/usage/last")
-            .then((response) => response.json())
-            .then((json) => {
-                const fields = {
-                    current: Number(json["current"]),
-                    water: Number(json["water"])
-                };
+        const response = await fetch("/api/usage/last");
+        const json = await response.json();
 
-                return fields;
-            });
+        return {
+            current: Number(json["current"]),
+            water: Number(json["water"])
+        };
     };
 
     private powerUsage: CurrentFields = {
@@ -234,12 +225,14 @@ export class CurrentDataTab {
         const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
         this.recentCurrentGraph.setData(
-        this.lastHourDescription,
-        new CurrentPowerUsageGraphDescription(this.lastHourDescription),
-            [ {name: "current", values: currentInW, lineColor: black, fill: {
-                positive: stroomUsageColorForCurrentGraph,
-                negative: stroomGenerationColorForCurrentGraph
-            }}])
+            this.lastHourDescription,
+            new CurrentPowerUsageGraphDescription(this.lastHourDescription),
+            [{
+                name: "current", values: currentInW, lineColor: black, fill: {
+                    positive: stroomUsageColorForCurrentGraph,
+                    negative: stroomGenerationColorForCurrentGraph
+                }
+            }])
             .animate(false);
 
         recentCurrentContainer.call(this.recentCurrentGraph.call);
