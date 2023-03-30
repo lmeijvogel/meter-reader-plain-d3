@@ -47,11 +47,11 @@ export function fetchAndDrawStroomGraph(periodDescription: PeriodDescription, ap
             }))
         };
 
+        const graphDescription = new StroomGraphDescription(periodDescription);
+
         api
             .clearCanvas(shouldClearCanvas)
-            .data(periodDescription, equalizedData);
-
-        const graphDescription = new StroomGraphDescription(periodDescription);
+            .data(periodDescription, graphDescription, equalizedData);
 
         const cardTitle = createStroomGraphCardTitle(equalizedData, "stroom", graphDescription, priceCalculator);
         setCardTitleRaw(periodStroomContainer, cardTitle, "stroomCardTitle");

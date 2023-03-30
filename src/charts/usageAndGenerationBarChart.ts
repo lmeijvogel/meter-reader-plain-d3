@@ -12,7 +12,7 @@ import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageCo
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
 export type UsageAndGenerationBarChartApi = {
-    data(periodDescription: PeriodDescription, data: Data): UsageAndGenerationBarChartApi;
+    data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: Data): UsageAndGenerationBarChartApi;
 
     onClick(handler: (periodDescription: PeriodDescription) => void): UsageAndGenerationBarChartApi;
 
@@ -35,8 +35,7 @@ type ConsolidatedData = {
 };
 
 type Store = {
-    periodDescription: PeriodDescription;
-    data: PowerSourcesAndBackDelivery[];
+    data: { periodDescription: PeriodDescription, graphDescription: GraphDescription, values: PowerSourcesAndBackDelivery[] } | "no_data";
     relativeMinMax: boolean;
     onValueClick: (periodDescription: PeriodDescription) => void;
     clearCanvas: boolean;
@@ -45,14 +44,10 @@ type Store = {
 
 let firstDrawCall = true;
 
-export function usageAndGenerationBarChart(
-    initialPeriodDescription: PeriodDescription,
-    graphDescription: GraphDescription
-) {
+export function usageAndGenerationBarChart() {
     const store: Store = {
-        periodDescription: initialPeriodDescription,
         relativeMinMax: true,
-        data: [],
+        data: "no_data",
         onValueClick: () => { /* no-op */ },
         clearCanvas: false,
         minMaxCalculator: (data: PowerSourcesAndBackDelivery[]): { min: number; max: number } => {
@@ -62,10 +57,10 @@ export function usageAndGenerationBarChart(
             return { min, max };
         }
     };
+
     const { scaleX, scaleXForInversion, scaleY } = initScales();
 
-    const calculateBarXPosition = (date: Date) => {
-        const { periodDescription } = store;
+    const calculateBarXPosition = (date: Date, periodDescription: PeriodDescription) => {
         const pos = scaleX(periodDescription.normalize(date));
 
         return pos ? pos : 0;
@@ -73,7 +68,7 @@ export function usageAndGenerationBarChart(
 
     function drawBars(
         selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-        data: PowerSourcesAndBackDelivery[],
+        data: { periodDescription: PeriodDescription, values: PowerSourcesAndBackDelivery[] },
         field: Exclude<keyof PowerSourcesAndBackDelivery, "timestamp">,
         color: string,
         onTopOf?: Exclude<keyof PowerSourcesAndBackDelivery, "timestamp">
@@ -81,16 +76,16 @@ export function usageAndGenerationBarChart(
         selection
             .select(`g.values-${field}`)
             .selectAll("rect")
-            .data(data)
+            .data(data.values)
             .join("rect")
             .on("click", (_event: any, d) => {
-                const clickedPeriod = store.periodDescription.atDate(d.timestamp);
+                const clickedPeriod = data.periodDescription.atDate(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
             .transition()
             .duration(firstDrawCall ? 0 : 200)
             .attr("x", (el) => {
-                return calculateBarXPosition(el.timestamp);
+                return calculateBarXPosition(el.timestamp, data.periodDescription);
             })
             .attr("y", (el) =>
                 onTopOf ? scaleY(el[onTopOf]) - (scaleY(0) - scaleY(el[field])) : scaleY(Math.max(0, el[field]))
@@ -104,19 +99,23 @@ export function usageAndGenerationBarChart(
     }
 
     function buildTooltip(event: any) {
-        const unit = graphDescription.displayableUnit;
+        if (store.data === "no_data") {
+            return "";
+        }
+
+        const unit = store.data.graphDescription.displayableUnit;
         const bisect = d3.bisector((d: PowerSourcesAndBackDelivery) => d.timestamp).right;
 
         const pointerX = d3.pointer(event)[0];
         const pointerDate = scaleXForInversion.invert(pointerX);
 
-        const data = store.data;
+        const data = store.data.values;
 
         const closestIndex = bisect(data, pointerDate, 1) - 1;
 
         const d = data[closestIndex];
 
-        const dateString = d3.timeFormat(initialPeriodDescription.timeFormatString())(d.timestamp);
+        const dateString = d3.timeFormat(store.data.periodDescription.timeFormatString())(d.timestamp);
 
         const rows = [
             { caption: "Grid", value: d.gridSource },
@@ -143,12 +142,16 @@ export function usageAndGenerationBarChart(
     }
 
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
+        if (store.data === "no_data") {
+            return;
+        }
+
         const tooltipLineSelector = selection.select(".tooltipLine");
 
-        const data = store.data;
+        const data = store.data.values;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(initialPeriodDescription.normalize(closestIndex.timestamp))!;
+        const x = scaleX(store.data.periodDescription.normalize(closestIndex.timestamp))!;
 
         tooltipLineSelector
             .selectAll("line")
@@ -184,9 +187,8 @@ export function usageAndGenerationBarChart(
     }
 
     const api: UsageAndGenerationBarChartApi  = {
-        data(periodDescription: PeriodDescription, data: Data) {
-            store.periodDescription = periodDescription;
-            store.data = splitSolarSourceData(groupValuesByDate(data));
+        data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: Data) {
+            store.data = { periodDescription, graphDescription, values: splitSolarSourceData(groupValuesByDate(data)) };
 
             return api;
         },
@@ -204,6 +206,10 @@ export function usageAndGenerationBarChart(
         },
 
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+            if (store.data === "no_data") {
+                throw new Error("Not initialized");
+            }
+
             if (store.clearCanvas) {
                 firstDrawCall = true;
                 selection.selectAll("*").remove();

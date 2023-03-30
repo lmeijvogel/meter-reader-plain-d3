@@ -67,14 +67,17 @@ export function fetchAndDrawGenerationGraph(periodDescription: PeriodDescription
         let generationBarChartApi: any;
 
         if (periodDescription instanceof DayDescription) {
-            generationBarChartApi = lineChart(periodDescription, graphDescription)
+            generationBarChartApi = lineChart()
                 .minMaxCalculation("minMax")
-                .setSeries("opwekking", valuesInKWhPer15m, darkGenerationGraphColor, 1, {
-                    positive: generationGraphColor,
-                    negative: white // The values will never be negative
-                })
-                .setSeries("gemiddelde", averagesValues, lightGrey, 1)
-                .setSeries("max", maxValues, grey, 1)
+                .setData(periodDescription, graphDescription, [{
+                    name: "opwekking", values: valuesInKWhPer15m, lineColor: darkGenerationGraphColor, strokeWidth: 1, fill: {
+                        positive: generationGraphColor,
+                        negative: white // The values will never be negative
+                    }
+                },
+                { name: "gemiddelde", values: averagesValues, lineColor: lightGrey, strokeWidth: 1 }
+                    , { name: "max", values: maxValues, lineColor: grey, strokeWidth: 1 }
+                ])
                 .renderOutsideLightShading(true);
         } else {
             generationBarChartApi = barChartApi;

@@ -24,9 +24,7 @@ export type BarChartApi = {
 };
 
 type Store = {
-    periodDescription: PeriodDescription;
-    graphDescription: GraphDescription;
-    data: ValueWithTimestamp[];
+    data: { periodDescription: PeriodDescription, graphDescription: GraphDescription, values: ValueWithTimestamp[] } | "no_data";
     lineData: { data: ValueWithTimestamp[]; graphDescription: GraphDescription }[];
     color: string;
     colorLight: string;
@@ -37,40 +35,54 @@ type Store = {
     minMaxCalculator: (data: ValueWithTimestamp[]) => { min: number; max: number };
 };
 
-export function barChart(
-    initialPeriodDescription: PeriodDescription,
-    initialGraphDescription: GraphDescription
-): BarChartApi {
+export function barChart(): BarChartApi {
+    const minMaxCalculator = () => {
+        if (store.data === "no_data") {
+            throw new Error("No data initialized.");
+        }
+
+        const { graphDescription } = store.data;
+        return ({ min: graphDescription.minY, max: graphDescription.maxY })
+    }
+
     const store: Store = {
-        periodDescription: initialPeriodDescription,
-        graphDescription: initialGraphDescription,
         relativeMinMax: true,
-        data: [],
+        data: "no_data",
         lineData: [],
         color: grey,
         colorLight: lightGrey,
-        onValueClick: () => {},
+        onValueClick: () => { /* no-op */ },
         clearCanvas: false,
         firstDrawCall: true,
-        minMaxCalculator: () => ({ min: store.graphDescription.minY, max: store.graphDescription.maxY })
+        minMaxCalculator
     };
     const { scaleX, scaleXForInversion, scaleY } = initScales();
 
     const calculateBarXPosition = (date: Date) => {
-        const pos = scaleX(store.periodDescription.normalize(date));
+        if (store.data === "no_data") {
+            return 0;
+        }
+
+        const pos = scaleX(store.data.periodDescription.normalize(date));
 
         return pos ? pos : 0;
     };
 
     function drawBars(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        if (store.data === "no_data") {
+            throw new Error("Data is not initialized.")
+        }
+
+        const { periodDescription, values } = store.data;
+
         selection
             .select("g.values")
             .selectAll("rect.bar")
-            .data<ValueWithTimestamp>(store.data)
+            .data<ValueWithTimestamp>(values)
             .join("rect")
             .classed("bar", true)
             .on("click", (_event: any, d) => {
-                const clickedPeriod = store.periodDescription.atDate(d.timestamp);
+                const clickedPeriod = periodDescription.atDate(d.timestamp);
                 store.onValueClick(clickedPeriod);
             })
             .transition()
@@ -86,6 +98,10 @@ export function barChart(
     }
 
     function drawLines(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+        if (store.data === "no_data") {
+            throw new Error("Data was not initialized.");
+        }
+
         const data = store.lineData[0]?.data;
 
         if (!data) {
@@ -94,7 +110,9 @@ export function barChart(
             return;
         }
 
-        const domainX = [store.periodDescription.startOfPeriod(), store.periodDescription.endOfPeriod()];
+        const periodDescription = store.data.periodDescription;
+
+        const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
         const lineScaleX = d3.scaleTime().domain(domainX).range(scaleX.range());
 
         const lineScaleY = d3.scaleLinear().domain([-5, 40]).range(scaleY.range());
@@ -146,26 +164,32 @@ export function barChart(
     }
 
     function getHoverTooltipContents(event: any): string {
-        const data = store.data;
+        if (store.data === "no_data") {
+            return "";
+        }
+
+        const data = store.data.values;
 
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
         const closestDate = closestIndex.timestamp;
         const value = data[closestIndex.index].value;
 
-        const dateString = d3.timeFormat(store.periodDescription.timeFormatString())(closestDate);
+        const dateString = d3.timeFormat(store.data.periodDescription.timeFormatString())(closestDate);
 
-        return `${dateString}: <b>${renderDisplayValue(value)}</b>`;
+        return `${dateString}: <b>${renderDisplayValue(value, store.data.graphDescription)}</b>`;
     }
 
-    function renderDisplayValue(value: number) {
-        return `${d3.format(store.graphDescription.tooltipValueFormat)(value)} ${
-            store.graphDescription.displayableUnit
-        }`;
+    function renderDisplayValue(value: number, graphDescription: GraphDescription) {
+        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit}`;
     }
 
     function highlightActiveBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
-        const closestIndex = getClosestIndex(event, scaleXForInversion, store.data);
+        if (store.data === "no_data") {
+            return;
+        }
+
+        const closestIndex = getClosestIndex(event, scaleXForInversion, store.data.values);
 
         selection
             .select(".values")
@@ -178,12 +202,16 @@ export function barChart(
     }
 
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
+        if (store.data === "no_data") {
+            return;
+        }
+
         const tooltipLineSelector = selection.select(".tooltipLine");
 
-        const data = store.data;
+        const data = store.data.values;
         const closestIndex = getClosestIndex(event, scaleXForInversion, data);
 
-        const x = scaleX(store.periodDescription.normalize(closestIndex.timestamp))!;
+        const x = scaleX(store.data.periodDescription.normalize(closestIndex.timestamp))!;
 
         tooltipLineSelector
             .selectAll("line")
@@ -198,9 +226,7 @@ export function barChart(
 
     const api = {
         data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: ValueWithTimestamp[]) {
-            store.periodDescription = periodDescription;
-            store.graphDescription = graphDescription;
-            store.data = data;
+            store.data = { periodDescription, graphDescription, values: data };
 
             return api;
         },

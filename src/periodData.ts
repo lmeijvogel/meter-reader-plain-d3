@@ -5,10 +5,6 @@ import { usageAndGenerationBarChart, UsageAndGenerationBarChartApi } from "./cha
 import { PriceCalculator } from "./lib/PriceCalculator";
 import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import {
-    GasGraphDescription,
-    WaterGraphDescription,
-    StroomGraphDescription,
-    GenerationGraphDescription,
     TemperatuurGraphDescription
 } from "./models/GraphDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
@@ -57,28 +53,21 @@ export class PeriodDataTab {
     constructor(initialPeriod: PeriodDescription, private readonly updateLocation: (path: string) => void) {
         this.periodDescription = initialPeriod;
 
-        const stroomGraphDescription = new StroomGraphDescription(this.periodDescription);
+        this.stroomChartApi = usageAndGenerationBarChart();
 
-        const gasGraphDescription = new GasGraphDescription(this.periodDescription);
-        const waterGraphDescription = new WaterGraphDescription(this.periodDescription);
-        const generationGraphDescription = new GenerationGraphDescription(this.periodDescription);
-        const temperatureGraphDescription = new TemperatuurGraphDescription(this.periodDescription);
-
-        this.stroomChartApi = usageAndGenerationBarChart(this.periodDescription, stroomGraphDescription);
-
-        this.waterChartApi = barChart(this.periodDescription, waterGraphDescription)
+        this.waterChartApi = barChart()
             .onClick(this.retrieveAndDrawPeriodCharts)
             .color(waterGraphColor);
 
-        this.gasChartApi = barChart(this.periodDescription, gasGraphDescription)
+        this.gasChartApi = barChart()
             .onClick(this.retrieveAndDrawPeriodCharts)
             .color(gasGraphColor);
 
-        this.generationBarChartApi = barChart(this.periodDescription, generationGraphDescription)
+        this.generationBarChartApi = barChart()
             .onClick(this.retrieveAndDrawPeriodCharts)
             .color(stroomGenerationColor);
 
-        this.temperatureChartApi = lineChart(this.periodDescription, temperatureGraphDescription).minMaxCalculation(
+        this.temperatureChartApi = lineChart().minMaxCalculation(
             "minMax"
         );
 
@@ -162,19 +151,21 @@ export class PeriodDataTab {
             temperatureRequest.then((result) => {
                 const graphDescription = new TemperatuurGraphDescription(periodDescription);
 
-                this.temperatureChartApi.periodDescription(periodDescription).graphDescription(graphDescription);
-
-                [
+                const series = [
                     ["huiskamer", temperatuurHuiskamerColor],
                     ["zolder", temperatuurZolderColor],
                     ["tuinkamer", temperatuurTuinkamerColor]
-                ].forEach(([key, color]) => {
-                    const series = result.get(key);
+                ].map(([name, color]) => {
+                    const series = result.get(name) ?? [];
 
-                    if (series) {
-                        this.temperatureChartApi.setSeries(key, series, color);
-                    }
+                    return {
+                        name,
+                        values: series,
+                        lineColor: color
+                    };
                 });
+
+                this.temperatureChartApi.setData(periodDescription, graphDescription, series);
                 chartContainer.call(this.temperatureChartApi.call);
             });
         }

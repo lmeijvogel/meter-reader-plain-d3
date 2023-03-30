@@ -16,7 +16,7 @@ import {
     gaugeWorseColor,
     stroomGenerationColorForCurrentGraph,
     stroomUsageColorForCurrentGraph,
-    waterUsageColorForWaterGraph
+    waterGraphColor
 } from "./colors";
 import { mergeNewWithOldValues } from "./lib/mergeNewWithOldValues";
 import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
@@ -26,6 +26,7 @@ import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { setCardTitle } from "./vizCard";
 import { HourDescription } from "./models/periodDescriptions/HourDescription";
 import { LastHourDescription } from "./models/periodDescriptions/LastHourDescription";
+import { barChart } from "./charts/barChart";
 
 type CurrentFields = { current: ValueWithTimestamp[] };
 type WaterFields = { water: ValueWithTimestamp[] };
@@ -52,15 +53,9 @@ export class CurrentDataTab {
         ]);
 
     private lastHourDescription = new LastHourDescription();
-    private readonly recentCurrentGraph = lineChart(
-        this.lastHourDescription,
-        new CurrentPowerUsageGraphDescription(this.lastHourDescription)
-    ).minMaxCalculation("quantile");
+    private readonly recentCurrentGraph = lineChart().minMaxCalculation("quantile");
 
-    private readonly recentWaterGraph = lineChart(
-        this.lastHourDescription,
-        new CurrentWaterUsageGraphDescription(this.lastHourDescription)
-    ).domain([0, 5]);
+    private readonly recentWaterGraph = barChart().color(waterGraphColor);
 
     private pageInvisibleTimestamp: Date | undefined;
 
@@ -201,7 +196,7 @@ export class CurrentDataTab {
         water: []
     };
 
-    private updatePowerUsageGraph = async (minutes: number = 1) => {
+    private updatePowerUsageGraph = async (minutes = 1) => {
         const newValues = await this.retrievePowerUsage(minutes);
 
         this.powerUsage.current = mergeNewWithOldValues(newValues.current, this.powerUsage.current);
@@ -209,7 +204,7 @@ export class CurrentDataTab {
         this.drawPowerUsage(this.powerUsage);
     };
 
-    private updateWaterUsageGraph = async (minutes: number = 60) => {
+    private updateWaterUsageGraph = async (minutes = 60) => {
         const newValues = await this.retrieveWaterUsage(minutes);
 
         this.waterUsage.water = newValues.water;
@@ -236,11 +231,13 @@ export class CurrentDataTab {
 
         const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
 
-        this.recentCurrentGraph
-            .setSeries("current", currentInW, black, undefined, {
+        this.recentCurrentGraph.setData(
+        this.lastHourDescription,
+        new CurrentPowerUsageGraphDescription(this.lastHourDescription),
+            [ {name: "current", values: currentInW, lineColor: black, fill: {
                 positive: stroomUsageColorForCurrentGraph,
                 negative: stroomGenerationColorForCurrentGraph
-            })
+            }}])
             .animate(false);
 
         recentCurrentContainer.call(this.recentCurrentGraph.call);
@@ -251,20 +248,19 @@ export class CurrentDataTab {
         const recentWaterContainer = recentWaterCard.select(".chart");
         setCardTitle(recentWaterCard, "Watergebruik");
 
-        const currentInW = water.water;
+        const waterData = water.water.filter((el) => el.value > 0);
 
         const lastElement = water.water.at(-1);
         if (!lastElement) {
             return;
         }
 
-        this.recentWaterGraph
-            .periodDescription(new HourDescription({ endOfPeriod: lastElement.timestamp }))
-            .setSeries("current", currentInW, black, undefined, {
-                positive: waterUsageColorForWaterGraph,
-                negative: "white" // We will hopefully never send water back to the grid
-            })
-            .animate(false);
+        const graphDescription = new CurrentWaterUsageGraphDescription(this.lastHourDescription);
+        this.recentWaterGraph.data(
+            new HourDescription({ endOfPeriod: lastElement.timestamp }),
+            graphDescription,
+            waterData
+        );
 
         recentWaterContainer.call(this.recentWaterGraph.call);
     }

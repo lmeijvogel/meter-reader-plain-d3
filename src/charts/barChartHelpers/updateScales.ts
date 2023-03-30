@@ -5,8 +5,7 @@ import { axisWidth, height, padding, width, xAxisHeight } from "./constants";
 import { renderXAxis } from "./renderXAxis";
 
 type Store<T> = {
-    periodDescription: PeriodDescription;
-    data: T[];
+    data: { periodDescription: PeriodDescription, values: T[] } | "no_data";
     minMaxCalculator: (data: T[]) => { min: number; max: number };
 };
 
@@ -38,13 +37,17 @@ export function updateScales<T>(
     scaleY: d3.ScaleLinear<number, number, never>,
     store: Store<T>
 ) {
+    if (store.data === "no_data") {
+        throw new Error("Store does not contain data.");
+    }
+
+    const { periodDescription, values } = store.data;
+
     function getRelativeDomain(): number[] {
-        const { min, max } = store.minMaxCalculator(store.data);
+        const { min, max } = store.minMaxCalculator(values);
 
         return [min * 1.1, max * 1.1];
     }
-
-    const { periodDescription } = store;
 
     const domainY = getRelativeDomain();
 
@@ -64,7 +67,7 @@ export function updateScales<T>(
         .duration(firstDrawCall ? 0 : 200)
         .attr("transform", `translate(0, ${scaleY(0)})`);
 
-    renderXAxis(xAxisBase, store.periodDescription);
+    renderXAxis(xAxisBase, periodDescription);
 
     const yAxis = d3.axisLeft(scaleY);
     selection

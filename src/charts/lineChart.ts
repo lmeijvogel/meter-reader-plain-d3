@@ -16,21 +16,19 @@ import { drawSolarIncidenceInChart } from "../drawSolarIncidenceInChart";
 import { getMaximumIncidentSunlight } from "../lib/calculatePotentialIncidentSunlight";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
+export type Series = {
+    name: string,
+    values: ValueWithTimestamp[],
+    lineColor: string,
+    strokeWidth?: number,
+    fill?: {
+        positive: string;
+        negative: string;
+    }
+};
+
 export type LineChartApi = {
-    periodDescription: (periodDescription: PeriodDescription) => LineChartApi;
-    graphDescription: (graphDescription: GraphDescription) => LineChartApi;
-    setSeries(
-        name: string,
-        series: ValueWithTimestamp[],
-        lineColor: string,
-        strokeWidth?: number,
-        fill?:
-            | {
-                  positive: string;
-                  negative: string;
-              }
-            | undefined
-    ): LineChartApi;
+    setData(periodDescription: PeriodDescription, graphDescription: GraphDescription, series: Series[]): LineChartApi;
     animate: (value: boolean) => LineChartApi;
     domain(domain: [number, number]): LineChartApi;
     minMaxCalculation: (method: "minMax" | "quantile") => LineChartApi;
@@ -44,19 +42,12 @@ type FillColors = {
     negative: string;
 };
 
-type SeriesCollection = Map<
-    string,
-    { series: ValueWithTimestamp[]; lineColor: string; strokeWidth?: number; fill?: FillColors }
->;
-
 type Store = {
-    periodDescription: PeriodDescription;
-    graphDescription: GraphDescription;
     animate: boolean;
     lineColors?: Map<string, string>;
     defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
-    seriesCollection: SeriesCollection;
+    seriesCollection: { periodDescription: PeriodDescription, graphDescription: GraphDescription, series: Series[] } | "not_set";
     domain?: [number, number];
     clearCanvas: boolean;
     renderOutsideLightShading: boolean;
@@ -75,15 +66,13 @@ const height = 240;
 const xAxisHeight = 20;
 const axisWidth = 50;
 
-export function lineChart(initialPeriodDescription: PeriodDescription, initialGraphDescription: GraphDescription) {
+export function lineChart() {
     const store: Store = {
-        periodDescription: initialPeriodDescription,
-        graphDescription: initialGraphDescription,
         animate: true,
         lineColors: new Map(),
         defaultLineColor: "black",
         minMaxCalculation: "explicit",
-        seriesCollection: new Map(),
+        seriesCollection: "not_set",
         clearCanvas: false,
         renderOutsideLightShading: false
     };
@@ -103,26 +92,12 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     let isBrushVisible = false;
 
     const api: LineChartApi = {
-        periodDescription: (periodDescription: PeriodDescription) => {
-            store.periodDescription = periodDescription;
-
-            return api;
-        },
-
-        graphDescription: (graphDescription: GraphDescription) => {
-            store.graphDescription = graphDescription;
-
-            return api;
-        },
-
-        setSeries(
-            name: string,
-            series: ValueWithTimestamp[],
-            lineColor: string,
-            strokeWidth?: number,
-            fill?: FillColors
+        setData(
+            periodDescription: PeriodDescription,
+            graphDescription: GraphDescription,
+            series: Series[]
         ) {
-            store.seriesCollection.set(name, { series, lineColor, strokeWidth, fill });
+            store.seriesCollection = { periodDescription, graphDescription, series };
 
             return api;
         },
@@ -159,6 +134,10 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         },
 
         call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+            if (store.seriesCollection === "not_set") {
+                throw new Error("No series data set");
+            }
+
             if (store.clearCanvas) {
                 selection.selectAll("*").remove();
                 hideTooltip();
@@ -192,13 +171,15 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
 
             registerEventHandlers(selection);
 
-            const domainX = [store.periodDescription.startOfPeriod(), store.periodDescription.endOfPeriod()];
+            const { periodDescription, series } = store.seriesCollection;
+
+            const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
             scaleX.domain(domainX);
 
             const domainY = getDomainY();
             scaleY.domain(domainY).range([maximumY, minimumY]);
 
-            renderXAxis(selection.select(".xAxis"));
+            renderXAxis(selection.select(".xAxis"), periodDescription);
             selection
                 .select(".yAxis")
                 .attr("transform", `translate(${minimumX}, 0)`)
@@ -207,7 +188,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
 
             const valuesSelection = selection.select(".values");
 
-            store.seriesCollection.forEach((series, name) => {
+            series.forEach((set, name) => {
                 const seriesGClassName = `series_${name}`;
 
                 let g = valuesSelection.select<SVGGElement>(`.${seriesGClassName}`);
@@ -217,21 +198,21 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
                     g.attr("class", seriesGClassName).attr("width", width).attr("height", height);
                 }
 
-                drawValues(series.series, series.lineColor, g, series.strokeWidth, series.fill);
+                drawValues(set.values, set.lineColor, g, set.strokeWidth, set.fill);
             });
 
             if (store.renderOutsideLightShading) {
-                drawTimesOfDay(selection);
+                drawTimesOfDay(selection, periodDescription);
             }
 
             return api;
         }
     };
 
-    function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+    function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, periodDescription: PeriodDescription) {
         // For some reason, `getTimes` returns the times on the previous day.
         // I don't know why so this fix will probably break soon.
-        const date = addDays(store.periodDescription.toDate(), 1);
+        const date = addDays(periodDescription.toDate(), 1);
         const times = getTimes(date, HouseLocation.latitude, HouseLocation.longitude);
 
         const g = svg.select("g.daylightUnderlay");
@@ -239,7 +220,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
 
         drawTimeBandsInChart(g, times, scaleX, padding.top, bandHeight);
 
-        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), store.periodDescription, scaleX, scaleY);
+        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), periodDescription, scaleX, scaleY);
     }
 
     function drawValues(
@@ -339,26 +320,30 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         });
     }
 
-    function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        const ticks = store.periodDescription.getChartTicks();
+    function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, periodDescription: PeriodDescription) {
+        const ticks = periodDescription.getChartTicks();
         const xAxis = d3
             .axisBottom(scaleX as any)
-            .ticks(ticks, d3.timeFormat(store.periodDescription.tickFormatString()));
+            .ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()));
 
         xAxisBase.attr("transform", `translate(0, ${scaleY(0)})`).call(xAxis as any);
     }
 
     function getDomainY(): number[] {
+        if (store.seriesCollection === "not_set") {
+            throw new Error("No series data set.");
+        }
+
         if (store.renderOutsideLightShading) {
-            return [0, getMaximumIncidentSunlight(store.periodDescription.startOfPeriod())];
+            return [0, getMaximumIncidentSunlight(store.seriesCollection.periodDescription.startOfPeriod())];
         }
 
         if (store.minMaxCalculation === "explicit") {
             return store.domain!;
         }
 
-        const relevantValues = Array.from(store.seriesCollection.values()).flatMap((series) =>
-            series.series.map((s) => s.value)
+        const relevantValues = store.seriesCollection.series.flatMap((series) =>
+            series.values.map((s) => s.value)
         );
 
         if (store.minMaxCalculation === "quantile") {
@@ -391,15 +376,19 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     }
 
     function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
+        if (store.seriesCollection === "not_set") {
+            return;
+        }
+
         const tooltipLineSelector = selection.select(".tooltipLine");
 
         // When measurements are missing, we of course don't want to try to include them.
-        const seriesCollectionValues = Array.from(store.seriesCollection.values()).filter(
-            (collection) => collection.series.length > 0
+        const seriesCollectionValues = store.seriesCollection.series.filter(
+            (collection) => collection.values.length > 0
         );
 
         const closestIndices = seriesCollectionValues.map((collection) =>
-            getClosestIndex(event, scaleX, collection.series)
+            getClosestIndex(event, scaleX, collection.values)
         );
 
         /* This is a bit of a dirty workaround for how we determine where to draw the line:
@@ -424,7 +413,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
 
         /* Draw a circle on all matching lines */
         const yValues = seriesCollectionValues.map((series, i) => ({
-            value: series.series[closestIndices[i].index].value,
+            value: series.values[closestIndices[i].index].value,
             color: series.lineColor
         }));
 
@@ -440,31 +429,32 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     }
 
     function getHoverTooltipContents(event: any): string {
+        if (store.seriesCollection === "not_set") {
+            return "";
+        }
+
         let closestDate = new Date();
 
-        const ys = Array.from(store.seriesCollection.keys())
-            .filter((key) => store.seriesCollection.get(key)!.series.length > 0)
-            .map((key) => {
-                const series = store.seriesCollection.get(key)!;
-
-                const closestIndex = getClosestIndex(event, scaleX, series.series);
+        const ys = store.seriesCollection.series.filter(series => series.values.length > 0).map(series => {
+                const closestIndex = getClosestIndex(event, scaleX, series.values);
                 closestDate = closestIndex.timestamp;
 
                 return {
-                    name: key,
-                    value: series.series[closestIndex.index]?.value,
+                    name: series.name,
+                    value: series.values[closestIndex.index]?.value,
                     color: series.lineColor
                 };
             });
 
-        const dateString = d3.timeFormat(store.periodDescription.timeFormatString())(closestDate);
+        const { periodDescription, graphDescription } = store.seriesCollection;
+        const dateString = d3.timeFormat(periodDescription.timeFormatString())(closestDate);
 
         const valueLines = ys
             .map(
                 ({ name, value, color }) => `
                                             <span style="display: inline-block; width: 15px; height: 15px; border: 1px solid black; background-color: ${color}"></span>
                                             <span>${name}:</span>
-                                            <span class="tableValue">${renderDisplayValue(value)}</span>
+                                            <span class="tableValue">${renderDisplayValue(value, graphDescription)}</span>
                                         `
             )
             .join("");
@@ -472,27 +462,31 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     }
 
     function getBrushTooltipContents(event: any): string {
+        if (store.seriesCollection === "not_set") {
+            return "";
+        }
+
         const pointerStartDate = scaleX.invert(event.selection[0]);
         const pointerEndDate = scaleX.invert(event.selection[1]);
 
         const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
 
-        for (const series of store.seriesCollection.entries()) {
-            const startIndex = getClosestIndex(event.selection[0], scaleX, series[1].series, event.selection[0]);
-            const endIndex = getClosestIndex(event.selection[1], scaleX, series[1].series, event.selection[1]);
+        for (const series of store.seriesCollection.series) {
+            const startIndex = getClosestIndex(event.selection[0], scaleX, series.values, event.selection[0]);
+            const endIndex = getClosestIndex(event.selection[1], scaleX, series.values, event.selection[1]);
 
-            const relevantEntries = series[1].series.slice(startIndex.index, endIndex.index);
+            const relevantEntries = series.values.slice(startIndex.index, endIndex.index);
 
             const [min, max] = d3.extent(relevantEntries, (v) => v.value);
 
-            displayValues.set(series[0], {
+            displayValues.set(series.name, {
                 min: min ?? 0,
                 mean: d3.mean(relevantEntries, (v) => v.value) ?? 0,
                 max: max ?? 0
             });
         }
 
-        const formatString = store.periodDescription.timeFormatString();
+        const formatString = store.seriesCollection.periodDescription.timeFormatString();
         const startDateString = d3.timeFormat(formatString)(pointerStartDate);
         const endDateString = d3.timeFormat(formatString)(pointerEndDate);
 
@@ -503,6 +497,10 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
     }
 
     function renderBrushTooltipDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
+        if (store.seriesCollection === "not_set") {
+            return [];
+        }
+
         const result: string[] = [];
 
         const headers = ["min", "gem.", "max"];
@@ -512,7 +510,7 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         result.push("</tr></thead>");
 
         result.push("<tbody>");
-        const tooltipValueFormat = store.graphDescription.tooltipValueFormat;
+        const tooltipValueFormat = store.seriesCollection.graphDescription.tooltipValueFormat;
         for (const [name, values] of displayValues) {
             result.push(`<tr><th scope="row">${name}</th>`);
             result.push(`<td class="tableValue">${d3.format(tooltipValueFormat)(values.min)}</td>
@@ -523,10 +521,9 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         return result;
     }
 
-    function renderDisplayValue(value: number) {
-        return `${d3.format(store.graphDescription.tooltipValueFormat)(value)} ${
-            store.graphDescription.displayableUnit
-        }`;
+    function renderDisplayValue(value: number, graphDescription: GraphDescription) {
+        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit
+            }`;
     }
 
     function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
@@ -544,11 +541,15 @@ export function lineChart(initialPeriodDescription: PeriodDescription, initialGr
         });
 
         selection.on("mousemove", (event) => {
+            if (store.seriesCollection === "not_set") {
+                return;
+            }
+
             if (isBrushVisible) {
                 return;
             }
 
-            if (store.seriesCollection.size === 0) {
+            if (store.seriesCollection.series.length === 0) {
                 return;
             }
 
