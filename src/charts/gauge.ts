@@ -6,6 +6,7 @@ type Store = {
 
     colorRanges: { start: number; color: string }[];
     domain: [min: number, max: number];
+    unit: string;
 };
 
 const startAngleFromTop = (2 * Math.PI) / 3;
@@ -25,7 +26,8 @@ export function gauge() {
     const store: Store = {
         colorRanges: [],
         currentValue: 0,
-        domain: [0, 3000]
+        domain: [0, 3000],
+        unit: ""
     };
 
     const scaleArcBorder = d3.arc();
@@ -138,9 +140,9 @@ export function gauge() {
                 /* Without this tween, the needle will rotate through the bottom when that is
                  * the shortest path.
                  */
-                let currentAngle = getCurrentAngle(this);
+                const currentAngle = getCurrentAngle(this);
 
-                let i = d3.interpolate(currentAngle, degrees);
+                const i = d3.interpolate(currentAngle, degrees);
 
                 return (t: number) => {
                     d3.select(this).attr("transform", `${defaultTransform}rotate(${i(t)})`);
@@ -162,7 +164,7 @@ export function gauge() {
             .style("fill", "black")
             .style("font-size", "12pt")
             .attr("text-anchor", "middle")
-            .text("W");
+            .text(store.unit);
     }
 
     initializeGraph();
@@ -173,6 +175,13 @@ export function gauge() {
 
             return api;
         },
+
+        unit(unit: string) {
+            store.unit = unit;
+
+            return api;
+        },
+
         domain(domain: [min: number, max: number]) {
             store.domain = domain;
             scale.domain(domain);

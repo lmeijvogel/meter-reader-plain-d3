@@ -33,6 +33,7 @@ type WaterFields = { water: ValueWithTimestamp[] };
 
 export class CurrentDataTab {
     private readonly powerUsageGauge = gauge()
+        .unit("W")
         .domain([-3000, 3000])
         .colors([
             { start: -3000, color: gaugeVeryGoodColor },
@@ -44,6 +45,7 @@ export class CurrentDataTab {
         ]);
 
     private readonly waterUsageGauge = gauge()
+        .unit("L/min")
         .domain([0, 40])
         .colors([
             { start: 0, color: gaugeWaterMin },
