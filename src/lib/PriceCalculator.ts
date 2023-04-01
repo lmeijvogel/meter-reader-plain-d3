@@ -81,8 +81,15 @@ const energyPrices: EnergyRateForDateRange[] = [
         gasPrice: new Money(2.45874), // 1.93352 + 0.02988 + 0.00515 + 0.39591 + 0.09428,
         stroomPrice: new Money(0.61864), // This is the "enkeltarief" price.
         validFrom: new Date(2022, 11, 26),
-        validUntil: new Date(2023, 2, 31) // 1 april: Variable prices
+        validUntil: new Date(2023, 3, 1) // 1 april: Variable prices
+    },
+    {
+        gasPrice: new Money(1.76072), // 1.12868 + 0.03366 + 0.00572 + 0.59266
+        stroomPrice: new Money(0.45184), // This is the "enkeltarief" price: 0.29939 + 0.15245
+        validFrom: new Date(2023, 3, 1),
+        validUntil: new Date(2024, 3, 1) // 1 april: Variable prices
     }
+
 ];
 // Incl. BTW. Rate is given on the Vandebron website in per m3, but I'd like to show in liters, so divide by 1000.
 const waterPrices: WaterRateForDateRange[] = [
