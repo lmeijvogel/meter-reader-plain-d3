@@ -4,19 +4,12 @@ import { lineChart, LineChartApi } from "./charts/lineChart";
 import { usageAndGenerationBarChart, UsageAndGenerationBarChartApi } from "./charts/usageAndGenerationBarChart";
 import { PriceCalculator } from "./lib/PriceCalculator";
 import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
-import {
-    TemperatuurGraphDescription
-} from "./models/GraphDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";
-import { setCardTitle } from "./vizCard";
 import { initKeyboardListener } from "./initKeyboardListener";
 import {
     gasGraphColor,
     stroomGenerationColor,
-    temperatuurHuiskamerColor,
-    temperatuurTuinkamerColor,
-    temperatuurZolderColor,
     waterGraphColor,
 } from "./colors";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
@@ -26,6 +19,7 @@ import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGe
 import { fetchAndDrawWaterChart } from "./periodDataFetchers/fetchAndDrawWaterChart";
 import { fetchAndDrawGasChart } from "./periodDataFetchers/fetchAndDrawGasGraph";
 import { fetchAndDrawStroomGraph } from "./periodDataFetchers/fetchAndDrawStroomGraph";
+import { fetchAndDrawTemperatureChart } from "./periodDataFetchers/fetchAndDrawTemperatureChart";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
 
@@ -67,15 +61,18 @@ export class PeriodDataTab {
             .onClick(this.retrieveAndDrawPeriodCharts)
             .color(stroomGenerationColor);
 
-        this.temperatureChartApi = lineChart().minMaxCalculation(
-            "minMax"
-        );
+        this.temperatureChartApi = lineChart().minMaxCalculation("minMax");
 
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
     }
 
     initializePage(selector: string) {
-        document.querySelector(selector)!.innerHTML = this.html();
+        const element = document.querySelector(selector);
+
+        if (!element) return;
+
+        element.innerHTML = this.html();
+
         createRowsWithCards(
             [
                 ["gas_period_data", "stroom_period_data", "water_period_data"],
@@ -138,36 +135,7 @@ export class PeriodDataTab {
         }
 
         if (enabledGraphs.includes("temperature")) {
-            const temperatureCard = d3.select("#temperature_line_chart");
-
-            if (!temperatureCard.select(".thermometer").node()) {
-                const thermometerCard = temperatureCard.select(".chart").append("g");
-                thermometerCard.attr("class", "thermometer");
-            }
-
-            const chartContainer = temperatureCard.select(".chart");
-            setCardTitle(temperatureCard, "Binnentemperatuur");
-
-            temperatureRequest.then((result) => {
-                const graphDescription = new TemperatuurGraphDescription(periodDescription);
-
-                const series = [
-                    ["huiskamer", temperatuurHuiskamerColor],
-                    ["zolder", temperatuurZolderColor],
-                    ["tuinkamer", temperatuurTuinkamerColor]
-                ].map(([name, color]) => {
-                    const series = result.get(name) ?? [];
-
-                    return {
-                        name,
-                        values: series,
-                        lineColor: color
-                    };
-                });
-
-                this.temperatureChartApi.setData(periodDescription, graphDescription, series);
-                chartContainer.call(this.temperatureChartApi.call);
-            });
+            fetchAndDrawTemperatureChart(periodDescription, temperatureRequest, this.temperatureChartApi, temperatureCard);
         }
 
         this.periodDescription = periodDescription;
