@@ -15,10 +15,10 @@ import {
 import { createRowsWithCards } from "./lib/createRowsWithCards";
 import { Thermometer } from "./charts/thermometer";
 import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
-import { fetchAndDrawGenerationGraph } from "./periodDataFetchers/fetchAndDrawGenerationGraph";
+import { fetchAndDrawGenerationChart } from "./periodDataFetchers/fetchAndDrawGenerationChart";
 import { fetchAndDrawWaterChart } from "./periodDataFetchers/fetchAndDrawWaterChart";
-import { fetchAndDrawGasChart } from "./periodDataFetchers/fetchAndDrawGasGraph";
-import { fetchAndDrawStroomGraph } from "./periodDataFetchers/fetchAndDrawStroomGraph";
+import { fetchAndDrawGasChart } from "./periodDataFetchers/fetchAndDrawGasChart";
+import { fetchAndDrawStroomChart } from "./periodDataFetchers/fetchAndDrawStroomChart";
 import { fetchAndDrawTemperatureChart } from "./periodDataFetchers/fetchAndDrawTemperatureChart";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
@@ -127,11 +127,11 @@ export class PeriodDataTab {
         }
 
         if (enabledGraphs.includes("generation")) {
-            fetchAndDrawGenerationGraph(periodDescription, this.generationBarChartApi, this.priceCalculator, shouldClearCanvas);
+            fetchAndDrawGenerationChart(periodDescription, this.generationBarChartApi, this.priceCalculator, shouldClearCanvas);
         }
 
         if (enabledGraphs.includes("stroom")) {
-            fetchAndDrawStroomGraph(periodDescription, this.stroomChartApi, shouldClearCanvas, this.priceCalculator);
+            fetchAndDrawStroomChart(periodDescription, this.stroomChartApi, shouldClearCanvas, this.priceCalculator);
         }
 
         if (enabledGraphs.includes("temperature")) {

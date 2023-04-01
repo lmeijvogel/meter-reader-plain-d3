@@ -11,7 +11,7 @@ import { PeriodDescription } from "../models/periodDescriptions/PeriodDescriptio
 import { setCardTitle } from "../vizCard";
 import { fetchChartData } from "./fetchChartData";
 
-export function fetchAndDrawGenerationGraph(periodDescription: PeriodDescription, barChartApi: BarChartApi, priceCalculator: PriceCalculator, shouldClearCanvas: boolean) {
+export function fetchAndDrawGenerationChart(periodDescription: PeriodDescription, barChartApi: BarChartApi, priceCalculator: PriceCalculator, shouldClearCanvas: boolean) {
     const periodGenerationContainer = d3.select("#generation_period_data");
 
     const fetchAggregate = (field: "mean" | "max") =>

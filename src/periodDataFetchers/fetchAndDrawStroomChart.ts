@@ -19,7 +19,7 @@ type EqualizedStroomData = {
     }[];
 };
 
-export function fetchAndDrawStroomGraph(periodDescription: PeriodDescription, api: UsageAndGenerationBarChartApi, shouldClearCanvas: boolean, priceCalculator: PriceCalculator) {
+export function fetchAndDrawStroomChart(periodDescription: PeriodDescription, api: UsageAndGenerationBarChartApi, shouldClearCanvas: boolean, priceCalculator: PriceCalculator) {
     const periodStroomContainer = d3.select("#stroom_period_data");
 
     Promise.all<ChartDataResult>([
