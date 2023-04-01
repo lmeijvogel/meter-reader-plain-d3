@@ -52,20 +52,22 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
             }
 
             switch (touchEvent.directionX) {
-                case "RIGHT":
+                case "RIGHT": {
                     const previous = periodDescription?.previous();
 
                     if (previous && !previous.beforeFirstMeasurement()) {
                         onPeriodChange(previous);
                     }
                     break;
-                case "LEFT":
+                }
+                case "LEFT": {
                     const next = periodDescription?.next();
 
                     if (next && !next.isInFuture()) {
                         onPeriodChange(next);
                     }
                     break;
+                }
             }
         },
         onTap: (_e: Event, data: EventData) => {
@@ -80,7 +82,7 @@ function initializeMobileNavigation(onPeriodChange: (periodDescription: PeriodDe
 
     pageTitleElement.addEventListener("click", () => {
         const up = periodDescription?.up();
-        if (!!up) {
+        if (up) {
             onPeriodChange(up);
         }
     });

@@ -82,7 +82,7 @@ function showPage(name: TabName, previousTab: string) {
     const page = document.getElementById(name);
 
     if (!page) {
-        console.warn(`Page with id '${name}' not found.`); 
+        console.warn(`Page with id '${name}' not found.`);
         return;
     }
 
