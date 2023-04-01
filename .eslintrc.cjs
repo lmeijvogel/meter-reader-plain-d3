@@ -20,7 +20,10 @@ module.exports = {
         "@typescript-eslint"
     ],
     "rules": {
-      // There are a lot of anys in the d3 types since 
-      "@typescript-eslint/no-explicit-any": "off"
+        // There are a lot of anys in the d3 types.
+        "@typescript-eslint/no-explicit-any": "off",
+        // Old-style DOM manipulation has a lot of Maybes.
+        "@typescript-eslint/no-non-null-assertion": "off"
+
     }
 }
