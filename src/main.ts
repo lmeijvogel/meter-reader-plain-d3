@@ -5,9 +5,9 @@ import { appStateFromLocation } from "./appStateFromLocation";
 import { DayDescription } from "./models/periodDescriptions/DayDescription";
 import { PeriodDescription } from "./models/periodDescriptions/PeriodDescription";
 
-type TabName = "currentPage" | "periodPage" | "heatmapsPage";
+type Page = "current" | "period" | "heatmaps";
 
-let currentTab = "";
+let currentTab: Page = "current";
 
 const updateLocation = (newPath: string) => {
     window.history.replaceState({}, "", newPath);
@@ -17,26 +17,40 @@ const periodDataTab = new PeriodDataTab(DayDescription.today(), updateLocation);
 const currentDataTab = new CurrentDataTab(currentDataReceived, updateLocation);
 const heatmapsTab = new Heatmaps(heatmapPeriodSelected, updateLocation);
 
-periodDataTab.initializePage("#periodPage");
-currentDataTab.initializePage("#currentPage");
-heatmapsTab.initializePage("#heatmapsPage");
+periodDataTab.initializePage("#period");
+currentDataTab.initializePage("#current");
+heatmapsTab.initializePage("#heatmaps");
 
-/* Initializing the currentTab is necessary for polling the current usage. */
+/* Initializing the currentDataTab is necessary for polling the current usage. */
 currentDataTab.startGaugesPolling();
 
-const initialState = appStateFromLocation(window.location.pathname);
+showInitialPage();
 
-switch (initialState.activeTab) {
-    case "now":
-        selectTab("currentTab");
-        break;
-    case "heatmaps":
-        selectTab("heatmapsTab");
-        break;
-    case "period":
-        selectTab("periodTab");
-        periodDataTab.retrieveAndDrawPeriodCharts(initialState.periodDescription);
-        break;
+for (const tab of document.getElementsByClassName("tab")) {
+    tab.addEventListener("click", () => {
+        const page = tab.getAttribute("data-page") as Page;
+
+        if (page !== currentTab) {
+            selectTabAndShowPage(page);
+        }
+    });
+}
+
+function showInitialPage() {
+    const initialState = appStateFromLocation(window.location.pathname);
+
+    switch (initialState.activeTab) {
+        case "now":
+            selectTabAndShowPage("current");
+            break;
+        case "heatmaps":
+            selectTabAndShowPage("heatmaps");
+            break;
+        case "period":
+            selectTabAndShowPage("period");
+            periodDataTab.retrieveAndDrawPeriodCharts(initialState.periodDescription);
+            break;
+    }
 }
 
 function currentDataReceived(values: { current: number; water: number }) {
@@ -48,38 +62,39 @@ function currentDataReceived(values: { current: number; water: number }) {
 }
 
 function heatmapPeriodSelected(periodDescription: PeriodDescription) {
-    selectTab("periodTab");
+    selectTabAndShowPage("period");
     periodDataTab.retrieveAndDrawPeriodCharts(periodDescription);
 }
 
-function selectTab(name: string) {
-    const tabs = document.getElementsByClassName("tab");
-    for (const tab of tabs) {
+function selectTabAndShowPage(name: Page) {
+    const allTabs = document.getElementsByClassName("tab");
+    for (const tab of allTabs) {
         tab.classList.remove("active");
     }
 
-    const selectedTab = document.querySelector("#" + name);
+    const selectedTab = document.querySelector(`.tab[data-page=${name}]`);
 
     if (!selectedTab) {
+        console.error(`Could not find tab ${name}`);
         return;
     }
 
     selectedTab.classList.add("active");
 
-    showPage(selectedTab.getAttribute("data-page") as TabName, currentTab);
-
     currentTab = name;
+
+    showPage(name, currentTab);
 }
 
-/* previousTab is the tab *before* the tab switch */
-function showPage(name: TabName, previousTab: string) {
+/* previous is the page *before* the page switch */
+function showPage(name: Page, previous: Page) {
     const pages = document.getElementsByClassName("page");
 
     for (const page of pages) {
         page.classList.remove("visible");
     }
 
-    const page = document.getElementById(name);
+    const page = document.querySelector(`.page[data-page=${name}]`);
 
     if (!page) {
         console.warn(`Page with id '${name}' not found.`);
@@ -89,26 +104,18 @@ function showPage(name: TabName, previousTab: string) {
     page.classList.add("visible");
 
     switch (name) {
-        case "currentPage":
+        case "current":
             currentDataTab.tabSelected();
             break;
-        case "periodPage":
+        case "period":
             periodDataTab.tabSelected();
             break;
-        case "heatmapsPage":
+        case "heatmaps":
             heatmapsTab.tabSelected();
             break;
     }
 
-    if (previousTab === "currentTab" && name !== "currentPage") {
+    if (previous === "current" && name !== "current") {
         currentDataTab.stopGraphsPolling();
     }
-}
-
-for (const tab of document.getElementsByClassName("tab")) {
-    tab.addEventListener("click", () => {
-        if (tab.id !== currentTab) {
-            selectTab(tab.id);
-        }
-    });
 }
