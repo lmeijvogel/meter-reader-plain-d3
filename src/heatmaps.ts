@@ -104,7 +104,7 @@ export class Heatmaps {
         if (enabledGraphs.includes("stroom")) {
             loadData("stroom", "last_year").then((result) => {
                 const chartContainer = d3.select("#stroom_heatmap_yearly");
-                setCardTitle(chartContainer, "Stroom laatste jaar");
+                setCardTitle(chartContainer, "Stroomvraag laatste jaar");
 
                 heatMap("year")
                     .colors([
@@ -121,7 +121,7 @@ export class Heatmaps {
 
             loadData("stroom", "last_30_days").then((result) => {
                 const chartContainer = d3.select("#stroom_heatmap_monthly");
-                setCardTitle(chartContainer, "Stroom laatste 30 dagen");
+                setCardTitle(chartContainer, "Stroomvraag laatste 30 dagen");
 
                 heatMap("30_days")
                     .colors([

@@ -69,7 +69,7 @@ function createStroomGraphCardTitle(
     const totalConsumption = formatPrice(
         equalizedData,
         "consumption",
-        "Levering",
+        "Van net",
         priceCategory,
         graphDescription,
         priceCalculator
@@ -77,7 +77,7 @@ function createStroomGraphCardTitle(
     const totalBackDelivery = formatPrice(
         equalizedData,
         "backDelivery",
-        "Teruglevering",
+        "Naar net",
         priceCategory,
         graphDescription,
         priceCalculator

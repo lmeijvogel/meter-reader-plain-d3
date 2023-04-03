@@ -118,11 +118,11 @@ export function usageAndGenerationBarChart() {
         const dateString = d3.timeFormat(store.data.periodDescription.timeFormatString())(d.timestamp);
 
         const rows = [
-            { caption: "Grid", value: d.gridSource },
-            { caption: "Panelen", value: d.solarSource },
-            { caption: "Geleverd", value: -d.backDelivery }
+            { caption: "Van net", value: d.gridSource },
+            { caption: "Van panelen", value: d.solarSource },
+            { caption: "Naar net", value: -d.backDelivery }
         ]
-            .filter((r) => r.caption === "Grid" || r.value > 0.01)
+            .filter((r) => r.caption === "Van net" || r.value > 0.01)
             .map(
                 ({ caption, value }) =>
                     `<tr><td class="category">${caption}</td><td class="tableValue">${d3.format(".2f")(
