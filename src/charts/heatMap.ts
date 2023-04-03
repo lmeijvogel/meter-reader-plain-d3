@@ -1,6 +1,5 @@
 import * as d3 from "d3";
-import { format, getDate, getHours, getMonth, startOfDay, startOfMonth, subDays, subYears } from "date-fns";
-import { black, grey, white } from "../colors";
+import { addMonths, format, getDate, getHours, getMonth, startOfDay, startOfMonth, subDays, subMonths } from "date-fns";
 import { monthNames } from "../lib/monthNames";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { hideTooltip, showTooltip } from "../tooltip";
@@ -15,16 +14,14 @@ const height = 240;
 
 const padding = 10;
 
-const widthForGraph = width - 2 * padding - xAxisWidth;
-const heightForGraph = height - 2 * padding - yAxisHeight;
-
-const lastYear = subYears(startOfMonth(new Date()), 1);
-const thisYear = startOfMonth(new Date());
+type ColorStop = {
+    value: number;
+    color: string;
+};
 
 type Store = {
-    lightColor: string;
-    midColor: string;
-    darkColor: string;
+    colors: ColorStop[];
+    backgroundColor?: string;
     data: ValueWithTimestamp[];
     cellWidth: number;
     cellHeight: number;
@@ -44,9 +41,20 @@ export function formatMonthNames(domainValue: d3.NumberValue): string {
 
 export function heatMap(graphType: GraphType) {
     const store: Store = {
-        lightColor: white,
-        midColor: grey,
-        darkColor: black,
+        colors: [
+            {
+                value: 0,
+                color: "white"
+            },
+            {
+                value: 50,
+                color: "grey"
+            },
+            {
+                value: 100,
+                color: "black"
+            }
+        ],
         data: [],
         cellWidth: 10,
         cellHeight: 10,
@@ -56,7 +64,9 @@ export function heatMap(graphType: GraphType) {
         min: 0,
         mapX: () => 0,
         mapY: () => 0,
-        onClick: () => { /* no-op */ },
+        onClick: () => {
+            /* no-op */
+        },
         tickFormat: (value) => value.toString()
     };
 
@@ -67,44 +77,50 @@ export function heatMap(graphType: GraphType) {
             const numberOfColumns = graphType === "30_days" ? 30 : 13;
             const numberOfRows = graphType === "30_days" ? 24 : 31;
 
+            // Some funky bookkeeping here, but we want the last label of the yearly graph to show
+            // the start of next month, so a column for, e.g., April starts at April and ends at May.
+            const thisYear = addMonths(startOfMonth(new Date()), 1);
+            const lastYear = subMonths(thisYear, 13);
+            console.log({thisYear, lastYear});
+
             const xDomain =
                 graphType === "30_days" ? [startOfDay(subDays(new Date(), 30)), new Date()] : [lastYear, thisYear];
 
             const yDomain = graphType === "30_days" ? [24, 0] : [31, 0];
 
             if (graphType === "30_days") {
-                store.mapX = (d) => store.scaleX(startOfDay(d.timestamp)) - store.cellWidth / 2;
+                store.mapX = (d) => store.scaleX(startOfDay(d.timestamp));
                 store.mapY = (d) => store.scaleY(getHours(d.timestamp)) - store.cellHeight ?? 0;
             } else {
-                store.mapX = (d) => store.scaleX(startOfMonth(d.timestamp)) - store.cellWidth / 2;
+                store.mapX = (d) => store.scaleX(startOfMonth(d.timestamp));
                 store.mapY = (d) => store.scaleY(getDate(d.timestamp)) ?? 0;
             }
 
             store.scaleX.domain(xDomain);
             store.scaleY.domain(yDomain);
-            store.cellWidth = widthForGraph / numberOfColumns;
-            store.cellHeight = heightForGraph / numberOfRows;
-            store.scaleX.range([padding + xAxisWidth + store.cellWidth / 2, width - padding - store.cellWidth / 2]);
-            store.scaleY.range([padding + store.cellHeight / 2, height - yAxisHeight - padding - store.cellHeight / 2]);
+
+            const graphBounds = calculateGraphBounds();
+
+            store.cellWidth = graphBounds.width / numberOfColumns;
+            store.cellHeight = graphBounds.height / numberOfRows;
+
+            console.log({ cellHeight: store.cellHeight });
+            console.log({ graphBounds });
+
+            store.scaleX.range([graphBounds.left, graphBounds.right]);
+            store.scaleY.range([graphBounds.top, graphBounds.bottom]);
 
             return api;
         },
 
-        colors: (...args: string[]) => {
-            if (args.length === 1) {
-                store.darkColor = args[0];
-                store.midColor = d3.scaleLinear().range([store.darkColor, store.lightColor] as any)(0.5) as any;
-            } else if (args.length === 2) {
-                store.lightColor = args[0];
-                store.darkColor = args[1];
-                store.midColor = d3.scaleLinear().range([store.darkColor, store.lightColor] as any)(0.5) as any;
-            } else if (args.length === 3) {
-                store.lightColor = args[0];
-                store.midColor = args[1];
-                store.darkColor = args[2];
-            } else {
-                throw new Error("Expected 1-3 arguments");
-            }
+        colors: (colors: ColorStop[]) => {
+            store.colors = colors;
+
+            return api;
+        },
+
+        backgroundColor(color: string) {
+            store.backgroundColor = color;
 
             return api;
         },
@@ -135,11 +151,15 @@ export function heatMap(graphType: GraphType) {
         draw: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             selection.attr("viewBox", "0 0 480 240");
 
-            ["values", "xAxis axis", "yAxis axis"].forEach((className) =>
+            ["background", "values", "xAxis axis", "yAxis axis"].forEach((className) =>
+            // ["border", "values", "background", "xAxis axis", "yAxis axis"].forEach((className) =>
                 addContainerIfNotExists(selection, className)
             );
 
-            drawBorder(selection);
+            if (store.backgroundColor) {
+                drawBackground(selection, store.backgroundColor);
+            }
+
             drawData(selection, store);
 
             drawAxes(selection, store);
@@ -157,12 +177,14 @@ function buildColorScale(store: Store) {
     const min = store.min;
     const max = d3.max(values)!;
 
-    const middle = (min + max) / 2.5;
+    const interpolate = d3.interpolate(min, max);
+    const domain = store.colors.map((stop) => interpolate(stop.value / 100));
+    const range = store.colors.map((color) => color.color);
 
     return d3
         .scaleLinear()
-        .domain([min, middle, max])
-        .range([store.lightColor, store.midColor, store.darkColor] as any[])
+        .domain(domain)
+        .range(range as any[])
         .clamp(true);
 }
 
@@ -177,8 +199,8 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         .attr("y", (d) => store.mapY(d))
         .attr("width", store.cellWidth)
         .attr("height", store.cellHeight)
+        .attr("stroke", "none")
         .attr("fill", (d) => colorScale(d.value ?? 0))
-        .text((d) => d.value)
         .on("mouseover", (event, d) => {
             /* Sadly, it seems to be difficult to have a mouseover handler
              * for the whole canvas, since it's not trivial to get the date
@@ -201,14 +223,17 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         });
 }
 
-function drawBorder(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    svg.append("rect")
-        .attr("x", padding)
-        .attr("y", padding)
-        .attr("width", width - 2 * padding)
-        .attr("height", height - 2 * padding)
-        .attr("fill", "none")
-        .attr("stroke-width", "1px");
+function drawBackground(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, color: string) {
+    const graphBounds = calculateGraphBounds();
+
+    svg.select(".background")
+        .append("rect")
+        .attr("x", graphBounds.left)
+        .attr("y", graphBounds.top)
+        .attr("width", graphBounds.width)
+        .attr("height",graphBounds.height)
+        .attr("fill", color)
+        .attr("stroke", "none");
 }
 
 function drawAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
@@ -231,4 +256,22 @@ function addContainerIfNotExists(
         const container = selection.append("g");
         container.attr("class", className);
     }
+}
+function calculateGraphBounds() {
+    const top =  padding;
+    const bottom =  height - 2 * padding - yAxisHeight;
+    const left =  padding + xAxisWidth;
+    const right =  width - 2 * padding;
+
+    const graphWidth = right - left;
+    const graphHeight = bottom - top;
+
+    return {
+        top,
+        bottom,
+        left,
+        right,
+        width: graphWidth,
+        height: graphHeight
+    };
 }

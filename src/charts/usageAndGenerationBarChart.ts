@@ -8,7 +8,7 @@ import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
 import { initScales, updateScales } from "./barChartHelpers/updateScales";
 import { PowerSourcesAndBackDelivery } from "./barChartHelpers/Types";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
-import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageColor } from "../colors";
+import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageGraphColor } from "../colors";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
 export type UsageAndGenerationBarChartApi = {
@@ -223,7 +223,7 @@ export function usageAndGenerationBarChart() {
             updateScales(selection, firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
 
             drawBars(selection, store.data, "solarSource", stroomGenerationColor, "gridSource");
-            drawBars(selection, store.data, "gridSource", stroomUsageColor);
+            drawBars(selection, store.data, "gridSource", stroomUsageGraphColor);
             drawBars(selection, store.data, "backDelivery", stroomBackDeliveryColor);
 
             firstDrawCall = false;

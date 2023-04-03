@@ -2,13 +2,11 @@ import * as d3 from "d3";
 import { getDate } from "date-fns";
 import { formatMonthNames, heatMap } from "./charts/heatMap";
 import {
-    darkGasGraphColor,
     darkGenerationGraphColor,
-    darkStroomUsageColor,
+    darkStroomUsageGraphColor,
     darkWaterGraphColor,
-    gasGraphColor,
     generationGraphColor,
-    stroomUsageColor,
+    stroomUsageGraphColor,
     waterGraphColor,
     white
 } from "./colors";
@@ -35,7 +33,7 @@ export class Heatmaps {
     constructor(
         private periodSelected: (periodDescription: PeriodDescription) => void,
         private readonly updateLocation: (newPath: string) => void
-    ) {}
+    ) { }
 
     initializePage(selector: string) {
         createRowsWithCards(cardsPerRow, selector);
@@ -70,7 +68,13 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Gas laatste jaar");
 
                 heatMap("year")
-                    .colors(white, gasGraphColor, darkGasGraphColor)
+                    .colors([
+                        { color: "white", value: 0 },
+                        { color: "#fbb021", value: 16 },
+                        { color: "#f68838", value: 30 },
+                        { color: "#ee3e32", value: 70 },
+                        { color: "#8a0000", value: 100 }
+                    ])
                     .data(result)
                     .unit("m³")
                     .tickFormat(formatMonthNames)
@@ -81,9 +85,14 @@ export class Heatmaps {
             loadData("gas", "last_30_days").then((result) => {
                 const chartContainer = d3.select("#gas_heatmap_monthly");
                 setCardTitle(chartContainer, "Gas laatste 30 dagen");
-
                 heatMap("30_days")
-                    .colors(white, gasGraphColor, darkGasGraphColor)
+                    .colors([
+                        { color: "white", value: 0 },
+                        { color: "#fbb021", value: 16 },
+                        { color: "#f68838", value: 30 },
+                        { color: "#ee3e32", value: 70 },
+                        { color: "#8a0000", value: 100 }
+                    ])
                     .data(result)
                     .unit("m³")
                     .tickFormat((value: Date) => getDate(value).toString())
@@ -98,7 +107,11 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Stroom laatste jaar");
 
                 heatMap("year")
-                    .colors(white, stroomUsageColor, darkStroomUsageColor)
+                    .colors([
+                        { color: white, value: 0 },
+                        { color: stroomUsageGraphColor, value: 50 },
+                        { color: darkStroomUsageGraphColor, value: 100 }
+                    ])
                     .data(result)
                     .unit("kWh")
                     .tickFormat(formatMonthNames)
@@ -111,7 +124,11 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Stroom laatste 30 dagen");
 
                 heatMap("30_days")
-                    .colors(white, stroomUsageColor, darkStroomUsageColor)
+                    .colors([
+                        { color: "white", value: 0 },
+                        { color: stroomUsageGraphColor, value: 50 },
+                        { color: darkStroomUsageGraphColor, value: 100 }
+                    ])
                     .min(0.1)
                     .data(result)
                     .unit("kWh")
@@ -127,7 +144,13 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Opwek laatste jaar");
 
                 heatMap("year")
-                    .colors(white, generationGraphColor, darkGenerationGraphColor)
+                    .colors([
+                        { color: "white", value: 0 },
+                        { color: generationGraphColor, value: 30 },
+                        { color: darkGenerationGraphColor, value: 100 }
+
+                    ])
+                    .backgroundColor("white")
                     .data(result)
                     .unit("Wh")
                     .tickFormat(formatMonthNames)
@@ -140,11 +163,17 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Opwek laatste 30 dagen");
 
                 heatMap("30_days")
-                    .colors(white, generationGraphColor, darkGenerationGraphColor)
-                    .min(0.1)
+                    .colors([
+                        { color: "black", value: 0 },
+                        { color: generationGraphColor, value: 10 },
+                        { color: "#bef621", value: 40 },
+                        { color: "#fbc421", value: 100 }
+
+                    ])
+                    .backgroundColor("black")
                     .data(result)
                     .unit("Wh")
-                    .tickFormat((value: Date) => getDate(value).toString())
+                    .tickFormat(formatMonthNames)
                     .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
             });
@@ -156,7 +185,12 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Water laatste jaar");
 
                 heatMap("year")
-                    .colors(white, waterGraphColor, darkWaterGraphColor)
+                    .colors([
+                        { color: "white", value: 0 },
+                        { color: "#1d92d0", value: 60 },
+                        { color: "#1d48d0", value: 100 }
+                    ])
+
                     .data(result)
                     .unit("L")
                     .tickFormat(formatMonthNames)
@@ -169,7 +203,11 @@ export class Heatmaps {
                 setCardTitle(chartContainer, "Water laatste 30 dagen");
 
                 heatMap("30_days")
-                    .colors(white, waterGraphColor, darkWaterGraphColor)
+                    .colors([
+                        { color: "white", value: 0 },
+                        { color: waterGraphColor, value: 50 },
+                        { color: darkWaterGraphColor, value: 100 }
+                    ])
                     .data(result)
                     .unit("L")
                     .tickFormat((value: Date) => getDate(value).toString())

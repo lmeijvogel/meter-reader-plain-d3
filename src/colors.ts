@@ -1,10 +1,10 @@
 export const stroomGenerationColor = "#55ff10";
-export const stroomUsageColor = "#f0ad4e";
+export const stroomUsageGraphColor = "#f0ad4e";
 export const stroomBackDeliveryColor = "#55ff10";
 
-export const darkStroomUsageColor = "#784805";
+export const darkStroomUsageGraphColor = "#784805";
 
-export const stroomUsageColorForCurrentGraph = stroomUsageColor;
+export const stroomUsageColorForCurrentGraph = stroomUsageGraphColor;
 export const stroomGenerationColorForCurrentGraph = "#adf04e";
 
 export const temperatuurHuiskamerColor = "#ff0000";
