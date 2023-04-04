@@ -164,10 +164,11 @@ export class Heatmaps {
 
                 heatMap("30_days")
                     .colors([
-                        { color: "black", value: 0 },
-                        { color: generationGraphColor, value: 10 },
-                        { color: "#bef621", value: 40 },
-                        { color: "#fbc421", value: 100 }
+                        { color: "#000064", value: 0 },
+                        { color: "#882200", value: 1 },
+                        { color: generationGraphColor, value: 20 },
+                        { color: "#aee61a", value: 40 },
+                        { color: "#fbb421", value: 100 }
 
                     ])
                     .backgroundColor("black")
