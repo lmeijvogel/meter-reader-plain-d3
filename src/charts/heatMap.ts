@@ -4,7 +4,7 @@ import { monthNames } from "../lib/monthNames";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { hideTooltip, showTooltip } from "../tooltip";
 
-type GraphType = "30_days" | "year";
+type GraphType = "hourly_30_days" | "hourly_year" | "year";
 
 const xAxisWidth = 40;
 const yAxisHeight = 20;
@@ -74,8 +74,8 @@ export function heatMap(graphType: GraphType) {
         data: (data: ValueWithTimestamp[]) => {
             store.data = data;
 
-            const numberOfColumns = graphType === "30_days" ? 30 : 13;
-            const numberOfRows = graphType === "30_days" ? 24 : 31;
+            const numberOfColumns = graphType === "hourly_30_days" ? 30 : (graphType === "hourly_year") ? 365 : 13;
+            const numberOfRows = graphType === "year" ? 31 : 24;
 
             // Some funky bookkeeping here, but we want the last label of the yearly graph to show
             // the start of next month, so a column for, e.g., April starts at April and ends at May.
@@ -84,16 +84,18 @@ export function heatMap(graphType: GraphType) {
             console.log({thisYear, lastYear});
 
             const xDomain =
-                graphType === "30_days" ? [startOfDay(subDays(new Date(), 30)), new Date()] : [lastYear, thisYear];
+                graphType === "hourly_30_days" ? [startOfDay(subDays(new Date(), 30)), new Date()] :
+                graphType === "hourly_year" ? [startOfDay(subDays(new Date(), 365)), new Date()] :
+                [lastYear, thisYear];
 
-            const yDomain = graphType === "30_days" ? [24, 0] : [31, 0];
+            const yDomain = graphType === "year" ? [31, 0] : [24, 0];
 
-            if (graphType === "30_days") {
-                store.mapX = (d) => store.scaleX(startOfDay(d.timestamp));
-                store.mapY = (d) => store.scaleY(getHours(d.timestamp)) - store.cellHeight ?? 0;
-            } else {
+            if (graphType === "year") {
                 store.mapX = (d) => store.scaleX(startOfMonth(d.timestamp));
                 store.mapY = (d) => store.scaleY(getDate(d.timestamp)) ?? 0;
+            } else {
+                store.mapX = (d) => store.scaleX(startOfDay(d.timestamp));
+                store.mapY = (d) => store.scaleY(getHours(d.timestamp)) - store.cellHeight ?? 0;
             }
 
             store.scaleX.domain(xDomain);
