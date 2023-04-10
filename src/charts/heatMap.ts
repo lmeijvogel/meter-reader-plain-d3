@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { addMonths, format, getDate, getHours, getMonth, startOfDay, startOfMonth, subDays, subMonths } from "date-fns";
+import { addMonths, format, getDate, getHours, getMonth, startOfDay, startOfMonth, startOfTomorrow, subDays, subMonths } from "date-fns";
 import { monthNames } from "../lib/monthNames";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { hideTooltip, showTooltip } from "../tooltip";
@@ -84,7 +84,7 @@ export function heatMap(graphType: GraphType) {
             console.log({thisYear, lastYear});
 
             const xDomain =
-                graphType === "hourly_30_days" ? [startOfDay(subDays(new Date(), 30)), new Date()] :
+                graphType === "hourly_30_days" ? [startOfDay(subDays(new Date(), 30)), startOfTomorrow()] :
                 graphType === "hourly_year" ? [startOfDay(subDays(new Date(), 365)), new Date()] :
                 [lastYear, thisYear];
 
