@@ -61,7 +61,7 @@ export class PeriodDataTab {
             .onClick(this.retrieveAndDrawPeriodCharts)
             .color(stroomGenerationColor);
 
-        this.temperatureChartApi = lineChart().minMaxCalculation("minMax");
+        this.temperatureChartApi = lineChart().domain([12, 30]);
 
         initKeyboardListener(this.retrieveAndDrawPeriodCharts, () => this.periodDescription);
     }
