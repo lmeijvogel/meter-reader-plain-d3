@@ -81,12 +81,11 @@ export function heatMap(graphType: GraphType) {
             // the start of next month, so a column for, e.g., April starts at April and ends at May.
             const thisYear = addMonths(startOfMonth(new Date()), 1);
             const lastYear = subMonths(thisYear, 13);
-            console.log({thisYear, lastYear});
 
             const xDomain =
                 graphType === "hourly_30_days" ? [startOfDay(subDays(new Date(), 30)), startOfTomorrow()] :
-                graphType === "hourly_year" ? [startOfDay(subDays(new Date(), 365)), new Date()] :
-                [lastYear, thisYear];
+                    graphType === "hourly_year" ? [startOfDay(subDays(new Date(), 365)), new Date()] :
+                        [lastYear, thisYear];
 
             const yDomain = graphType === "year" ? [31, 0] : [24, 0];
 
@@ -105,9 +104,6 @@ export function heatMap(graphType: GraphType) {
 
             store.cellWidth = graphBounds.width / numberOfColumns;
             store.cellHeight = graphBounds.height / numberOfRows;
-
-            console.log({ cellHeight: store.cellHeight });
-            console.log({ graphBounds });
 
             store.scaleX.range([graphBounds.left, graphBounds.right]);
             store.scaleY.range([graphBounds.top, graphBounds.bottom]);
@@ -233,7 +229,7 @@ function drawBackground(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any
         .attr("x", graphBounds.left)
         .attr("y", graphBounds.top)
         .attr("width", graphBounds.width)
-        .attr("height",graphBounds.height)
+        .attr("height", graphBounds.height)
         .attr("fill", color)
         .attr("stroke", "none");
 }
@@ -260,10 +256,10 @@ function addContainerIfNotExists(
     }
 }
 function calculateGraphBounds() {
-    const top =  padding;
-    const bottom =  height - 2 * padding - yAxisHeight;
-    const left =  padding + xAxisWidth;
-    const right =  width - 2 * padding;
+    const top = padding;
+    const bottom = height - 2 * padding - yAxisHeight;
+    const left = padding + xAxisWidth;
+    const right = width - 2 * padding;
 
     const graphWidth = right - left;
     const graphHeight = bottom - top;

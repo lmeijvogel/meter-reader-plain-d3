@@ -31,7 +31,7 @@ export function mergeNewWithOldValues(
      * I only filter them out of the previous batch, because
      * including the value at the end _is_ more accurate.
      */
-    const retainedExistingItems = !!existing[oldestValidExistingIndex]
+    const retainedExistingItems = existing[oldestValidExistingIndex]
         ? existing.slice(oldestValidExistingIndex, -1)
         : existing;
 

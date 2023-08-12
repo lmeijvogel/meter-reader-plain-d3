@@ -37,7 +37,7 @@ export function drawSolarIncidenceInChart(
 
         const g = selection.append("g").attr("class", field);
 
-        var path = g
+        const path = g
             .selectAll(`path.line`)
             .data([data.map((el) => ({ date: el.date, value: el[field] }))])
             .join("path");

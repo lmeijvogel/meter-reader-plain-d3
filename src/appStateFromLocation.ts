@@ -5,12 +5,12 @@ import { YearDescription } from "./models/periodDescriptions/YearDescription";
 
 export type AppState =
     | {
-          activeTab: "now" | "heatmaps";
-      }
+        activeTab: "now" | "heatmaps";
+    }
     | {
-          activeTab: "period";
-          periodDescription: PeriodDescription;
-      };
+        activeTab: "period";
+        periodDescription: PeriodDescription;
+    };
 
 export function appStateFromLocation(pathName: string): AppState {
     if (pathName === "/now") {

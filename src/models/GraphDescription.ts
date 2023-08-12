@@ -2,7 +2,7 @@ import { assertNever } from "../lib/assertNever";
 import { PeriodDescription } from "./periodDescriptions/PeriodDescription";
 
 export abstract class GraphDescription {
-    constructor(protected readonly periodDescription: PeriodDescription) {}
+    constructor(protected readonly periodDescription: PeriodDescription) { }
 
     /**
      * The unit that is relevant for single data points.
