@@ -113,7 +113,7 @@ export class GenerationGraphDescription extends GraphDescription {
             case "year":
                 return 600;
             case "month":
-                return 20;
+                return 30;
             case "day":
                 return 1;
             default:
@@ -173,7 +173,7 @@ export class TemperatuurGraphDescription extends GraphDescription {
     readonly displayableUnit = "°C";
 
     override get minY() {
-        return 18;
+        return 15;
     }
 
     get maxY() {

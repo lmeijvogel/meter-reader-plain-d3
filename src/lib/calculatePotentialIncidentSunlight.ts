@@ -4,7 +4,7 @@ import { getPosition } from "suncalc";
 
 import { HouseLocation } from "../models/HouseLocation";
 
-const solarRigMultiplier = 4;
+const solarRigMultiplier = 3;
 
 export function calculatePotentialIncidentSunlight(date: Date, roofSide: "east" | "west"): number {
     // From: https://www.pveducation.org/pvcdrom/properties-of-sunlight/arbitrary-orientation-and-tilt
