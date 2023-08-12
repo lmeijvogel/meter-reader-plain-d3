@@ -116,8 +116,8 @@ export class Heatmaps {
 
                     ])
                     .backgroundColor("white")
-                    .data(result)
-                    .unit("Wh")
+                    .data(result.map(r => ({ ...r, value: r.value / 1000 })))
+                    .unit("kWh")
                     .tickFormat(formatMonthNames)
                     .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
