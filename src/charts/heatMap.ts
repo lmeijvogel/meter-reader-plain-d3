@@ -9,6 +9,7 @@ type GraphType = "hourly_30_days" | "hourly_year" | "year";
 const xAxisWidth = 40;
 const yAxisHeight = 20;
 
+const legendWidth = 100;
 const width = 480;
 const height = 240;
 
@@ -149,8 +150,7 @@ export function heatMap(graphType: GraphType) {
         draw: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
             selection.attr("viewBox", "0 0 480 240");
 
-            ["background", "values", "xAxis axis", "yAxis axis"].forEach((className) =>
-            // ["border", "values", "background", "xAxis axis", "yAxis axis"].forEach((className) =>
+            ["background", "values", "xAxis axis", "yAxis axis", "legend"].forEach((className) =>
                 addContainerIfNotExists(selection, className)
             );
 
@@ -161,6 +161,8 @@ export function heatMap(graphType: GraphType) {
             drawData(selection, store);
 
             drawAxes(selection, store);
+
+            drawLegend(selection, store);
 
             return api;
         }
@@ -221,6 +223,39 @@ function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, sto
         });
 }
 
+function drawLegend(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
+    const { top, bottom } = calculateGraphBounds();
+
+    const graphCenter = bottom + (top - bottom / 2)
+
+    const labelBaseY = (i: number) => graphCenter + padding + ((i - store.colors.length / 2) * 20);
+
+    svg.select(".legend")
+        .selectAll("rect.color")
+        .data(store.colors)
+        .join("rect")
+        .classed("color", true)
+        .attr("x", width - padding - legendWidth)
+        .attr("y", (_d, i) => labelBaseY(i))
+        .attr("width", 10)
+        .attr("height", 10)
+        .attr("stroke", "black")
+        .attr("fill", d => d.color);
+
+    const f = d3.format(",.2r");
+    const max = d3.max(store.data, d => d.value) ?? 0;
+
+    svg.select(".legend")
+        .selectAll("text.value")
+        .data(store.colors)
+        .join("text")
+        .classed("value", true)
+        .attr("x", width - padding - legendWidth + 25)
+        .attr("y", (_d, i) => labelBaseY(i) + 12)
+        .text(d => `${f((d.value / 100) * max)} ${store.unit}`);
+
+}
+
 function drawBackground(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, color: string) {
     const graphBounds = calculateGraphBounds();
 
@@ -259,7 +294,7 @@ function calculateGraphBounds() {
     const top = padding;
     const bottom = height - 2 * padding - yAxisHeight;
     const left = padding + xAxisWidth;
-    const right = width - 2 * padding;
+    const right = width - legendWidth - 2 * padding;
 
     const graphWidth = right - left;
     const graphHeight = bottom - top;
