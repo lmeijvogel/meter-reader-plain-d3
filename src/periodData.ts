@@ -112,7 +112,7 @@ export class PeriodDataTab {
          * the data twice.
          */
         const temperatureCard = d3.select("#temperature_line_chart");
-        const temperatureRequest = fetchTemperatureData(periodDescription, temperatureCard);
+        const temperatureRequest = enabledGraphs.includes("temperature") ? fetchTemperatureData(periodDescription, temperatureCard) : Promise.resolve(new Map<string, ValueWithTimestamp[]>());
 
         this.navigation?.setPeriodDescription(periodDescription);
 

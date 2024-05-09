@@ -12,8 +12,12 @@ import { fetchChartData } from "./fetchChartData";
 export function fetchAndDrawGasChart(periodDescription: PeriodDescription, temperatureRequest: Promise<Map<string, ValueWithTimestamp[]>>, gasChartApi: BarChartApi, thermometer: Thermometer, shouldClearCanvas: boolean, priceCalculator: PriceCalculator) {
     const periodGasContainer = d3.select("#gas_period_data");
 
-    Promise.all([fetchChartData("gas", periodDescription, periodGasContainer), temperatureRequest]).then((result) => {
-        const [gasValues, temperatureValues] = result;
+    Promise.allSettled([fetchChartData("gas", periodDescription, periodGasContainer), temperatureRequest]).then((result) => {
+        const [gasValueResult, temperatureValueResult] = result;
+
+        if (gasValueResult.status !== "fulfilled") return;
+
+        const gasValues = gasValueResult.value;
 
         if (!gasValues.requestedPeriodDescription.equals(periodDescription)) {
             return;
@@ -22,7 +26,8 @@ export function fetchAndDrawGasChart(periodDescription: PeriodDescription, tempe
         const graphDescription = new GasGraphDescription(periodDescription);
 
         gasChartApi.clearCanvas(shouldClearCanvas).data(periodDescription, graphDescription, gasValues.result);
-        const outsideTemperatures = temperatureValues.get("buiten");
+        const outsideTemperatures =
+            temperatureValueResult.status === "fulfilled" ? temperatureValueResult.value.get("buiten") : [];
 
         let thermometerContainer = periodGasContainer.select(".thermometer");
 
