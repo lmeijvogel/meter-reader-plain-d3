@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { differenceInMinutes } from "date-fns";
+import { addMinutes, differenceInMinutes } from "date-fns";
 import { gauge } from "./charts/gauge";
 import { lineChart } from "./charts/lineChart";
 import {
@@ -90,6 +90,8 @@ export class CurrentDataTab {
                 this.stopGaugesPolling();
             }
         });
+
+        this.startGaugesPolling();
     }
 
     public async tabSelected() {
@@ -155,7 +157,10 @@ export class CurrentDataTab {
         const json = await response.json();
 
         return {
-            current: json["current"].map(responseRowToValueWithTimestamp)
+            current: json.map((row: any) => ({
+                timestamp: new Date(Date.parse(row.timestamp)),
+                value: Number(row.power)
+            }))
         };
     };
 
@@ -191,6 +196,7 @@ export class CurrentDataTab {
 
     private updatePowerUsageGraph = async (minutes = 1) => {
         const newValues = await this.retrievePowerUsage(minutes);
+        (newValues.current as unknown[]).reverse();
 
         this.powerUsage.current = mergeNewWithOldValues(newValues.current, this.powerUsage.current);
 
@@ -222,13 +228,13 @@ export class CurrentDataTab {
         const recentCurrentContainer = recentCurrentCard.select(".chart");
         setCardTitle(recentCurrentCard, "Stroomverbruik laatste uur");
 
-        const currentInW = fieldsKW.current.map((entry) => ({ ...entry, value: entry.value * 1000 }));
+        const currentInW = fieldsKW;
 
         this.recentCurrentGraph.setData(
             this.lastHourDescription,
             new CurrentPowerUsageGraphDescription(this.lastHourDescription),
             [{
-                name: "current", values: currentInW, lineColor: black, fill: {
+                name: "current", values: currentInW.current, lineColor: black, fill: {
                     positive: stroomUsageColorForCurrentGraph,
                     negative: stroomGenerationColorForCurrentGraph
                 }
@@ -245,14 +251,19 @@ export class CurrentDataTab {
 
         const waterData = water.water.filter((el) => el.value > 0);
 
-        const lastElement = water.water.at(-1);
+        const lastElement = water.water.at(0);
         if (!lastElement) {
             return;
         }
 
         const graphDescription = new CurrentWaterUsageGraphDescription(this.lastHourDescription);
+
+        // Add 1 minute because the scale is non-inclusive at the end,
+        // causing the last measurement to fall off.
+        const endOfPeriod = addMinutes(lastElement.timestamp, 1);
+
         this.recentWaterGraph.data(
-            new HourDescription({ endOfPeriod: lastElement.timestamp }),
+            new HourDescription({ endOfPeriod }),
             graphDescription,
             waterData
         );

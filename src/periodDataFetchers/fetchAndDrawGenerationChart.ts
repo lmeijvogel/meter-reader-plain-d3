@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { utcToZonedTime } from "date-fns-tz";
 import { BarChartApi } from "../charts/barChart";
 import { lineChart } from "../charts/lineChart";
 import { darkGenerationGraphColor, generationGraphColor, white, lightGrey, grey } from "../colors";
@@ -21,7 +20,7 @@ export function fetchAndDrawGenerationChart(periodDescription: PeriodDescription
                 .then((r) =>
                     r.map((row: [number, number, number]) => {
                         const timestamp = new Date(
-                            Date.UTC(
+                            new Date(
                                 periodDescription.year,
                                 periodDescription.month,
                                 periodDescription.day,
@@ -30,9 +29,11 @@ export function fetchAndDrawGenerationChart(periodDescription: PeriodDescription
                             )
                         );
 
+                        // const utcTimestamp = fromZonedTime(timestamp, "Europe/Amsterdam");
+
                         return {
                             value: row[2] / 250,
-                            timestamp: utcToZonedTime(timestamp, "Europe/Amsterdam")
+                            timestamp
                         };
                     })
                 )

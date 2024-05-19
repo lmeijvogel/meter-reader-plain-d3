@@ -5,7 +5,7 @@ import { assertNever } from "../lib/assertNever";
 export type PriceCategory = "gas" | "stroom" | "water";
 
 export class Money {
-    constructor(readonly euros: number) {}
+    constructor(readonly euros: number) { }
 
     add(amount: number | Money): Money {
         if (amount instanceof Money) {

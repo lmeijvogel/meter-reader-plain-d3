@@ -122,7 +122,7 @@ export function usageAndGenerationBarChart() {
             { caption: "Van panelen", value: d.solarSource },
             { caption: "Naar net", value: -d.backDelivery }
         ]
-            .filter((r) => r.caption === "Van net" || r.value > 0.01)
+            .filter((r) => r.caption === "Van net" || Math.abs(r.value) > 0.01)
             .map(
                 ({ caption, value }) =>
                     `<tr><td class="category">${caption}</td><td class="tableValue">${d3.format(".2f")(
@@ -186,7 +186,7 @@ export function usageAndGenerationBarChart() {
         });
     }
 
-    const api: UsageAndGenerationBarChartApi  = {
+    const api: UsageAndGenerationBarChartApi = {
         data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: Data) {
             store.data = { periodDescription, graphDescription, values: splitSolarSourceData(groupValuesByDate(data)) };
 
@@ -276,12 +276,13 @@ function splitSolarSourceData(input: ConsolidatedData[]): PowerSourcesAndBackDel
     const result: PowerSourcesAndBackDelivery[] = [];
 
     for (const entry of input) {
-        result.push({
+        const splitRow = {
             gridSource: entry.consumption,
             solarSource: entry.generation + entry.backDelivery,
             backDelivery: entry.backDelivery,
             timestamp: entry.timestamp
-        } as PowerSourcesAndBackDelivery);
+        };
+        result.push(splitRow);
     }
 
     return result;

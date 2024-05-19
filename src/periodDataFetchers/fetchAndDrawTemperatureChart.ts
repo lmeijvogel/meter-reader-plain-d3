@@ -6,7 +6,7 @@ import { PeriodDescription } from "../models/periodDescriptions/PeriodDescriptio
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { setCardTitle } from "../vizCard";
 
-export function fetchAndDrawTemperatureChart(periodDescription: PeriodDescription,  temperatureRequest: Promise<Map<string, ValueWithTimestamp[]>>, api: LineChartApi, temperatureCard: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
+export function fetchAndDrawTemperatureChart(periodDescription: PeriodDescription, temperatureRequest: Promise<Map<string, ValueWithTimestamp[]>>, api: LineChartApi, temperatureCard: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
     if (!temperatureCard.select(".thermometer").node()) {
         const thermometerCard = temperatureCard.select(".chart").append("g");
         thermometerCard.attr("class", "thermometer");

@@ -3,7 +3,6 @@ import { barChart, BarChartApi } from "./charts/barChart";
 import { lineChart, LineChartApi } from "./charts/lineChart";
 import { usageAndGenerationBarChart, UsageAndGenerationBarChartApi } from "./charts/usageAndGenerationBarChart";
 import { PriceCalculator } from "./lib/PriceCalculator";
-import { JsonResponseRow, responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { initializeNavigation, NavigationApi } from "./navigation";
 import { initKeyboardListener } from "./initKeyboardListener";
@@ -22,6 +21,8 @@ import { fetchAndDrawStroomChart } from "./periodDataFetchers/fetchAndDrawStroom
 import { fetchAndDrawTemperatureChart } from "./periodDataFetchers/fetchAndDrawTemperatureChart";
 
 type Graphs = "gas" | "stroom" | "water" | "temperature" | "generation";
+
+type TemperatureField = "huiskamer" | "tuinkamer" | "zolder";
 
 const enabledGraphs: Graphs[] = ["gas", "stroom", "water", "temperature", "generation"];
 
@@ -182,14 +183,23 @@ async function fetchTemperatureData(
 
     try {
         const response = await fetch(`/api/temperature/living_room${url}`);
-        const json: { [key: string]: JsonResponseRow[] } = await response.json();
+        const json: { timestamp: string, huiskamer: number, tuinkamer: number, zolder: number }[] = await response.json();
 
-        Object.entries(json).forEach((keyAndSeries) => {
-            const [key, rawSeries] = keyAndSeries;
-            const series = rawSeries.map(responseRowToValueWithTimestamp);
+        result.set("huiskamer", []);
+        result.set("tuinkamer", []);
+        result.set("zolder", []);
 
-            result.set(key, series);
-        });
+        for (const row of json) {
+            const timestamp = new Date(Date.parse(row.timestamp));
+
+            const fields: TemperatureField[] = ["huiskamer", "tuinkamer", "zolder"];
+            for (const key of fields) {
+                result.get(key).push({
+                    timestamp: timestamp,
+                    value: Number(row[key])
+                });
+            }
+        }
     } finally {
         card.classed("loading", false);
     }
