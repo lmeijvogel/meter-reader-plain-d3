@@ -88,6 +88,12 @@ const energyPrices: EnergyRateForDateRange[] = [
         stroomPrice: new Money(0.45184), // This is the "enkeltarief" price: 0.29939 + 0.15245
         validFrom: new Date(2023, 3, 1),
         validUntil: new Date(2024, 3, 1) // 1 april: Variable prices
+    },
+    {
+        gasPrice: new Money(1.39889), // From contract
+        stroomPrice: new Money(0.29740),
+        validFrom: new Date(2024, 4, 1),
+        validUntil: new Date(2027, 4, 1)
     }
 
 ];
