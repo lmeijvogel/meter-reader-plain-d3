@@ -251,7 +251,7 @@ export class CurrentDataTab {
 
         const waterData = water.water.filter((el) => el.value > 0);
 
-        const lastElement = water.water.at(0);
+        const lastElement = water.water.at(-1);
         if (!lastElement) {
             return;
         }
