@@ -2,7 +2,7 @@ import { differenceInSeconds, isAfter, isBefore, isEqual } from "date-fns";
 import fs from "fs";
 
 import { mergeNewWithOldValues } from "../lib/mergeNewWithOldValues";
-import { responseRowToValueWithTimestamp } from "../lib/responseRowToValueWithTimestamp";
+import { JsonResponseRow, responseRowToValueWithTimestamp } from "../lib/responseRowToValueWithTimestamp";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 type ResponseJson = {
@@ -12,10 +12,10 @@ type ResponseJson = {
 describe("mergeNewWithOldValues", () => {
     it("works if there is only new data", () => {
         const oldValues: ValueWithTimestamp[] = [];
-        const newValues = [
+        const newValues = ([
             ["2022-11-20T19:02:06.000000000+00:00", 0.4003333333333334],
             ["2022-11-20T19:02:10.813632216+00:00", 0.3932]
-        ].map(responseRowToValueWithTimestamp);
+        ] as JsonResponseRow[]).map(responseRowToValueWithTimestamp);
 
         const result = mergeNewWithOldValues(newValues, oldValues);
 
@@ -23,16 +23,15 @@ describe("mergeNewWithOldValues", () => {
     });
 
     it("skips existing data", () => {
-        const oldValues: ValueWithTimestamp[] = [
+        const oldValues: ValueWithTimestamp[] = ([
             ["2022-11-20T19:02:00.000000000+00:00", 0.2003333333333334],
             ["2022-11-20T19:02:06.000000000+00:00", 0.4003333333333334]
-        ].map(responseRowToValueWithTimestamp);
+        ] as JsonResponseRow[]).map(responseRowToValueWithTimestamp);
 
-        [];
-        const newValues = [
+        const newValues = ([
             ["2022-11-20T19:02:06.000000000+00:00", 0.4003333333333334],
             ["2022-11-20T19:02:12.000000000+00:00", 0.3932]
-        ].map(responseRowToValueWithTimestamp);
+        ] as JsonResponseRow[]).map(responseRowToValueWithTimestamp);
 
         const result = mergeNewWithOldValues(newValues, oldValues);
 
