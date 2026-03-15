@@ -26,6 +26,7 @@ export async function fetchChartData(
         }
 
         const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
         const json = await response.json();
 
         const data = json.map(responseRowToValueWithTimestamp);

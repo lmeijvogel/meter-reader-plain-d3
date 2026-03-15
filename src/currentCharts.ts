@@ -154,6 +154,7 @@ export class CurrentDataTab {
 
     private retrievePowerUsage = async (minutes = 10) => {
         const response = await fetch(`/api/stroom/recent?minutes=${minutes}`);
+        if (!response.ok) throw new Error(`Failed to fetch power usage: ${response.status}`);
         const json = await response.json();
 
         return {
@@ -166,6 +167,7 @@ export class CurrentDataTab {
 
     private retrieveWaterUsage = async (minutes = 10) => {
         const response = await fetch(`/api/water/recent?minutes=${minutes}`);
+        if (!response.ok) throw new Error(`Failed to fetch water usage: ${response.status}`);
         const json = await response.json();
 
         return {
@@ -178,6 +180,7 @@ export class CurrentDataTab {
      */
     private fetchGaugeData = async () => {
         const response = await fetch("/api/usage/last");
+        if (!response.ok) throw new Error(`Failed to fetch gauge data: ${response.status}`);
         const json = await response.json();
 
         return {
@@ -262,11 +265,7 @@ export class CurrentDataTab {
         // causing the last measurement to fall off.
         const endOfPeriod = addMinutes(lastElement.timestamp, 1);
 
-        this.recentWaterGraph.data(
-            new HourDescription({ endOfPeriod }),
-            graphDescription,
-            waterData
-        );
+        this.recentWaterGraph.data(new HourDescription({ endOfPeriod }), graphDescription, waterData);
 
         recentWaterContainer.call(this.recentWaterGraph.call);
     }

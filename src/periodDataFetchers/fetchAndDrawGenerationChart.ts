@@ -16,7 +16,7 @@ export function fetchAndDrawGenerationChart(periodDescription: PeriodDescription
     const fetchAggregate = (field: "mean" | "max") =>
         periodDescription instanceof DayDescription
             ? fetch(`/api/generation/aggregate/${field}${periodDescription.toUrl()}`)
-                .then((r) => r.json())
+                .then((r) => { if (!r.ok) throw new Error(`Failed to fetch aggregate ${field}: ${r.status}`); return r.json(); })
                 .then((r) =>
                     r.map((row: [number, number, number]) => {
                         const timestamp = new Date(
