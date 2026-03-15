@@ -40,19 +40,22 @@ function parsePath(path: string): PeriodDescription {
     const period = parts.shift();
 
     if (period === "year") {
-        const year = parseInt(parts[0]);
+        const year = parseInt(parts[0], 10);
+        if (isNaN(year)) return DayDescription.today();
 
         return new YearDescription(year);
     }
 
     if (period === "month") {
         const [year, month] = parts.map((p) => parseInt(p, 10));
+        if (isNaN(year) || isNaN(month)) return DayDescription.today();
 
         return new MonthDescription(year, month - 1);
     }
 
     if (period === "day") {
         const [year, month, day] = parts.map((p) => parseInt(p, 10));
+        if (isNaN(year) || isNaN(month) || isNaN(day)) return DayDescription.today();
 
         return new DayDescription(year, month - 1, day);
     }
