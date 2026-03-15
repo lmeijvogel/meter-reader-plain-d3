@@ -93,5 +93,7 @@ export function fetchAndDrawGenerationChart(periodDescription: PeriodDescription
         setCardTitle(periodGenerationContainer, cardTitle);
 
         generationBarChartApi.call(periodGenerationContainer.select(".chart"));
+    }).catch((err) => {
+        console.error("Failed to load generation chart data:", err);
     });
 }

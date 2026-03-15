@@ -24,5 +24,7 @@ export function fetchAndDrawWaterChart(periodDescription: PeriodDescription, wat
             .clearCanvas(shouldClearCanvas)
             .data(periodDescription, graphDescription, values.result)
             .call(periodWaterContainer.select(".chart"));
+    }).catch((err) => {
+        console.error("Failed to load water chart data:", err);
     });
 }

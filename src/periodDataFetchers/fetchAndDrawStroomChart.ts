@@ -57,6 +57,8 @@ export function fetchAndDrawStroomChart(periodDescription: PeriodDescription, ap
         setCardTitleRaw(periodStroomContainer, cardTitle, "stroomCardTitle");
 
         api.call(periodStroomContainer.select(".chart"));
+    }).catch((err) => {
+        console.error("Failed to load stroom chart data:", err);
     });
 }
 
