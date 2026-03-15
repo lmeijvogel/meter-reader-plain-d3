@@ -29,15 +29,15 @@ const cardsPerRow = [
     ["water_heatmap_monthly", "water_heatmap_yearly"]
 ];
 
-const graphTypes: { [key in GraphType]: "hourly_30_days" | "hourly_year" } = {
-    gas: "hourly_30_days",
-    stroom: "hourly_30_days",
-    generation: "hourly_30_days",
-    water: "hourly_30_days"
-};
-
 export class Heatmaps {
     private _dataAlreadyLoaded = false;
+
+    private graphTypes: { [key in GraphType]: "hourly_30_days" | "hourly_year" } = {
+        gas: "hourly_30_days",
+        stroom: "hourly_30_days",
+        generation: "hourly_30_days",
+        water: "hourly_30_days"
+    };
 
     constructor(
         private periodSelected: (periodDescription: PeriodDescription) => void,
@@ -77,7 +77,7 @@ export class Heatmaps {
                     .tickFormat(formatMonthNames)
                     .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
-            });
+            }).catch((err) => { console.error("Failed to load gas yearly heatmap:", err); });
 
             this.renderHourlyGasUsageChart();
         }
@@ -98,7 +98,7 @@ export class Heatmaps {
                     .tickFormat(formatMonthNames)
                     .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
-            });
+            }).catch((err) => { console.error("Failed to load stroom yearly heatmap:", err); });
 
             this.renderHourlyStroomUsageChart();
         }
@@ -121,7 +121,7 @@ export class Heatmaps {
                     .tickFormat(formatMonthNames)
                     .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
-            });
+            }).catch((err) => { console.error("Failed to load generation yearly heatmap:", err); });
 
             this.renderHourlyGenerationChart();
         }
@@ -143,7 +143,7 @@ export class Heatmaps {
                     .tickFormat(formatMonthNames)
                     .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                     .draw(chartContainer.select(".chart"));
-            });
+            }).catch((err) => { console.error("Failed to load water yearly heatmap:", err); });
 
             this.renderHourlyWaterUsageChart();
         }
@@ -151,15 +151,15 @@ export class Heatmaps {
     }
 
     private renderHourlyGasUsageChart() {
-        this.loadHeatmapData("gas", graphTypes.gas).then((result) => {
+        this.loadHeatmapData("gas", this.graphTypes.gas).then((result) => {
             const chartContainer = d3.select("#gas_heatmap_monthly");
             setCardTitle(chartContainer, "Gas laatste 30 dagen");
             onCardTitleClick(chartContainer, () => {
-                toggleGraphType("gas");
+                this.toggleGraphType("gas");
                 this.renderHourlyGasUsageChart();
             });
 
-            heatMap(graphTypes.gas)
+            heatMap(this.graphTypes.gas)
                 .colors([
                     { color: "white", value: 0 },
                     { color: "#fbb021", value: 16 },
@@ -169,22 +169,24 @@ export class Heatmaps {
                 ])
                 .data(result)
                 .unit("m³")
-                .tickFormat(tickFormatForHourlyGraph("gas"))
+                .tickFormat(this.tickFormatForHourlyGraph("gas"))
                 .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                 .draw(chartContainer.select(".chart"));
+        }).catch((err) => {
+            console.error("Failed to load gas heatmap data:", err);
         });
     }
 
     private renderHourlyStroomUsageChart() {
-        this.loadHeatmapData("stroom", graphTypes.stroom).then((result) => {
+        this.loadHeatmapData("stroom", this.graphTypes.stroom).then((result) => {
             const chartContainer = d3.select("#stroom_heatmap_monthly");
             setCardTitle(chartContainer, "Stroomvraag laatste 30 dagen");
             onCardTitleClick(chartContainer, () => {
-                toggleGraphType("stroom");
+                this.toggleGraphType("stroom");
                 this.renderHourlyStroomUsageChart();
             });
 
-            const colors = graphTypes.stroom === "hourly_30_days" ? [
+            const colors = this.graphTypes.stroom === "hourly_30_days" ? [
                 { color: "white", value: 0 },
                 { color: stroomUsageGraphColor, value: 50 },
                 { color: darkStroomUsageGraphColor, value: 100 }
@@ -192,29 +194,30 @@ export class Heatmaps {
                 { color: "white", value: 0 },
                 { color: stroomUsageGraphColor, value: 10 },
                 { color: darkStroomUsageGraphColor, value: 100 }
-
             ];
-            heatMap(graphTypes.stroom)
+            heatMap(this.graphTypes.stroom)
                 .colors(colors)
                 .min(0.1)
                 .data(result)
                 .unit("kWh")
-                .tickFormat(tickFormatForHourlyGraph("stroom"))
+                .tickFormat(this.tickFormatForHourlyGraph("stroom"))
                 .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                 .draw(chartContainer.select(".chart"));
+        }).catch((err) => {
+            console.error("Failed to load stroom heatmap data:", err);
         });
     }
 
     private renderHourlyGenerationChart() {
-        this.loadHeatmapData("generation", graphTypes.generation).then((result) => {
+        this.loadHeatmapData("generation", this.graphTypes.generation).then((result) => {
             const chartContainer = d3.select("#opwekking_heatmap_monthly");
             setCardTitle(chartContainer, "Opwek laatste 30 dagen");
             onCardTitleClick(chartContainer, () => {
-                toggleGraphType("generation");
+                this.toggleGraphType("generation");
                 this.renderHourlyGenerationChart();
             });
 
-            heatMap(graphTypes.generation)
+            heatMap(this.graphTypes.generation)
                 .colors([
                     { color: "#000064", value: 0 },
                     { color: "#882200", value: 1 },
@@ -225,22 +228,24 @@ export class Heatmaps {
                 .backgroundColor("black")
                 .data(result)
                 .unit("Wh")
-                .tickFormat(tickFormatForHourlyGraph("generation"))
+                .tickFormat(this.tickFormatForHourlyGraph("generation"))
                 .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                 .draw(chartContainer.select(".chart"));
+        }).catch((err) => {
+            console.error("Failed to load generation heatmap data:", err);
         });
     }
 
     private renderHourlyWaterUsageChart() {
-        this.loadHeatmapData("water", graphTypes.water).then((result) => {
+        this.loadHeatmapData("water", this.graphTypes.water).then((result) => {
             const chartContainer = d3.select("#water_heatmap_monthly");
             setCardTitle(chartContainer, "Water laatste 30 dagen");
             onCardTitleClick(chartContainer, () => {
-                toggleGraphType("water");
+                this.toggleGraphType("water");
                 this.renderHourlyWaterUsageChart();
             });
 
-            const colors = graphTypes.water === "hourly_30_days" ? [
+            const colors = this.graphTypes.water === "hourly_30_days" ? [
                 { color: "white", value: 0 },
                 { color: waterGraphColor, value: 50 },
                 { color: darkWaterGraphColor, value: 100 }
@@ -250,13 +255,15 @@ export class Heatmaps {
                 { color: darkWaterGraphColor, value: 100 }
             ];
 
-            heatMap(graphTypes.water)
+            heatMap(this.graphTypes.water)
                 .colors(colors)
                 .data(result)
                 .unit("L")
-                .tickFormat(tickFormatForHourlyGraph("water"))
+                .tickFormat(this.tickFormatForHourlyGraph("water"))
                 .onClick((date: Date) => this.periodSelected(DayDescription.fromDate(date)))
                 .draw(chartContainer.select(".chart"));
+        }).catch((err) => {
+            console.error("Failed to load water heatmap data:", err);
         });
     }
 
@@ -269,24 +276,25 @@ export class Heatmaps {
     }
 
     private async fetchLastMonthHeatMapData(query: string): Promise<ValueWithTimestamp[]> {
-        return fetch(query)
-            .then((response) => response.json())
-            .then((json) => json.map(responseRowToValueWithTimestamp));
+        const response = await fetch(query);
+        if (!response.ok) throw new Error(`Failed to fetch ${query}: ${response.status}`);
+        const json = await response.json();
+        return json.map(responseRowToValueWithTimestamp);
     }
-}
 
-function toggleGraphType(type: GraphType) {
-    if (graphTypes[type] === "hourly_30_days") {
-        graphTypes[type] = "hourly_year";
-    } else {
-        graphTypes[type] = "hourly_30_days";
+    private toggleGraphType(type: GraphType) {
+        if (this.graphTypes[type] === "hourly_30_days") {
+            this.graphTypes[type] = "hourly_year";
+        } else {
+            this.graphTypes[type] = "hourly_30_days";
+        }
     }
-}
 
-function tickFormatForHourlyGraph(type: GraphType) {
-    if (graphTypes[type] === "hourly_30_days") {
-        return (value: Date) => getDate(value).toString();
-    } else {
-        return formatMonthNames;
+    private tickFormatForHourlyGraph(type: GraphType) {
+        if (this.graphTypes[type] === "hourly_30_days") {
+            return (value: Date) => getDate(value).toString();
+        } else {
+            return formatMonthNames;
+        }
     }
 }
