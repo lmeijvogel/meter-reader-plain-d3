@@ -22,7 +22,7 @@ export class HourDescription extends PeriodDescription {
         return "";
     }
     toTitle() {
-        return `${this.up().toTitle} ${this._endOfPeriod.getHours()}:${this._endOfPeriod}.getMinutes()}`;
+        return `${this.up().toTitle()} ${this._endOfPeriod.getHours()}:${String(this._endOfPeriod.getMinutes()).padStart(2, "0")}`;
     }
 
     toDate() {
