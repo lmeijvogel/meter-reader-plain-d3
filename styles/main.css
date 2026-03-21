@@ -1,5 +1,5 @@
 :root {
-    --background-color: #f8f8f8;
+    --background-color: var(--color-bg);
 
     --tab-bar-height: 4rem;
     --period-title-height: 60px;
@@ -17,7 +17,9 @@
 }
 
 body {
-    background-color: var(--background-color);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
 
     margin: 0;
 }
@@ -48,7 +50,7 @@ body {
     /* This prevents contents being visible in the "empty" lines
      * above the tabs.
      */
-    background-color: white;
+    background-color: var(--color-surface-1);
 }
 
 .tab {
@@ -57,12 +59,12 @@ body {
 
     margin-top: 2px;
 
-    border-top: 1px solid black;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    border-bottom: 1px solid black;
+    border-top: 1px solid var(--color-border);
+    border-top-left-radius: var(--radius-sm);
+    border-top-right-radius: var(--radius-sm);
+    border-bottom: 1px solid var(--color-border);
 
-    background-color: #ddd;
+    background-color: var(--color-surface-2);
 
     line-height: var(--tab-bar-height);
     justify-content: center;
@@ -75,7 +77,7 @@ body {
 }
 
 .tab.active {
-    background-color: var(--background-color);
+    background-color: var(--color-bg);
     border-bottom: 0;
     cursor: default;
 }
@@ -83,11 +85,11 @@ body {
 /* Different background color for the period tab, since that has
  * a white title bar. */
 .tab.active#periodTab {
-    background-color: white;
+    background-color: var(--color-surface-1);
 }
 
 .tab:not(:first-of-type) {
-    border-left: 1px solid black;
+    border-left: 1px solid var(--color-border);
 }
 
 .page {
@@ -117,10 +119,10 @@ body {
 
     width: 300px;
 
-    background-color: white;
-    border: 1px solid #cccccc;
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border);
     padding: 20px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
 }
 
 #tooltip .tableValue {
@@ -152,7 +154,7 @@ body {
     width: 100%;
     height: 100%;
 
-    background-color: #f0f;
+    background-color: var(--color-surface-2);
 }
 
 .spinner-icon {
@@ -163,7 +165,7 @@ body {
     top: 15px;
     left: 65px;
 
-    color: #bbb;
+    color: var(--color-text-muted);
     width: 30px;
     height: 30px;
 }
@@ -182,19 +184,19 @@ body {
 }
 
 .axis {
-    color: black;
-    stroke: black;
+    color: var(--color-text);
+    stroke: var(--color-text);
     stroke-width: 1;
 }
 
 .axis text {
-    fill: black;
+    fill: var(--color-text);
 
     stroke: none;
 }
 
 .tooltipLine {
-    stroke: #333;
+    stroke: var(--color-text-muted);
     stroke-width: 1;
 }
 

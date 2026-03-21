@@ -1,3 +1,4 @@
+import "@shared-styles/style.css";
 import { PeriodDataTab } from "./periodData";
 import { CurrentDataTab } from "./currentCharts";
 import { Heatmaps } from "./heatmaps";
