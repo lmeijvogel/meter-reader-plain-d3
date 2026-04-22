@@ -1,30 +1,23 @@
 import * as d3 from "d3";
-import * as uuid from "uuid";
+import * as echarts from "echarts";
+import { addDays } from "date-fns";
 
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
-
-import { assertNever } from "../lib/assertNever";
 import { GraphDescription } from "../models/GraphDescription";
-import { ClosestIndex, getClosestIndex } from "../lib/getClosestIndex";
-import { hideTooltip, showTooltip } from "../tooltip";
-import { white } from "../colors";
-import { addDays } from "date-fns";
+import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 import { HouseLocation } from "../models/HouseLocation";
 import { getTimes } from "suncalc";
-import { drawTimeBandsInChart } from "../drawTimeBandsInChart";
-import { drawSolarIncidenceInChart } from "../drawSolarIncidenceInChart";
 import { getMaximumIncidentSunlight } from "../lib/calculatePotentialIncidentSunlight";
-import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 
 export type Series = {
-    name: string,
-    values: ValueWithTimestamp[],
-    lineColor: string,
-    strokeWidth?: number,
+    name: string;
+    values: ValueWithTimestamp[];
+    lineColor: string;
+    strokeWidth?: number;
     fill?: {
         positive: string;
         negative: string;
-    }
+    };
 };
 
 export type LineChartApi = {
@@ -37,578 +30,258 @@ export type LineChartApi = {
     call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => LineChartApi;
 };
 
-type FillColors = {
-    positive: string;
-    negative: string;
-};
-
 type Store = {
     animate: boolean;
-    lineColors?: Map<string, string>;
-    defaultLineColor: string;
     minMaxCalculation: "explicit" | "minMax" | "quantile";
-    seriesCollection: { periodDescription: PeriodDescription, graphDescription: GraphDescription, series: Series[] } | "not_set";
+    seriesCollection:
+        | { periodDescription: PeriodDescription; graphDescription: GraphDescription; series: Series[] }
+        | "not_set";
     domain?: [number, number];
     clearCanvas: boolean;
     renderOutsideLightShading: boolean;
 };
 
-const padding = {
-    top: 10,
-    right: 30,
-    bottom: 10,
-    left: 10
-};
+function getChartTextColor(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
+}
 
-const width = 480;
-const height = 240;
+function computeDomainY(store: Store): [number, number] {
+    if (store.seriesCollection === "not_set") return [0, 1];
 
-const xAxisHeight = 20;
-const axisWidth = 50;
+    if (store.renderOutsideLightShading) {
+        const max = getMaximumIncidentSunlight(store.seriesCollection.periodDescription.startOfPeriod());
+        return [0, max];
+    }
 
-export function lineChart() {
+    if (store.minMaxCalculation === "explicit") {
+        return store.domain!;
+    }
+
+    const allValues = store.seriesCollection.series.flatMap((s) => s.values.map((v) => v.value));
+
+    if (allValues.length === 0) return [0, 1];
+
+    if (store.minMaxCalculation === "quantile") {
+        const sorted = [...allValues].sort((a, b) => a - b);
+        let min = sorted[Math.floor(sorted.length * 0.05)] ?? sorted[0];
+        let max = sorted[Math.floor(sorted.length * 0.95)] ?? sorted[sorted.length - 1];
+
+        if (max < 0) max = -min / 3;
+        if (min > 0) min = -max / 3;
+
+        return [min - Math.abs(min * 0.1), max + Math.abs(max * 1.0)];
+    } else {
+        // minMax
+        const min = Math.min(...allValues) * 0.95;
+        const max = Math.max(...allValues) * 1.1;
+        return [min, max];
+    }
+}
+
+export function lineChart(): LineChartApi {
     const store: Store = {
         animate: true,
-        lineColors: new Map(),
-        defaultLineColor: "black",
         minMaxCalculation: "explicit",
         seriesCollection: "not_set",
         clearCanvas: false,
-        renderOutsideLightShading: false
+        renderOutsideLightShading: false,
     };
 
-    let firstDrawCall = true;
+    const call = (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>): LineChartApi => {
+        if (store.seriesCollection === "not_set") return api;
 
-    const minimumX = padding.left + axisWidth;
-    const maximumX = width - padding.right;
-    const minimumY = padding.top;
-    const maximumY = height - padding.bottom - xAxisHeight;
+        const el = (selection as any).node() as HTMLElement;
+        if (!el) return api;
 
-    const scaleX = d3.scaleTime().range([minimumX, maximumX]);
-    const scaleY = d3.scaleLinear().range([minimumY, maximumY]).clamp(true);
+        if (store.clearCanvas) {
+            const existing = echarts.getInstanceByDom(el);
+            if (existing) existing.dispose();
+        }
 
-    const yAxis = d3.axisLeft(scaleY);
+        let chart = echarts.getInstanceByDom(el);
+        if (!chart) {
+            chart = echarts.init(el);
+            const ro = new ResizeObserver(() => chart!.resize());
+            ro.observe(el);
+        }
 
-    let isBrushVisible = false;
+        const { periodDescription, graphDescription, series } = store.seriesCollection;
+        const [yMin, yMax] = computeDomainY(store);
+        const textColor = getChartTextColor();
+
+        // For fill series: compute a LinearGradient that transitions at y=0,
+        // avoiding the piecewise visualMap which crashes when data doesn't cross zero.
+        const getFillGradient = (fill: { positive: string; negative: string }) => {
+            const range = yMax - yMin;
+            if (range === 0) return fill.positive;
+            let zeroOffset: number;
+            if (yMax <= 0) {
+                zeroOffset = 0;
+            } else if (yMin >= 0) {
+                zeroOffset = 1;
+            } else {
+                zeroOffset = yMax / range;
+            }
+            return new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: fill.positive },
+                { offset: zeroOffset, color: fill.positive },
+                { offset: zeroOffset, color: fill.negative },
+                { offset: 1, color: fill.negative },
+            ]);
+        };
+
+        // Build ECharts series
+        const eChartsSeries: any[] = series.map((s) => {
+            const data: [number, number][] = s.values.map((v) => [v.timestamp.getTime(), v.value]);
+
+            const seriesOption: any = {
+                name: s.name,
+                type: "line",
+                data,
+                smooth: true,
+                showSymbol: false,
+                lineStyle: {
+                    color: s.lineColor,
+                    width: s.strokeWidth ?? (s.fill ? 1 : 2),
+                },
+                itemStyle: { color: s.lineColor },
+            };
+
+            if (s.fill) {
+                seriesOption.areaStyle = { color: getFillGradient(s.fill) };
+            }
+
+            return seriesOption;
+        });
+
+        const visualMap: any[] = [];
+
+        // Solar incidence overlay as markArea
+        const markAreas: any[] = [];
+        if (store.renderOutsideLightShading) {
+            const date = addDays(periodDescription.toDate(), 1);
+            const times = getTimes(date, HouseLocation.latitude, HouseLocation.longitude);
+            const nightStart = periodDescription.startOfPeriod().getTime();
+            const dawn = (times.dawn as Date).getTime();
+            const sunrise = (times.sunrise as Date).getTime();
+            const sunset = (times.sunset as Date).getTime();
+            const dusk = (times.dusk as Date).getTime();
+            const nightEnd2 = periodDescription.endOfPeriod().getTime();
+
+            const nightColor = "rgb(40,40,120)";
+            const twilightColor = "rgb(100,100,160)";
+
+            // Night before dawn
+            if (nightStart < dawn) {
+                markAreas.push([{ xAxis: nightStart, itemStyle: { color: nightColor } }, { xAxis: dawn }]);
+            }
+            // Dawn transition
+            if (dawn < sunrise) {
+                markAreas.push([{ xAxis: dawn, itemStyle: { color: twilightColor } }, { xAxis: sunrise }]);
+            }
+            // Dusk transition
+            if (sunset < dusk) {
+                markAreas.push([{ xAxis: sunset, itemStyle: { color: twilightColor } }, { xAxis: dusk }]);
+            }
+            // Night after dusk
+            if (dusk < nightEnd2) {
+                markAreas.push([{ xAxis: dusk, itemStyle: { color: nightColor } }, { xAxis: nightEnd2 }]);
+            }
+
+            if (eChartsSeries.length > 0 && markAreas.length > 0) {
+                eChartsSeries[0].markArea = {
+                    silent: true,
+                    data: markAreas,
+                };
+            }
+        }
+
+        const option: any = {
+            animation: store.animate,
+            textStyle: { color: textColor },
+            backgroundColor: "transparent",
+            grid: { top: 10, right: 30, bottom: 25, left: 55 },
+            tooltip: {
+                trigger: "axis",
+                axisPointer: { type: "cross" },
+                formatter(params: any) {
+                    if (!params.length) return "";
+                    const ts = new Date(params[0].value[0]);
+                    const dateStr = d3.timeFormat(periodDescription.timeFormatString())(ts);
+
+                    const lines = params
+                        .filter((p: any) => p.value[1] != null)
+                        .map((p: any) => {
+                            const val = p.value[1];
+                            const formatted = `${d3.format(graphDescription.tooltipValueFormat)(val)} ${
+                                graphDescription.displayableUnit
+                            }`;
+                            return `<span style="display:inline-block;width:10px;height:10px;background:${p.color};margin-right:4px"></span>${p.seriesName}: <b>${formatted}</b>`;
+                        })
+                        .join("<br/>");
+
+                    return `<b>${dateStr}</b><br/>${lines}`;
+                },
+            },
+            xAxis: {
+                type: "time",
+                axisLabel: {
+                    color: textColor,
+                    formatter: (value: number) => d3.timeFormat(periodDescription.tickFormatString())(new Date(value)),
+                },
+                axisLine: { lineStyle: { color: textColor } },
+                min: periodDescription.startOfPeriod().getTime(),
+                max: periodDescription.endOfPeriod().getTime(),
+            },
+            yAxis: {
+                type: "value",
+                min: yMin,
+                max: yMax,
+                axisLabel: { color: textColor, formatter: (value: number) => d3.format(".2f")(value) },
+            },
+            visualMap: visualMap.length > 0 ? visualMap : undefined,
+            series: eChartsSeries,
+        };
+
+        chart.setOption(option, true);
+
+        return api;
+    };
 
     const api: LineChartApi = {
-        setData(
-            periodDescription: PeriodDescription,
-            graphDescription: GraphDescription,
-            series: Series[]
-        ) {
+        setData(periodDescription, graphDescription, series) {
             store.seriesCollection = { periodDescription, graphDescription, series };
-
             return api;
         },
 
-        animate: (value: boolean) => {
+        animate(value) {
             store.animate = value;
-
             return api;
         },
 
-        domain(domain: [number, number]) {
+        domain(domain) {
             store.domain = domain;
             store.minMaxCalculation = "explicit";
-
             return api;
         },
 
-        minMaxCalculation: (method: "minMax" | "quantile") => {
+        minMaxCalculation(method) {
             store.minMaxCalculation = method;
-
             return api;
         },
 
-        clearCanvas: (value: boolean) => {
+        clearCanvas(value) {
             store.clearCanvas = value;
-
             return api;
         },
 
-        renderOutsideLightShading: (value: boolean) => {
+        renderOutsideLightShading(value) {
             store.renderOutsideLightShading = value;
-
             return api;
         },
 
-        call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-            if (store.seriesCollection === "not_set") {
-                throw new Error("No series data set");
-            }
-
-            if (store.clearCanvas) {
-                selection.selectAll("*").remove();
-                hideTooltip();
-            }
-
-            if (firstDrawCall) {
-                firstDrawCall = false;
-
-                addSvgChildTags(selection);
-            }
-
-            const brush = d3.brushX();
-            brush.extent([
-                [minimumX, minimumY],
-                [maximumX, maximumY]
-            ]);
-
-            brush.on("start", () => (isBrushVisible = true));
-
-            brush.on("brush", (event) => showTooltip(event.sourceEvent, () => getBrushTooltipContents(event)));
-
-            brush.on("end", (event) => {
-                if (!event.selection) {
-                    isBrushVisible = false;
-                }
-            });
-
-            selection.select(".brush").call(brush as any);
-
-            selection.attr("viewBox", `0 0 ${width} ${height}`);
-
-            registerEventHandlers(selection);
-
-            const { periodDescription, series } = store.seriesCollection;
-
-            const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
-            scaleX.domain(domainX);
-
-            const domainY = getDomainY();
-            scaleY.domain(domainY).range([maximumY, minimumY]);
-
-            renderXAxis(selection.select(".xAxis"), periodDescription);
-            selection
-                .select(".yAxis")
-                .attr("transform", `translate(${minimumX}, 0)`)
-                .style("font-size", "13pt")
-                .call(yAxis as any);
-
-            const valuesSelection = selection.select(".values");
-
-            series.forEach((set, name) => {
-                const seriesGClassName = `series_${name}`;
-
-                let g = valuesSelection.select<SVGGElement>(`.${seriesGClassName}`);
-
-                if (!g.node()) {
-                    g = valuesSelection.insert("g", "g.xAxis");
-                    g.attr("class", seriesGClassName).attr("width", width).attr("height", height);
-                }
-
-                drawValues(set.values, set.lineColor, g, set.strokeWidth, set.fill);
-            });
-
-            if (store.renderOutsideLightShading) {
-                drawTimesOfDay(selection, periodDescription);
-            }
-
-            return api;
-        }
+        call,
     };
 
-    function drawTimesOfDay(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, periodDescription: PeriodDescription) {
-        // For some reason, `getTimes` returns the times on the previous day.
-        // I don't know why so this fix will probably break soon.
-        const date = addDays(periodDescription.toDate(), 1);
-        const times = getTimes(date, HouseLocation.latitude, HouseLocation.longitude);
-
-        const g = svg.select("g.daylightUnderlay");
-        const bandHeight = scaleY(0) - padding.top;
-
-        drawTimeBandsInChart(g, times, scaleX, padding.top, bandHeight);
-
-        drawSolarIncidenceInChart(svg.select("g.solarIncidence"), periodDescription, scaleX, scaleY);
-    }
-
-    function drawValues(
-        series: ValueWithTimestamp[],
-        lineColor: string,
-        selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
-        strokeWidth?: number,
-        fill?: FillColors
-    ) {
-        const lineGenerator = d3
-            .line<ValueWithTimestamp>()
-            .curve(d3.curveBasis)
-            .x((d) => scaleX(d.timestamp))
-            .y((d) => scaleY(d.value));
-
-        if (fill) {
-            selection.select("defs").remove();
-            selection.append("defs");
-
-            drawGradient(selection, fill, series, "positive");
-            drawGradient(selection, fill, series, "negative");
-        }
-
-        const path = selection.selectAll(`path.line`).data([series]).join("path");
-
-        if (store.animate) {
-            path.transition().duration(firstDrawCall ? 0 : 200);
-        }
-
-        path.attr("class", `line`)
-            .attr("fill", "none")
-            .attr("stroke", lineColor)
-            .attr("stroke-width", strokeWidth ?? (fill ? 1 : 2))
-            .transition()
-            .duration(200)
-            .attr("d", lineGenerator);
-    }
-
-    function drawGradient(
-        selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
-        fill: FillColors,
-        series: ValueWithTimestamp[],
-        areaRange: "positive" | "negative"
-    ) {
-        const randomId = getOrCreateRandomId(selection);
-
-        const limitFunction =
-            areaRange === "positive" ? (v: number) => Math.max(0.0, v) : (v: number) => Math.min(v, 0.0);
-
-        const area = d3
-            .area<ValueWithTimestamp>()
-            .curve(d3.curveBasis)
-            .x((d) => scaleX(d.timestamp))
-            .y0(scaleY(-1.0))
-            .y1((d) => scaleY(limitFunction(d.value)));
-
-        const gradientId = `areaGradient_${areaRange}_${randomId}`;
-        const gradientExists = !!selection.select(`#${gradientId}`).node();
-
-        if (!gradientExists) {
-            const areaGradient = selection
-                .select("defs")
-                .append("linearGradient")
-                .attr("id", gradientId)
-                .attr("x1", "0%")
-                .attr("y1", "0%")
-                .attr("x2", "0%")
-                .attr("y2", "100%");
-
-            areaGradient.append("stop").attr("offset", "40%").attr("stop-color", fill[areaRange]);
-            areaGradient.append("stop").attr("offset", "100%").attr("stop-color", white);
-        }
-
-        const path = selection.selectAll(`path.area_${areaRange}`).data([series]).join("path");
-
-        if (store.animate) {
-            path.transition().duration(firstDrawCall ? 0 : 200);
-        }
-
-        path.attr("class", `area_${areaRange}`).attr("fill", `url(#${gradientId})`).attr("d", area);
-    }
-
-    function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        [
-            "gridLines",
-            "daylightUnderlay",
-            "values",
-            "solarIncidence",
-            "xAxis axis",
-            "yAxis axis",
-            "tooltipLine",
-            "brush"
-        ].forEach((className) => {
-            const g = selection.append("g");
-
-            g.attr("class", className);
-        });
-    }
-
-    function renderXAxis(xAxisBase: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, periodDescription: PeriodDescription) {
-        const ticks = periodDescription.getChartTicks();
-        const xAxis = d3
-            .axisBottom(scaleX as any)
-            .ticks(ticks, d3.timeFormat(periodDescription.tickFormatString()));
-
-        xAxisBase.attr("transform", `translate(0, ${scaleY(0)})`).call(xAxis as any);
-    }
-
-    function getDomainY(): number[] {
-        if (store.seriesCollection === "not_set") {
-            throw new Error("No series data set.");
-        }
-
-        if (store.renderOutsideLightShading) {
-            return [0, getMaximumIncidentSunlight(store.seriesCollection.periodDescription.startOfPeriod())];
-        }
-
-        if (store.minMaxCalculation === "explicit") {
-            return store.domain!;
-        }
-
-        const relevantValues = store.seriesCollection.series.flatMap((series) =>
-            series.values.map((s) => s.value)
-        );
-
-        if (store.minMaxCalculation === "quantile") {
-            let min = d3.quantile(relevantValues, 0.05)!;
-            let max = d3.quantile(relevantValues, 0.95)!;
-
-            // Make sure x axis is visible
-            if (max < 0) {
-                max = -min / 3;
-            }
-
-            if (min > 0) {
-                min = -max / 3;
-            }
-
-            // Always show a bit of margin around the range
-            return [min - Math.abs(min * 0.1), max + Math.abs(max * 1.0)];
-        } else if (store.minMaxCalculation === "minMax") {
-            if (relevantValues.length === 0) {
-                return [0, 1];
-            }
-
-            const min = Math.min(...relevantValues) * 0.95;
-            const max = Math.max(...relevantValues) * 1.1;
-
-            return [min, max];
-        } else {
-            assertNever(store.minMaxCalculation);
-        }
-    }
-
-    function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
-        if (store.seriesCollection === "not_set") {
-            return;
-        }
-
-        const tooltipLineSelector = selection.select(".tooltipLine");
-
-        // When measurements are missing, we of course don't want to try to include them.
-        const seriesCollectionValues = store.seriesCollection.series.filter(
-            (collection) => collection.values.length > 0
-        );
-
-        const closestIndices = seriesCollectionValues.map((collection) =>
-            getClosestIndex(event, scaleX, collection.values)
-        );
-
-        /* This is a bit of a dirty workaround for how we determine where to draw the line:
-         * Ideally, we would just use the cursor position, but because of how we're using
-         * d3, we first get the mouse position, then find the corresponding column and use that.
-         *
-         * Because we don't have the mouse position anymore, we have to determine it in a different way. :(
-         */
-        const timestamp = mostOccurringDate(closestIndices);
-
-        const x = scaleX(timestamp);
-
-        tooltipLineSelector
-            .selectAll("line")
-            .data([x])
-            .join("line")
-            .attr("x1", (x) => x)
-            .attr("x2", (x) => x)
-            .attr("y1", minimumY)
-            .attr("y2", maximumY)
-            .attr("class", "tooltipLine");
-
-        /* Draw a circle on all matching lines */
-        const yValues = seriesCollectionValues.map((series, i) => ({
-            value: series.values[closestIndices[i].index].value,
-            color: series.lineColor
-        }));
-
-        tooltipLineSelector
-            .selectAll("circle")
-            .data(yValues)
-            .join("circle")
-            .attr("stroke", "black")
-            .attr("fill", (d) => d.color)
-            .attr("r", 4)
-            .attr("cx", x)
-            .attr("cy", (d) => scaleY(d.value));
-    }
-
-    function getHoverTooltipContents(event: any): string {
-        if (store.seriesCollection === "not_set") {
-            return "";
-        }
-
-        let closestDate = new Date();
-
-        const ys = store.seriesCollection.series.filter(series => series.values.length > 0).map(series => {
-                const closestIndex = getClosestIndex(event, scaleX, series.values);
-                closestDate = closestIndex.timestamp;
-
-                return {
-                    name: series.name,
-                    value: series.values[closestIndex.index]?.value,
-                    color: series.lineColor
-                };
-            });
-
-        const { periodDescription, graphDescription } = store.seriesCollection;
-        const dateString = d3.timeFormat(periodDescription.timeFormatString())(closestDate);
-
-        const valueLines = ys
-            .map(
-                ({ name, value, color }) => `
-                                            <span style="display: inline-block; width: 15px; height: 15px; border: 1px solid black; background-color: ${color}"></span>
-                                            <span>${name}:</span>
-                                            <span class="tableValue">${renderDisplayValue(value, graphDescription)}</span>
-                                        `
-            )
-            .join("");
-        return `<b>${dateString}</b><div class="valueLinesTooltip">${valueLines}</div>`;
-    }
-
-    function getBrushTooltipContents(event: any): string {
-        if (store.seriesCollection === "not_set") {
-            return "";
-        }
-
-        const pointerStartDate = scaleX.invert(event.selection[0]);
-        const pointerEndDate = scaleX.invert(event.selection[1]);
-
-        const displayValues: Map<string, { min: number; max: number; mean: number }> = new Map();
-
-        for (const series of store.seriesCollection.series) {
-            const startIndex = getClosestIndex(event.selection[0], scaleX, series.values, event.selection[0]);
-            const endIndex = getClosestIndex(event.selection[1], scaleX, series.values, event.selection[1]);
-
-            const relevantEntries = series.values.slice(startIndex.index, endIndex.index);
-
-            const [min, max] = d3.extent(relevantEntries, (v) => v.value);
-
-            displayValues.set(series.name, {
-                min: min ?? 0,
-                mean: d3.mean(relevantEntries, (v) => v.value) ?? 0,
-                max: max ?? 0
-            });
-        }
-
-        const formatString = store.seriesCollection.periodDescription.timeFormatString();
-        const startDateString = d3.timeFormat(formatString)(pointerStartDate);
-        const endDateString = d3.timeFormat(formatString)(pointerEndDate);
-
-        return `<table class="lineChartBrush">
-                    <caption>${startDateString} - ${endDateString}</caption>
-                    ${renderBrushTooltipDisplayValues(displayValues).join("")}
-                </table>`;
-    }
-
-    function renderBrushTooltipDisplayValues(displayValues: Map<string, { min: number; max: number; mean: number }>) {
-        if (store.seriesCollection === "not_set") {
-            return [];
-        }
-
-        const result: string[] = [];
-
-        const headers = ["min", "gem.", "max"];
-
-        result.push('<thead><tr><th scope="col"></th>');
-        result.push(...headers.map((h) => `<th scope="col">${h}</th>`));
-        result.push("</tr></thead>");
-
-        result.push("<tbody>");
-        const tooltipValueFormat = store.seriesCollection.graphDescription.tooltipValueFormat;
-        for (const [name, values] of displayValues) {
-            result.push(`<tr><th scope="row">${name}</th>`);
-            result.push(`<td class="tableValue">${d3.format(tooltipValueFormat)(values.min)}</td>
-                    <td class="tableValue">${d3.format(tooltipValueFormat)(values.mean)}</td>
-                    <td class="tableValue">${d3.format(tooltipValueFormat)(values.max)}</td></tr>`);
-        }
-        result.push("</tbody>");
-        return result;
-    }
-
-    function renderDisplayValue(value: number, graphDescription: GraphDescription) {
-        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit
-            }`;
-    }
-
-    function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        selection.on("mouseover", null);
-        selection.on("mouseout", null);
-        selection.on("mousemove", null);
-
-        selection.on("mouseover", () => {
-            selection.select(".tooltipLine").style("display", "block");
-        });
-
-        selection.on("mouseout", () => {
-            hideTooltip();
-            selection.select(".tooltipLine").style("display", "none");
-        });
-
-        selection.on("mousemove", (event) => {
-            if (store.seriesCollection === "not_set") {
-                return;
-            }
-
-            if (isBrushVisible) {
-                return;
-            }
-
-            if (store.seriesCollection.series.length === 0) {
-                return;
-            }
-
-            showTooltip(event, () => getHoverTooltipContents(event));
-
-            /* Draw a vertical line as a visual aid */
-            drawTooltipLine(selection, event);
-        });
-    }
-
-    function getOrCreateRandomId(selection: d3.Selection<SVGGElement, unknown, HTMLElement, any>) {
-        /* I can't think of a better way to store the random id.
-         * I want it to be random for these reasons:
-         * - I don't want name clashes,
-         * - I don't want to make it depend on the fieldName, because
-         *   I might want to add more graphs for the same field
-         *
-         * I need to define it per-graph, but only once, so I'm storing it
-         * in the DOM.
-         *
-         */
-        const existingId = selection.attr("data-gradient-random-id");
-
-        if (existingId) {
-            return existingId;
-        }
-
-        const newRandomId = uuid.v4();
-
-        selection.attr("data-gradient-random-id", newRandomId);
-
-        return newRandomId;
-    }
-
     return api;
-}
-
-function mostOccurringDate(closestIndices: ClosestIndex[]): Date {
-    const result = new Map<Date, number>();
-
-    for (const closestIndex of closestIndices) {
-        if (!result.has(closestIndex.timestamp)) {
-            result.set(closestIndex.timestamp, 0);
-        }
-
-        const count = result.get(closestIndex.timestamp)!;
-        result.set(closestIndex.timestamp, count + 1);
-    }
-
-    const entries = Array.from(result.entries());
-    const init: [Date, number] = [new Date(), -1];
-
-    const mostOccurringEntry = entries.reduce((acc, el) => {
-        if (el[1] > acc[1]) {
-            return el;
-        } else {
-            return acc;
-        }
-    }, init);
-
-    return mostOccurringEntry[0];
 }

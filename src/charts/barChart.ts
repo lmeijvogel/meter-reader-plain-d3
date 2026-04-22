@@ -1,13 +1,9 @@
 import * as d3 from "d3";
+import * as echarts from "echarts";
 import { GraphDescription } from "../models/GraphDescription";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
-
-import { getClosestIndex } from "../lib/getClosestIndex";
-import { hideTooltip, showTooltip } from "../tooltip";
-import { height, padding, xAxisHeight, width } from "./barChartHelpers/constants";
-import { initScales, updateScales } from "./barChartHelpers/updateScales";
-import { grey, lightGrey } from "../colors";
+import { grey } from "../colors";
 
 export type BarChartApi = {
     data(
@@ -20,277 +16,184 @@ export type BarChartApi = {
     color(color: string): BarChartApi;
     onClick: (handler: (periodDescription: PeriodDescription) => void) => BarChartApi;
     clearCanvas: (value: boolean) => BarChartApi;
-    call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, BarChartApi>) => void;
+    call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => void;
 };
 
-type Store = {
-    data: { periodDescription: PeriodDescription, graphDescription: GraphDescription, values: ValueWithTimestamp[] } | "no_data";
-    lineData: { data: ValueWithTimestamp[]; graphDescription: GraphDescription }[];
-    color: string;
-    colorLight: string;
-    relativeMinMax: boolean;
-    onValueClick: (periodDescription: PeriodDescription) => void;
-    clearCanvas: boolean;
-    firstDrawCall: boolean;
-    minMaxCalculator: (data: ValueWithTimestamp[]) => { min: number; max: number };
-};
+function getChartTextColor(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
+}
 
 export function barChart(): BarChartApi {
-    const minMaxCalculator = () => {
-        if (store.data === "no_data") {
-            throw new Error("No data initialized.");
-        }
-
-        const { graphDescription } = store.data;
-        return ({ min: graphDescription.minY, max: graphDescription.maxY })
-    }
-
-    const store: Store = {
-        relativeMinMax: true,
-        data: "no_data",
-        lineData: [],
-        color: grey,
-        colorLight: lightGrey,
-        onValueClick: () => { /* no-op */ },
-        clearCanvas: false,
-        firstDrawCall: true,
-        minMaxCalculator
+    let currentPeriodDescription: PeriodDescription | null = null;
+    let currentGraphDescription: GraphDescription | null = null;
+    let currentValues: ValueWithTimestamp[] = [];
+    let lineData: { data: ValueWithTimestamp[]; graphDescription: GraphDescription }[] = [];
+    let barColor = grey;
+    let onValueClick: (pd: PeriodDescription) => void = () => {
+        /* no-op */
     };
-    const { scaleX, scaleXForInversion, scaleY } = initScales();
+    let shouldClearCanvas = false;
 
-    const calculateBarXPosition = (date: Date) => {
-        if (store.data === "no_data") {
-            return 0;
+    const call = (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+        if (!currentPeriodDescription || !currentGraphDescription) return;
+
+        const el = (selection as any).node() as HTMLElement;
+        if (!el) return;
+
+        if (shouldClearCanvas) {
+            const existing = echarts.getInstanceByDom(el);
+            if (existing) existing.dispose();
         }
 
-        const pos = scaleX(store.data.periodDescription.normalize(date));
+        let chart = echarts.getInstanceByDom(el);
+        if (!chart) {
+            chart = echarts.init(el);
+            const ro = new ResizeObserver(() => chart!.resize());
+            ro.observe(el);
+        }
 
-        return pos ? pos : 0;
+        const pd = currentPeriodDescription;
+        const gd = currentGraphDescription;
+        const values = currentValues;
+        const hasLine = lineData.length > 0;
+
+        const formatX = d3.timeFormat(pd.tickFormatString());
+        const xLabels = values.map((v) => formatX(pd.normalize(v.timestamp)));
+        const yValues = values.map((v) => v.value);
+
+        const textColor = getChartTextColor();
+
+        const yAxes: any[] = [
+            {
+                type: "value",
+                min: gd.minY,
+                max: gd.maxY,
+                axisLabel: { color: textColor, formatter: (value: number) => d3.format(gd.tooltipValueFormat)(value) },
+            },
+        ];
+
+        if (hasLine) {
+            yAxes.push({
+                type: "value",
+                min: -5,
+                max: 40,
+                position: "right",
+                splitLine: { show: false },
+                axisLabel: { color: textColor },
+            });
+        }
+
+        const series: any[] = [
+            {
+                type: "bar",
+                data: yValues,
+                itemStyle: { color: barColor },
+                yAxisIndex: 0,
+            },
+        ];
+
+        if (hasLine) {
+            const tempLineData = lineData[0].data;
+            // Align temperature readings to each bar by closest timestamp
+            const tempValues = values.map((barEntry) => {
+                if (tempLineData.length === 0) return null;
+                const closest = tempLineData.reduce((best, curr) =>
+                    Math.abs(curr.timestamp.getTime() - barEntry.timestamp.getTime()) <
+                    Math.abs(best.timestamp.getTime() - barEntry.timestamp.getTime())
+                        ? curr
+                        : best
+                );
+                return closest.value;
+            });
+
+            series.push({
+                type: "line",
+                data: tempValues,
+                yAxisIndex: 1,
+                smooth: true,
+                lineStyle: { color: "#888" },
+                itemStyle: { color: "#888" },
+                showSymbol: false,
+            });
+        }
+
+        const option: any = {
+            textStyle: { color: textColor },
+            backgroundColor: "transparent",
+            grid: {
+                top: 10,
+                right: hasLine ? 60 : 30,
+                bottom: 25,
+                left: 55,
+            },
+            tooltip: {
+                trigger: "axis",
+                formatter(params: any) {
+                    if (!params.length) return "";
+                    const idx = params[0].dataIndex;
+                    if (idx < 0 || idx >= values.length) return "";
+                    const ts = values[idx].timestamp;
+                    const dateStr = d3.timeFormat(pd.timeFormatString())(ts);
+                    const value = values[idx].value;
+                    const formatted = `${d3.format(gd.tooltipValueFormat)(value)} ${gd.displayableUnit}`;
+                    return `${dateStr}: <b>${formatted}</b>`;
+                },
+            },
+            xAxis: {
+                type: "category",
+                data: xLabels,
+                axisLabel: { color: textColor, interval: "auto" },
+                axisLine: { lineStyle: { color: textColor } },
+            },
+            yAxis: yAxes,
+            series,
+        };
+
+        chart.off("click");
+        chart.on("click", (params: any) => {
+            if (params.dataIndex >= 0 && params.dataIndex < values.length) {
+                onValueClick(pd.atDate(values[params.dataIndex].timestamp));
+            }
+        });
+
+        chart.setOption(option, true);
     };
 
-    function drawBars(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        if (store.data === "no_data") {
-            throw new Error("Data is not initialized.")
-        }
-
-        const { periodDescription, values } = store.data;
-
-        selection
-            .select("g.values")
-            .selectAll("rect.bar")
-            .data<ValueWithTimestamp>(values)
-            .join("rect")
-            .classed("bar", true)
-            .on("click", (_event: any, d) => {
-                const clickedPeriod = periodDescription.atDate(d.timestamp);
-                store.onValueClick(clickedPeriod);
-            })
-            .transition()
-            .duration(store.firstDrawCall ? 0 : 200)
-            .attr("x", (el) => calculateBarXPosition(el.timestamp))
-            .attr("y", (el) => scaleY(el.value))
-            .attr("height", (el) => scaleY(0) - scaleY(el.value))
-            .attr("width", scaleX.bandwidth())
-            .attr("fill", store.color)
-            .attr("data-value", (el) => el.value)
-            .attr("data-timestamp", (el) => el.timestamp.toString())
-            .attr("index", (_d: any, i: number) => i);
-    }
-
-    function drawLines(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        if (store.data === "no_data") {
-            throw new Error("Data was not initialized.");
-        }
-
-        const data = store.lineData[0]?.data;
-
-        if (!data) {
-            selection.select("g.lines").selectAll("path").remove();
-            selection.select("g.lineYAxis").selectAll("*").remove();
-            return;
-        }
-
-        const periodDescription = store.data.periodDescription;
-
-        const domainX = [periodDescription.startOfPeriod(), periodDescription.endOfPeriod()];
-        const lineScaleX = d3.scaleTime().domain(domainX).range(scaleX.range());
-
-        const lineScaleY = d3.scaleLinear().domain([-5, 40]).range(scaleY.range());
-        const lineGenerator = d3
-            .line<ValueWithTimestamp>()
-            .x((d) => lineScaleX(d.timestamp)!)
-            .y((d) => lineScaleY(d.value));
-
-        selection
-            .select("g.lines")
-            .selectAll("path")
-            .data(store.lineData)
-            .join("path")
-            .attr("stroke", "black")
-            .attr("fill", "none")
-            .transition()
-            .duration(200)
-            .attr("d", lineGenerator(data));
-
-        const yAxis = d3.axisRight(lineScaleY);
-
-        selection
-            .select("g.lineYAxis")
-            .attr("transform", `translate(${width - padding.right}, 0)`)
-            .call(yAxis as any);
-    }
-
-    function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        selection.on("mouseover", null);
-        selection.on("mouseout", null);
-        selection.on("mousemove", null);
-
-        selection.on("mouseover", () => {
-            selection.select(".tooltipLine").style("display", "block");
-        });
-
-        selection.on("mouseout", () => {
-            hideTooltip();
-            selection.select(".tooltipLine").style("display", "none");
-            unhighlightBar(selection);
-        });
-
-        selection.on("mousemove", (event) => {
-            showTooltip(event, () => getHoverTooltipContents(event));
-            highlightActiveBar(selection, event);
-
-            drawTooltipLine(selection, event);
-        });
-    }
-
-    function getHoverTooltipContents(event: any): string {
-        if (store.data === "no_data") {
-            return "";
-        }
-
-        const data = store.data.values;
-
-        const closestIndex = getClosestIndex(event, scaleXForInversion, data);
-
-        const closestDate = closestIndex.timestamp;
-        const value = data[closestIndex.index].value;
-
-        const dateString = d3.timeFormat(store.data.periodDescription.timeFormatString())(closestDate);
-
-        return `${dateString}: <b>${renderDisplayValue(value, store.data.graphDescription)}</b>`;
-    }
-
-    function renderDisplayValue(value: number, graphDescription: GraphDescription) {
-        return `${d3.format(graphDescription.tooltipValueFormat)(value)} ${graphDescription.displayableUnit}`;
-    }
-
-    function highlightActiveBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
-        if (store.data === "no_data") {
-            return;
-        }
-
-        const closestIndex = getClosestIndex(event, scaleXForInversion, store.data.values);
-
-        selection
-            .select(".values")
-            .selectAll("rect")
-            .style("fill", (_d, i) => (i === closestIndex.index ? store.colorLight : store.color));
-    }
-
-    function unhighlightBar(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        selection.select(".values").selectAll("rect").style("fill", store.color);
-    }
-
-    function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
-        if (store.data === "no_data") {
-            return;
-        }
-
-        const tooltipLineSelector = selection.select(".tooltipLine");
-
-        const data = store.data.values;
-        const closestIndex = getClosestIndex(event, scaleXForInversion, data);
-
-        const x = scaleX(store.data.periodDescription.normalize(closestIndex.timestamp))!;
-
-        tooltipLineSelector
-            .selectAll("line")
-            .data([x])
-            .join("line")
-            .attr("x1", (x) => x + scaleX.bandwidth() / 2)
-            .attr("x2", (x) => x + scaleX.bandwidth() / 2)
-            .attr("y1", padding.top)
-            .attr("y2", height - padding.bottom - xAxisHeight)
-            .attr("class", "tooltipLine");
-    }
-
-    const api = {
-        data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: ValueWithTimestamp[]) {
-            store.data = { periodDescription, graphDescription, values: data };
-
+    const api: BarChartApi = {
+        data(periodDescription, graphDescription, data) {
+            currentPeriodDescription = periodDescription;
+            currentGraphDescription = graphDescription;
+            currentValues = data;
             return api;
         },
 
-        addLineData(data: ValueWithTimestamp[], graphDescription: GraphDescription) {
-            store.lineData.push({ data, graphDescription });
-
+        addLineData(data, graphDescription) {
+            lineData = [{ data, graphDescription }];
             return api;
         },
 
         removeLineData() {
-            store.lineData = [];
-
+            lineData = [];
             return api;
         },
 
-        color(color: string) {
-            store.color = color;
-            store.colorLight = d3.color(color)!.brighter(1.5).formatHex();
+        color(color) {
+            barColor = color;
             return api;
         },
 
-        onClick: (handler: (periodDescription: PeriodDescription) => void) => {
-            store.onValueClick = handler;
-
+        onClick: (handler) => {
+            onValueClick = handler;
             return api;
         },
 
-        clearCanvas: (value: boolean) => {
-            store.clearCanvas = value;
-
+        clearCanvas: (value) => {
+            shouldClearCanvas = value;
             return api;
         },
 
-        call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-            if (store.clearCanvas) {
-                selection.selectAll("*").remove();
-                store.firstDrawCall = true;
-            }
-            hideTooltip();
-
-            if (store.firstDrawCall) {
-                addSvgChildTags(selection);
-            }
-
-            registerEventHandlers(selection);
-            updateScales(selection, store.firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
-
-            drawBars(selection);
-            drawLines(selection);
-
-            store.firstDrawCall = false;
-        }
+        call,
     };
 
     return api;
-}
-
-function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    ["tooltipLine", "gridLines", "additionalInfo", "values", "lines", "xAxis", "yAxis", "lineYAxis"].forEach((name) => {
-        if (!selection.select(`g.${name}`).node()) {
-            selection.append("g").attr("class", name);
-        }
-    });
-
-    selection.attr("viewBox", "0 0 480 240");
 }

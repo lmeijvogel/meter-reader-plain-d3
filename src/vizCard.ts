@@ -36,3 +36,20 @@ export function createSvgCard(id: string, container: HTMLElement) {
 
     container.append(div);
 }
+
+export function createDivCard(id: string, container: HTMLElement) {
+    const div = document.createElement("div");
+
+    div.innerHTML = `<h3 class="title">&nbsp;</h3>
+            <div class="chartContainer">
+                <div class="overlay" style="">
+                    <i class="spinner-icon"  icon-name="loader-2"></i>
+                </div>
+                <div class="chart"></div>
+            </div>`;
+
+    div.classList.add("card");
+    div.id = id;
+
+    container.append(div);
+}

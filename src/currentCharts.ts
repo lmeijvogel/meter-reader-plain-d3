@@ -73,8 +73,8 @@ export class CurrentDataTab {
     initializePage(selector: string) {
         createRowsWithCards(
             [
-                ["recent_current", "current_power_gauge"],
-                ["recent_water", "current_water_gauge"]
+                ["recent_current", { id: "current_power_gauge", svg: true }],
+                ["recent_water", { id: "current_water_gauge", svg: true }]
             ],
             selector
         );

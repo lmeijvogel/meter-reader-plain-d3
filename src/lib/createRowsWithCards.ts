@@ -1,6 +1,8 @@
-import { createSvgCard } from "../vizCard";
+import { createDivCard, createSvgCard } from "../vizCard";
 
-export function createRowsWithCards(rows: string[][], containerSelector: string) {
+export type CardSpec = string | { id: string; svg: true };
+
+export function createRowsWithCards(rows: CardSpec[][], containerSelector: string) {
     const cardsContainer = document.querySelector(containerSelector)!;
 
     for (const itemsPerRow of rows) {
@@ -8,8 +10,12 @@ export function createRowsWithCards(rows: string[][], containerSelector: string)
         row.classList.add("row");
         cardsContainer.appendChild(row);
 
-        for (const id of itemsPerRow) {
-            createSvgCard(id, row);
+        for (const spec of itemsPerRow) {
+            if (typeof spec === "string") {
+                createDivCard(spec, row);
+            } else {
+                createSvgCard(spec.id, row);
+            }
         }
     }
 }

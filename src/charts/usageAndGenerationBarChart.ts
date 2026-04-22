@@ -1,23 +1,15 @@
 import * as d3 from "d3";
+import * as echarts from "echarts";
 import { GraphDescription } from "../models/GraphDescription";
-
 import { isEqual } from "date-fns";
-import { getClosestIndex } from "../lib/getClosestIndex";
-import { hideTooltip, showTooltip } from "../tooltip";
-import { height, padding, xAxisHeight } from "./barChartHelpers/constants";
-import { initScales, updateScales } from "./barChartHelpers/updateScales";
-import { PowerSourcesAndBackDelivery } from "./barChartHelpers/Types";
-import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
-import { darkGrey, stroomBackDeliveryColor, stroomGenerationColor, stroomUsageGraphColor } from "../colors";
+import { stroomBackDeliveryColor, stroomGenerationColor, stroomUsageGraphColor } from "../colors";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
+import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 
 export type UsageAndGenerationBarChartApi = {
     data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: Data): UsageAndGenerationBarChartApi;
-
     onClick(handler: (periodDescription: PeriodDescription) => void): UsageAndGenerationBarChartApi;
-
     clearCanvas(value: boolean): UsageAndGenerationBarChartApi;
-
     call(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>): void;
 };
 
@@ -29,261 +21,170 @@ type Data = {
 
 type ConsolidatedData = {
     timestamp: Date;
-    consumption: number;
-    generation: number;
+    gridSource: number;
+    solarSelfUse: number;
     backDelivery: number;
 };
 
-type Store = {
-    data: { periodDescription: PeriodDescription, graphDescription: GraphDescription, values: PowerSourcesAndBackDelivery[] } | "no_data";
-    relativeMinMax: boolean;
-    onValueClick: (periodDescription: PeriodDescription) => void;
-    clearCanvas: boolean;
-    minMaxCalculator: (data: PowerSourcesAndBackDelivery[]) => { min: number; max: number };
-};
+function getChartTextColor(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
+}
 
-let firstDrawCall = true;
+function consolidateData(input: Data): ConsolidatedData[] {
+    const getDates = (arr: ValueWithTimestamp[]) => arr.map(el => el.timestamp);
+    const dataFields: (keyof Data)[] = ["consumption", "generation", "backDelivery"];
+    const timestamps = d3.sort(d3.union(dataFields.flatMap(field => getDates(input[field]))));
 
-export function usageAndGenerationBarChart() {
-    const store: Store = {
-        relativeMinMax: true,
-        data: "no_data",
-        onValueClick: () => { /* no-op */ },
-        clearCanvas: false,
-        minMaxCalculator: (data: PowerSourcesAndBackDelivery[]): { min: number; max: number } => {
-            const min = d3.min(data, (el) => el.backDelivery) ?? 0;
-            const max = d3.max(data, (el) => el.gridSource + el.solarSource) ?? 0;
+    return timestamps.map(ts => {
+        const consumption = input.consumption.find(el => isEqual(el.timestamp, ts))?.value ?? 0;
+        const generation = input.generation.find(el => isEqual(el.timestamp, ts))?.value ?? 0;
+        const backDelivery = input.backDelivery.find(el => isEqual(el.timestamp, ts))?.value ?? 0;
 
-            return { min, max };
+        // backDelivery is already negative in the input (negated in fetchAndDrawStroomChart)
+        // solarSelfUse = total generation minus what went back = generation + backDelivery (since backDelivery < 0)
+        return {
+            timestamp: ts,
+            gridSource: consumption,
+            solarSelfUse: generation + backDelivery,
+            backDelivery
+        };
+    });
+}
+
+export function usageAndGenerationBarChart(): UsageAndGenerationBarChartApi {
+    let currentPeriodDescription: PeriodDescription | null = null;
+    let currentGraphDescription: GraphDescription | null = null;
+    let consolidatedValues: ConsolidatedData[] = [];
+    let onValueClick: (pd: PeriodDescription) => void = () => { /* no-op */ };
+    let shouldClearCanvas = false;
+
+    const call = (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+        if (!currentPeriodDescription || !currentGraphDescription) return;
+
+        const el = (selection as any).node() as HTMLElement;
+        if (!el) return;
+
+        if (shouldClearCanvas) {
+            const existing = echarts.getInstanceByDom(el);
+            if (existing) existing.dispose();
         }
+
+        let chart = echarts.getInstanceByDom(el);
+        if (!chart) {
+            chart = echarts.init(el);
+            const ro = new ResizeObserver(() => chart!.resize());
+            ro.observe(el);
+        }
+
+        const pd = currentPeriodDescription;
+        const gd = currentGraphDescription;
+        const values = consolidatedValues;
+
+        const formatX = d3.timeFormat(pd.tickFormatString());
+        const xLabels = values.map(v => formatX(pd.normalize(v.timestamp)));
+
+        const textColor = getChartTextColor();
+
+        const option: any = {
+            textStyle: { color: textColor },
+            backgroundColor: "transparent",
+            grid: { top: 10, right: 30, bottom: 25, left: 55 },
+            tooltip: {
+                trigger: "axis",
+                formatter(params: any) {
+                    if (!params.length) return "";
+                    const idx = params[0].dataIndex;
+                    if (idx < 0 || idx >= values.length) return "";
+                    const d = values[idx];
+                    const ts = d.timestamp;
+                    const dateStr = d3.timeFormat(pd.timeFormatString())(ts);
+                    const fmt = (v: number) => `${d3.format(gd.tooltipValueFormat)(v)} ${gd.displayableUnit}`;
+
+                    const rows = [
+                        { caption: "Van net", value: d.gridSource },
+                        { caption: "Van panelen", value: d.solarSelfUse },
+                        { caption: "Naar net", value: -d.backDelivery }
+                    ]
+                        .filter(r => r.caption === "Van net" || Math.abs(r.value) > 0.01)
+                        .map(r => `<tr><td style="padding:0 8px">${r.caption}</td><td style="text-align:right">${fmt(r.value)}</td></tr>`)
+                        .join("");
+
+                    return `<b>${dateStr}</b><table style="border-collapse:collapse"><tbody>${rows}</tbody></table>`;
+                }
+            },
+            xAxis: {
+                type: "category",
+                data: xLabels,
+                axisLabel: { color: textColor, interval: "auto" },
+                axisLine: { lineStyle: { color: textColor } }
+            },
+            yAxis: {
+                type: "value",
+                axisLabel: { color: textColor }
+            },
+            series: [
+                {
+                    // Back-delivery: negative bars going below zero
+                    type: "bar",
+                    name: "Naar net",
+                    data: values.map(v => v.backDelivery),
+                    itemStyle: { color: stroomBackDeliveryColor },
+                    barGap: "-100%",
+                    barMaxWidth: 20
+                },
+                {
+                    // Grid consumption: positive bars, part of stacked group
+                    type: "bar",
+                    name: "Van net",
+                    data: values.map(v => v.gridSource),
+                    itemStyle: { color: stroomUsageGraphColor },
+                    stack: "positive",
+                    barGap: "-100%",
+                    barMaxWidth: 20
+                },
+                {
+                    // Solar self-use: stacked on top of grid consumption
+                    type: "bar",
+                    name: "Van panelen",
+                    data: values.map(v => v.solarSelfUse),
+                    itemStyle: { color: stroomGenerationColor },
+                    stack: "positive",
+                    barGap: "-100%",
+                    barMaxWidth: 20
+                }
+            ]
+        };
+
+        chart.off("click");
+        chart.on("click", (params: any) => {
+            if (params.dataIndex >= 0 && params.dataIndex < values.length) {
+                onValueClick(pd.atDate(values[params.dataIndex].timestamp));
+            }
+        });
+
+        chart.setOption(option, true);
     };
-
-    const { scaleX, scaleXForInversion, scaleY } = initScales();
-
-    const calculateBarXPosition = (date: Date, periodDescription: PeriodDescription) => {
-        const pos = scaleX(periodDescription.normalize(date));
-
-        return pos ? pos : 0;
-    };
-
-    function drawBars(
-        selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-        data: { periodDescription: PeriodDescription, values: PowerSourcesAndBackDelivery[] },
-        field: Exclude<keyof PowerSourcesAndBackDelivery, "timestamp">,
-        color: string,
-        onTopOf?: Exclude<keyof PowerSourcesAndBackDelivery, "timestamp">
-    ) {
-        selection
-            .select(`g.values-${field}`)
-            .selectAll("rect")
-            .data(data.values)
-            .join("rect")
-            .on("click", (_event: any, d) => {
-                const clickedPeriod = data.periodDescription.atDate(d.timestamp);
-                store.onValueClick(clickedPeriod);
-            })
-            .transition()
-            .duration(firstDrawCall ? 0 : 200)
-            .attr("x", (el) => {
-                return calculateBarXPosition(el.timestamp, data.periodDescription);
-            })
-            .attr("y", (el) =>
-                onTopOf ? scaleY(el[onTopOf]) - (scaleY(0) - scaleY(el[field])) : scaleY(Math.max(0, el[field]))
-            )
-            .attr("height", (el) => Math.abs(scaleY(el[field]) - scaleY(0)))
-            .attr("width", scaleX.bandwidth())
-            .attr("fill", color)
-            .attr("data-value", (el) => el[field])
-            .attr("data-pos", onTopOf ?? "")
-            .attr("index", (_d: any, i: number) => i);
-    }
-
-    function buildTooltip(event: any) {
-        if (store.data === "no_data") {
-            return "";
-        }
-
-        const unit = store.data.graphDescription.displayableUnit;
-        const bisect = d3.bisector((d: PowerSourcesAndBackDelivery) => d.timestamp).right;
-
-        const pointerX = d3.pointer(event)[0];
-        const pointerDate = scaleXForInversion.invert(pointerX);
-
-        const data = store.data.values;
-
-        const closestIndex = bisect(data, pointerDate, 1) - 1;
-
-        const d = data[closestIndex];
-
-        const dateString = d3.timeFormat(store.data.periodDescription.timeFormatString())(d.timestamp);
-
-        const rows = [
-            { caption: "Van net", value: d.gridSource },
-            { caption: "Van panelen", value: d.solarSource },
-            { caption: "Naar net", value: -d.backDelivery }
-        ]
-            .filter((r) => r.caption === "Van net" || Math.abs(r.value) > 0.01)
-            .map(
-                ({ caption, value }) =>
-                    `<tr><td class="category">${caption}</td><td class="tableValue">${d3.format(".2f")(
-                        value
-                    )} ${unit}</td></tr>`
-            );
-
-        const contents = `<h3 class="title">${dateString}</h3>
-                            <table class="usageAndGenerationTooltip">
-                            <tbody>
-                                ${rows.join("")}
-                            </tbody>
-                            </table>
-                        `;
-
-        return contents;
-    }
-
-    function drawTooltipLine(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, event: any) {
-        if (store.data === "no_data") {
-            return;
-        }
-
-        const tooltipLineSelector = selection.select(".tooltipLine");
-
-        const data = store.data.values;
-        const closestIndex = getClosestIndex(event, scaleXForInversion, data);
-
-        const x = scaleX(store.data.periodDescription.normalize(closestIndex.timestamp))!;
-
-        tooltipLineSelector
-            .selectAll("line")
-            .data([x])
-            .join("line")
-            .attr("x1", (x) => x + scaleX.bandwidth() / 2)
-            .attr("x2", (x) => x + scaleX.bandwidth() / 2)
-            .attr("y1", padding.top)
-            .attr("y2", height - padding.bottom - xAxisHeight)
-            .attr("stroke", darkGrey)
-            .attr("stroke-width", 1);
-    }
-
-    function registerEventHandlers(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-        selection.on("mouseover", null);
-        selection.on("mouseout", null);
-        selection.on("mousemove", null);
-
-        selection.on("mouseover", () => {
-            selection.select(".tooltipLine").style("display", "block");
-        });
-
-        selection.on("mouseout", () => {
-            hideTooltip();
-            selection.select(".tooltipLine").style("display", "none");
-        });
-
-        selection.on("mousemove", (event) => {
-            showTooltip(event, () => buildTooltip(event));
-
-            drawTooltipLine(selection, event);
-        });
-    }
 
     const api: UsageAndGenerationBarChartApi = {
-        data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: Data) {
-            store.data = { periodDescription, graphDescription, values: splitSolarSourceData(groupValuesByDate(data)) };
-
+        data(periodDescription, graphDescription, data) {
+            currentPeriodDescription = periodDescription;
+            currentGraphDescription = graphDescription;
+            consolidatedValues = consolidateData(data);
             return api;
         },
 
-        onClick: (handler: (periodDescription: PeriodDescription) => void) => {
-            store.onValueClick = handler;
-
+        onClick(handler) {
+            onValueClick = handler;
             return api;
         },
 
-        clearCanvas: (value: boolean) => {
-            store.clearCanvas = value;
-
+        clearCanvas(value) {
+            shouldClearCanvas = value;
             return api;
         },
 
-        call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-            if (store.data === "no_data") {
-                throw new Error("Not initialized");
-            }
-
-            if (store.clearCanvas) {
-                firstDrawCall = true;
-                selection.selectAll("*").remove();
-            }
-
-            d3.select("#tooltip").style("display", "none");
-
-            addSvgChildTags(selection);
-
-            registerEventHandlers(selection);
-            updateScales(selection, firstDrawCall, scaleX, scaleXForInversion, scaleY, store);
-
-            drawBars(selection, store.data, "solarSource", stroomGenerationColor, "gridSource");
-            drawBars(selection, store.data, "gridSource", stroomUsageGraphColor);
-            drawBars(selection, store.data, "backDelivery", stroomBackDeliveryColor);
-
-            firstDrawCall = false;
-        }
+        call
     };
 
     return api;
-}
-
-function addSvgChildTags(selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) {
-    [
-        "tooltipLine",
-        "gridLines",
-        "additionalInfo",
-        "values-solarSource",
-        "values-backDelivery",
-        "values-gridSource",
-        "xAxis axis",
-        "yAxis axis"
-    ].forEach((name) => {
-        if (!selection.select(`g.${name}`).node()) {
-            selection.append("g").attr("class", name);
-        }
-    });
-
-    selection.attr("viewBox", "0 0 480 240");
-}
-
-function groupValuesByDate(input: Data): ConsolidatedData[] {
-    const getDates = (input: ValueWithTimestamp[]) => input.map((el) => el.timestamp);
-    const dataFields: (keyof Data)[] = ["consumption", "generation", "backDelivery"];
-    const timestamps = d3.sort(d3.union(dataFields.flatMap((field) => getDates(input[field]))));
-
-    const result: ConsolidatedData[] = [];
-
-    for (const ts of timestamps) {
-        const row = {
-            consumption: input.consumption.find((el) => isEqual(el.timestamp, ts))?.value ?? 0,
-            generation: input.generation.find((el) => isEqual(el.timestamp, ts))?.value ?? 0,
-            backDelivery: input.backDelivery.find((el) => isEqual(el.timestamp, ts))?.value ?? 0,
-            timestamp: ts
-        };
-        result.push(row);
-    }
-
-    return result;
-}
-
-function splitSolarSourceData(input: ConsolidatedData[]): PowerSourcesAndBackDelivery[] {
-    const result: PowerSourcesAndBackDelivery[] = [];
-
-    for (const entry of input) {
-        const splitRow = {
-            gridSource: entry.consumption,
-            solarSource: entry.generation + entry.backDelivery,
-            backDelivery: entry.backDelivery,
-            timestamp: entry.timestamp
-        };
-        result.push(splitRow);
-    }
-
-    return result;
 }

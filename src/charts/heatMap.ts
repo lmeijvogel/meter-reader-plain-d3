@@ -1,19 +1,21 @@
 import * as d3 from "d3";
-import { addMonths, format, getDate, getHours, getMonth, startOfDay, startOfMonth, startOfTomorrow, subDays, subMonths } from "date-fns";
+import * as echarts from "echarts";
+import {
+    addMonths,
+    format,
+    getDate,
+    getHours,
+    getMonth,
+    startOfDay,
+    startOfMonth,
+    startOfTomorrow,
+    subDays,
+    subMonths
+} from "date-fns";
 import { monthNames } from "../lib/monthNames";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
-import { hideTooltip, showTooltip } from "../tooltip";
 
 type GraphType = "hourly_30_days" | "hourly_year" | "year";
-
-const xAxisWidth = 40;
-const yAxisHeight = 20;
-
-const legendWidth = 100;
-const width = 480;
-const height = 240;
-
-const padding = 10;
 
 type ColorStop = {
     value: number;
@@ -24,115 +26,57 @@ type Store = {
     colors: ColorStop[];
     backgroundColor?: string;
     data: ValueWithTimestamp[];
-    cellWidth: number;
-    cellHeight: number;
     unit: string;
     min: number;
-    mapX: (d: ValueWithTimestamp) => number;
-    mapY: (d: ValueWithTimestamp) => number;
-    scaleX: d3.ScaleTime<number, number, never>;
-    scaleY: d3.ScaleLinear<number, number, never>;
     tickFormat: (domainValue: Date) => string;
     onClick: (date: Date) => void;
 };
 
 export function formatMonthNames(domainValue: d3.NumberValue): string {
-    return monthNames[getMonth(domainValue as any) + 1]; // Months are 0-based
+    return monthNames[getMonth(domainValue as any) + 1];
+}
+
+function getChartTextColor(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
 }
 
 export function heatMap(graphType: GraphType) {
     const store: Store = {
         colors: [
-            {
-                value: 0,
-                color: "white"
-            },
-            {
-                value: 50,
-                color: "grey"
-            },
-            {
-                value: 100,
-                color: "black"
-            }
+            { value: 0, color: "white" },
+            { value: 50, color: "grey" },
+            { value: 100, color: "black" }
         ],
         data: [],
-        cellWidth: 10,
-        cellHeight: 10,
         unit: "",
-        scaleX: d3.scaleTime(),
-        scaleY: d3.scaleLinear(),
         min: 0,
-        mapX: () => 0,
-        mapY: () => 0,
-        onClick: () => {
-            /* no-op */
-        },
+        onClick: () => { /* no-op */ },
         tickFormat: (value) => value.toString()
     };
 
     const api = {
         data: (data: ValueWithTimestamp[]) => {
             store.data = data;
-
-            const numberOfColumns = graphType === "hourly_30_days" ? 30 : (graphType === "hourly_year") ? 365 : 13;
-            const numberOfRows = graphType === "year" ? 31 : 24;
-
-            // Some funky bookkeeping here, but we want the last label of the yearly graph to show
-            // the start of next month, so a column for, e.g., April starts at April and ends at May.
-            const thisYear = addMonths(startOfMonth(new Date()), 1);
-            const lastYear = subMonths(thisYear, 13);
-
-            const xDomain =
-                graphType === "hourly_30_days" ? [startOfDay(subDays(new Date(), 30)), startOfTomorrow()] :
-                    graphType === "hourly_year" ? [startOfDay(subDays(new Date(), 365)), new Date()] :
-                        [lastYear, thisYear];
-
-            const yDomain = graphType === "year" ? [31, 0] : [24, 0];
-
-            if (graphType === "year") {
-                store.mapX = (d) => store.scaleX(startOfMonth(d.timestamp));
-                store.mapY = (d) => store.scaleY(getDate(d.timestamp)) ?? 0;
-            } else {
-                store.mapX = (d) => store.scaleX(startOfDay(d.timestamp));
-                store.mapY = (d) => store.scaleY(getHours(d.timestamp)) - store.cellHeight ?? 0;
-            }
-
-            store.scaleX.domain(xDomain);
-            store.scaleY.domain(yDomain);
-
-            const graphBounds = calculateGraphBounds();
-
-            store.cellWidth = graphBounds.width / numberOfColumns;
-            store.cellHeight = graphBounds.height / numberOfRows;
-
-            store.scaleX.range([graphBounds.left, graphBounds.right]);
-            store.scaleY.range([graphBounds.top, graphBounds.bottom]);
-
             return api;
         },
 
         colors: (colors: ColorStop[]) => {
             store.colors = colors;
-
             return api;
         },
 
         backgroundColor(color: string) {
             store.backgroundColor = color;
-
             return api;
         },
 
         unit: (unit: string) => {
             store.unit = unit;
-
             return api;
         },
 
         min: (min: number) => {
             store.min = min;
-
             return api;
         },
 
@@ -143,168 +87,164 @@ export function heatMap(graphType: GraphType) {
 
         onClick: (handler: (date: Date) => void) => {
             store.onClick = handler;
-
             return api;
         },
 
         draw: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
-            selection.attr("viewBox", "0 0 480 240");
+            const el = (selection as any).node() as HTMLElement;
+            if (!el || store.data.length === 0) return api;
 
-            ["background", "values", "xAxis axis", "yAxis axis", "legend"].forEach((className) =>
-                addContainerIfNotExists(selection, className)
-            );
+            let chart = echarts.getInstanceByDom(el);
+            if (chart) chart.dispose();
+            chart = echarts.init(el, store.backgroundColor === "black" ? "dark" : undefined);
+            const ro = new ResizeObserver(() => chart!.resize());
+            ro.observe(el);
 
-            if (store.backgroundColor) {
-                drawBackground(selection, store.backgroundColor);
+            const textColor = store.backgroundColor === "black" ? "#ccc" : getChartTextColor();
+            const maxValue = d3.max(store.data, d => d.value) ?? 1;
+            const minValue = store.min;
+
+            // Build color scale using D3 for accurate percentile mapping
+            const interpolate = d3.interpolate(minValue, maxValue);
+            const colorDomain = store.colors.map(s => interpolate(s.value / 100));
+            const colorRange = store.colors.map(s => s.color);
+            const colorScale = d3.scaleLinear<string>()
+                .domain(colorDomain)
+                .range(colorRange as any[])
+                .clamp(true);
+
+            // Build visualMap pieces for legend
+            const f = d3.format(",.2r");
+            const pieces = store.colors.map((stop, i) => {
+                const absValue = minValue + (stop.value / 100) * (maxValue - minValue);
+                const label = `${f(absValue)} ${store.unit}`;
+                if (i === store.colors.length - 1) {
+                    return { gte: absValue, color: stop.color, label };
+                }
+                const nextStop = store.colors[i + 1];
+                const nextAbsValue = minValue + (nextStop.value / 100) * (maxValue - minValue);
+                return { gte: absValue, lt: nextAbsValue, color: stop.color, label };
+            });
+
+            // Build axis arrays and data
+            let xCategories: string[];
+            let yCategories: string[];
+            let seriesData: any[];
+
+            if (graphType === "year") {
+                // X: months, Y: days 1-31
+                const thisYear = addMonths(startOfMonth(new Date()), 1);
+                const lastYear = subMonths(thisYear, 13);
+                const months: Date[] = [];
+                let cur = lastYear;
+                while (cur < thisYear) {
+                    months.push(cur);
+                    cur = addMonths(cur, 1);
+                }
+                xCategories = months.map(m => store.tickFormat(m));
+                yCategories = Array.from({ length: 31 }, (_, i) => String(i + 1));
+
+                seriesData = store.data.map(d => {
+                    const monthStart = startOfMonth(d.timestamp);
+                    const xIdx = months.findIndex(m => m.getTime() === monthStart.getTime());
+                    const yIdx = getDate(d.timestamp) - 1;
+                    if (xIdx < 0) return null;
+                    return {
+                        value: [xIdx, yIdx, d.value, d.timestamp.getTime()],
+                        itemStyle: { color: colorScale(d.value) }
+                    };
+                }).filter(Boolean);
+
+            } else {
+                // Hourly: X = days, Y = hours 0-23
+                const daysCount = graphType === "hourly_30_days" ? 30 : 365;
+                const startDate = startOfDay(subDays(new Date(), daysCount));
+                const endDate = startOfTomorrow();
+
+                const days: Date[] = [];
+                let day = startDate;
+                while (day < endDate) {
+                    days.push(day);
+                    day = new Date(day.getTime() + 86400000);
+                }
+
+                xCategories = days.map(d => store.tickFormat(d));
+                yCategories = Array.from({ length: 24 }, (_, i) => String(i));
+
+                seriesData = store.data.map(d => {
+                    const dayStart = startOfDay(d.timestamp);
+                    const xIdx = days.findIndex(day => day.getTime() === dayStart.getTime());
+                    const yIdx = getHours(d.timestamp);
+                    if (xIdx < 0) return null;
+                    return {
+                        value: [xIdx, yIdx, d.value, d.timestamp.getTime()],
+                        itemStyle: { color: colorScale(d.value) }
+                    };
+                }).filter(Boolean);
             }
 
-            drawData(selection, store);
+            const option: any = {
+                textStyle: { color: textColor },
+                backgroundColor: store.backgroundColor ?? "transparent",
+                grid: { top: 10, right: 115, bottom: 25, left: 40 },
+                tooltip: {
+                    trigger: "item",
+                    formatter(params: any) {
+                        const [, , value, tsMs] = params.data.value;
+                        const ts = new Date(tsMs);
+                        const dateStr = format(ts, "eee yyyy-MM-dd HH:00");
+                        return `${dateStr}<br/>Waarde: <b>${d3.format(".2f")(value)}</b> ${store.unit}`;
+                    }
+                },
+                xAxis: {
+                    type: "category",
+                    data: xCategories,
+                    splitArea: { show: false },
+                    axisLabel: {
+                        color: textColor,
+                        interval: graphType === "hourly_year" ? Math.floor(xCategories.length / 12) : "auto"
+                    },
+                    axisLine: { lineStyle: { color: textColor } }
+                },
+                yAxis: {
+                    type: "category",
+                    data: yCategories,
+                    inverse: graphType === "year" ? false : false,
+                    splitArea: { show: false },
+                    axisLabel: { color: textColor }
+                },
+                visualMap: {
+                    type: "piecewise",
+                    pieces,
+                    orient: "vertical",
+                    right: 5,
+                    top: "middle",
+                    textStyle: { color: textColor },
+                    itemWidth: 12,
+                    itemHeight: 12,
+                    formatter: (val: number) => `${f(val)} ${store.unit}`
+                },
+                series: [{
+                    type: "heatmap",
+                    data: seriesData,
+                    label: { show: false },
+                    emphasis: { itemStyle: { shadowBlur: 5, shadowColor: "rgba(0,0,0,0.5)" } }
+                }]
+            };
 
-            drawAxes(selection, store);
+            chart.off("click");
+            chart.on("click", (params: any) => {
+                if (params.data && params.data.value) {
+                    const tsMs = params.data.value[3];
+                    store.onClick(new Date(tsMs));
+                }
+            });
 
-            drawLegend(selection, store);
+            chart.setOption(option);
 
             return api;
         }
     };
 
     return api;
-}
-
-function buildColorScale(store: Store) {
-    const values = store.data.map((v) => v.value);
-
-    const min = store.min;
-    const max = d3.max(values)!;
-
-    const interpolate = d3.interpolate(min, max);
-    const domain = store.colors.map((stop) => interpolate(stop.value / 100));
-    const range = store.colors.map((color) => color.color);
-
-    return d3
-        .scaleLinear()
-        .domain(domain)
-        .range(range as any[])
-        .clamp(true);
-}
-
-function drawData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
-    const colorScale = buildColorScale(store);
-
-    svg.select(".values")
-        .selectAll("rect")
-        .data(store.data)
-        .join("rect")
-        .attr("x", (d) => store.mapX(d))
-        .attr("y", (d) => store.mapY(d))
-        .attr("width", store.cellWidth)
-        .attr("height", store.cellHeight)
-        .attr("stroke", "none")
-        .attr("fill", (d) => colorScale(d.value ?? 0))
-        .on("mouseover", (event, d) => {
-            /* Sadly, it seems to be difficult to have a mouseover handler
-             * for the whole canvas, since it's not trivial to get the date
-             * from the current x,y-coordinates.
-             *
-             * For the other charts, it's easier since there's only one
-             * scale to go over, while here there are two.
-             */
-            showTooltip(event, () => {
-                const dateString = format(d.timestamp, "eee yyyy-MM-dd HH:00");
-
-                const contents = `${dateString}<br />Waarde: <b>${d3.format(".2f")(d.value)}</b> ${store.unit}`;
-
-                return contents;
-            });
-        })
-        .on("mouseout", hideTooltip)
-        .on("click", (_event, d) => {
-            store.onClick(d.timestamp);
-        });
-}
-
-function drawLegend(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
-    const { top, bottom } = calculateGraphBounds();
-
-    const graphCenter = bottom + (top - bottom / 2)
-
-    const labelBaseY = (i: number) => graphCenter + padding + ((i - store.colors.length / 2) * 20);
-
-    svg.select(".legend")
-        .selectAll("rect.color")
-        .data(store.colors)
-        .join("rect")
-        .classed("color", true)
-        .attr("x", width - padding - legendWidth)
-        .attr("y", (_d, i) => labelBaseY(i))
-        .attr("width", 10)
-        .attr("height", 10)
-        .attr("stroke", "black")
-        .attr("fill", d => d.color);
-
-    const f = d3.format(",.2r");
-    const max = d3.max(store.data, d => d.value) ?? 0;
-
-    svg.select(".legend")
-        .selectAll("text.value")
-        .data(store.colors)
-        .join("text")
-        .classed("value", true)
-        .attr("x", width - padding - legendWidth + 25)
-        .attr("y", (_d, i) => labelBaseY(i) + 12)
-        .text(d => `${f((d.value / 100) * max)} ${store.unit}`);
-
-}
-
-function drawBackground(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, color: string) {
-    const graphBounds = calculateGraphBounds();
-
-    svg.select(".background")
-        .append("rect")
-        .attr("x", graphBounds.left)
-        .attr("y", graphBounds.top)
-        .attr("width", graphBounds.width)
-        .attr("height", graphBounds.height)
-        .attr("fill", color)
-        .attr("stroke", "none");
-}
-
-function drawAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, store: Store) {
-    const xAxis = d3.axisBottom(store.scaleX).tickFormat(store.tickFormat as any);
-
-    const xAxisContainer = svg.select(".xAxis").attr("transform", `translate(0, ${store.scaleY(0)})`);
-
-    const yAxis = d3.axisLeft(store.scaleY);
-    const yAxisContainer = svg.select(".yAxis").attr("transform", `translate(${padding + xAxisWidth}, 0)`);
-
-    xAxisContainer.call(xAxis as any);
-    yAxisContainer.call(yAxis as any);
-}
-
-function addContainerIfNotExists(
-    selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-    className: string
-): void {
-    if (selection.filter(`.${className}`).empty()) {
-        const container = selection.append("g");
-        container.attr("class", className);
-    }
-}
-function calculateGraphBounds() {
-    const top = padding;
-    const bottom = height - 2 * padding - yAxisHeight;
-    const left = padding + xAxisWidth;
-    const right = width - legendWidth - 2 * padding;
-
-    const graphWidth = right - left;
-    const graphHeight = bottom - top;
-
-    return {
-        top,
-        bottom,
-        left,
-        right,
-        width: graphWidth,
-        height: graphHeight
-    };
 }
