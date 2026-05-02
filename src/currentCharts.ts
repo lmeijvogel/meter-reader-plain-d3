@@ -36,7 +36,7 @@ export class CurrentDataTab {
             { start: -1000, color: gaugeOkColor },
             { start: 0, color: gaugeMildColor },
             { start: 1000, color: gaugeBadColor },
-            { start: 2000, color: gaugeWorseColor }
+            { start: 2000, color: gaugeWorseColor },
         ]);
 
     private lastHourDescription = new LastHourDescription();
@@ -52,16 +52,10 @@ export class CurrentDataTab {
     constructor(
         private readonly onDataReceived: (values: { current: number; water: number }) => void,
         private readonly updateLocation: (newPath: string) => void
-    ) { }
+    ) {}
 
     initializePage(selector: string) {
-        createRowsWithCards(
-            [
-                ["recent_current", { id: "current_power_gauge", svg: true }],
-                ["recent_gas"]
-            ],
-            selector
-        );
+        createRowsWithCards([["recent_current", { id: "current_power_gauge", svg: true }], ["recent_gas"]], selector);
 
         window.addEventListener("visibilitychange", () => {
             const pageVisible = document.visibilityState === "visible";
@@ -139,28 +133,21 @@ export class CurrentDataTab {
         return {
             current: json.map((row: any) => ({
                 timestamp: new Date(Date.parse(row.timestamp)),
-                value: Number(row.power)
-            }))
+                value: Number(row.power),
+            })),
         };
     };
 
     // TODO: replace with real API fetch when backend is ready
     private retrieveGasUsage = async (): Promise<ValueWithTimestamp[]> => {
-        const now = new Date();
-        const snap = (minutesAgo: number): Date => {
-            const t = new Date(now.getTime() - minutesAgo * 60 * 1000);
-            t.setSeconds(0, 0);
-            t.setMinutes(Math.floor(t.getMinutes() / 10) * 10);
-            return t;
-        };
-        return [
-            { timestamp: snap(430), value: 0.052 },
-            { timestamp: snap(420), value: 0.081 },
-            { timestamp: snap(410), value: 0.043 },
-            { timestamp: snap(130), value: 0.031 },
-            { timestamp: snap(120), value: 0.067 },
-            { timestamp: snap(110), value: 0.058 },
-        ];
+        const response = await fetch("/api/gas/recent");
+        if (!response.ok) throw new Error(`Failed to fetch gas usage: ${response.status}`);
+        const json = await response.json();
+
+        return json.map((row: any) => ({
+            timestamp: new Date(Date.parse(row.timestamp)),
+            value: Number(row.power),
+        }));
     };
 
     private fetchGaugeData = async () => {
@@ -170,7 +157,7 @@ export class CurrentDataTab {
 
         return {
             current: Number(json["current"]),
-            water: Number(json["water"])
+            water: Number(json["water"]),
         };
     };
 
@@ -196,7 +183,7 @@ export class CurrentDataTab {
 
         const displayableValues = {
             current: newValues.current * 1000,
-            water: newValues.water
+            water: newValues.water,
         };
 
         this.updateGauge(displayableValues);
@@ -208,15 +195,18 @@ export class CurrentDataTab {
         const recentCurrentContainer = recentCurrentCard.select(".chart");
         setCardTitle(recentCurrentCard, "Stroomverbruik laatste uur");
 
-        this.recentCurrentGraph.setData(
-            this.lastHourDescription,
-            new CurrentPowerUsageGraphDescription(this.lastHourDescription),
-            [{
-                name: "current", values: fieldsKW.current, lineColor: black, fill: {
-                    positive: stroomUsageColorForCurrentGraph,
-                    negative: stroomGenerationColorForCurrentGraph
-                }
-            }])
+        this.recentCurrentGraph
+            .setData(this.lastHourDescription, new CurrentPowerUsageGraphDescription(this.lastHourDescription), [
+                {
+                    name: "current",
+                    values: fieldsKW.current,
+                    lineColor: black,
+                    fill: {
+                        positive: stroomUsageColorForCurrentGraph,
+                        negative: stroomGenerationColorForCurrentGraph,
+                    },
+                },
+            ])
             .animate(false);
 
         recentCurrentContainer.call(this.recentCurrentGraph.call);
