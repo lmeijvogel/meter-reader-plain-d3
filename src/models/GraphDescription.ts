@@ -167,6 +167,18 @@ export class CurrentWaterUsageGraphDescription extends GraphDescription {
     }
 }
 
+export class CurrentGasUsageGraphDescription extends GraphDescription {
+    readonly displayableUnit = "m³";
+
+    get maxY() {
+        return 0.2;
+    }
+
+    get tooltipValueFormat() {
+        return ".3f";
+    }
+}
+
 export class TemperatuurGraphDescription extends GraphDescription {
     readonly fieldName = "temperatuur";
 

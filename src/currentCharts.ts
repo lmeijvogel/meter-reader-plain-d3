@@ -9,19 +9,14 @@ import {
     gaugeMildColor,
     gaugeOkColor,
     gaugeVeryGoodColor,
-    gaugeWaterHalf,
-    gaugeWaterMin,
-    gaugeWaterQuart,
-    gaugeWaterThreeQuart,
     gaugeWorseColor,
+    gasGraphColor,
     stroomGenerationColorForCurrentGraph,
     stroomUsageColorForCurrentGraph,
-    waterGraphColor
 } from "./colors";
 import { mergeNewWithOldValues } from "./lib/mergeNewWithOldValues";
-import { responseRowToValueWithTimestamp } from "./lib/responseRowToValueWithTimestamp";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
-import { CurrentPowerUsageGraphDescription, CurrentWaterUsageGraphDescription } from "./models/GraphDescription";
+import { CurrentPowerUsageGraphDescription, CurrentGasUsageGraphDescription } from "./models/GraphDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { setCardTitle } from "./vizCard";
 import { HourDescription } from "./models/periodDescriptions/HourDescription";
@@ -29,7 +24,7 @@ import { LastHourDescription } from "./models/periodDescriptions/LastHourDescrip
 import { barChart } from "./charts/barChart";
 
 type CurrentFields = { current: ValueWithTimestamp[] };
-type WaterFields = { water: ValueWithTimestamp[] };
+type GasFields = { gas: ValueWithTimestamp[] };
 
 export class CurrentDataTab {
     private readonly powerUsageGauge = gauge()
@@ -44,26 +39,15 @@ export class CurrentDataTab {
             { start: 2000, color: gaugeWorseColor }
         ]);
 
-    private readonly waterUsageGauge = gauge()
-        .unit("L/min")
-        .domain([0, 40])
-        .colors([
-            { start: 0, color: gaugeWaterMin },
-            { start: 10, color: gaugeWaterQuart },
-            { start: 20, color: gaugeWaterHalf },
-            { start: 30, color: gaugeWaterThreeQuart }
-        ]);
-
     private lastHourDescription = new LastHourDescription();
     private readonly recentCurrentGraph = lineChart().minMaxCalculation("quantile");
-
-    private readonly recentWaterGraph = barChart().color(waterGraphColor);
+    private readonly recentGasGraph = barChart().color(gasGraphColor);
 
     private pageInvisibleTimestamp: Date | undefined;
 
     private gaugesTimer: NodeJS.Timer | undefined;
     private recentPowerGraphTimer: NodeJS.Timer | undefined;
-    private recentWaterGraphTimer: NodeJS.Timer | undefined;
+    private recentGasGraphTimer: NodeJS.Timer | undefined;
 
     constructor(
         private readonly onDataReceived: (values: { current: number; water: number }) => void,
@@ -74,7 +58,7 @@ export class CurrentDataTab {
         createRowsWithCards(
             [
                 ["recent_current", { id: "current_power_gauge", svg: true }],
-                ["recent_water", { id: "current_water_gauge", svg: true }]
+                ["recent_gas"]
             ],
             selector
         );
@@ -104,28 +88,23 @@ export class CurrentDataTab {
 
         this.updateLocation("/now");
 
-        /* This duplicates the check at the top, but we don't want the intervals
-         * to be set if the page is loaded in the background.
-         */
         if (!pageVisible) {
             return;
         }
 
         if (this.pageInvisibleTimestamp) {
             const minutesSinceLastLoad = differenceInMinutes(new Date(), this.pageInvisibleTimestamp);
-
             await this.updatePowerUsageGraph(minutesSinceLastLoad + 1);
         } else {
-            /* This is the first page load, so load everything */
             await this.updatePowerUsageGraph(60);
-            await this.updateWaterUsageGraph(60);
         }
+        await this.updateGasUsageGraph();
 
         this.pageInvisibleTimestamp = undefined;
 
         if (!this.recentPowerGraphTimer) {
             this.recentPowerGraphTimer = setInterval(this.updatePowerUsageGraph, 5000);
-            this.recentWaterGraphTimer = setInterval(this.updateWaterUsageGraph, 5000);
+            this.recentGasGraphTimer = setInterval(this.updateGasUsageGraph, 60000);
         }
     }
 
@@ -146,8 +125,8 @@ export class CurrentDataTab {
         clearInterval(this.recentPowerGraphTimer);
         this.recentPowerGraphTimer = undefined;
 
-        clearInterval(this.recentWaterGraphTimer);
-        this.recentWaterGraphTimer = undefined;
+        clearInterval(this.recentGasGraphTimer);
+        this.recentGasGraphTimer = undefined;
 
         this.pageInvisibleTimestamp = new Date();
     }
@@ -165,19 +144,25 @@ export class CurrentDataTab {
         };
     };
 
-    private retrieveWaterUsage = async (minutes = 10) => {
-        const response = await fetch(`/api/water/recent?minutes=${minutes}`);
-        if (!response.ok) throw new Error(`Failed to fetch water usage: ${response.status}`);
-        const json = await response.json();
-
-        return {
-            water: json.map(responseRowToValueWithTimestamp)
+    // TODO: replace with real API fetch when backend is ready
+    private retrieveGasUsage = async (): Promise<ValueWithTimestamp[]> => {
+        const now = new Date();
+        const snap = (minutesAgo: number): Date => {
+            const t = new Date(now.getTime() - minutesAgo * 60 * 1000);
+            t.setSeconds(0, 0);
+            t.setMinutes(Math.floor(t.getMinutes() / 10) * 10);
+            return t;
         };
+        return [
+            { timestamp: snap(430), value: 0.052 },
+            { timestamp: snap(420), value: 0.081 },
+            { timestamp: snap(410), value: 0.043 },
+            { timestamp: snap(130), value: 0.031 },
+            { timestamp: snap(120), value: 0.067 },
+            { timestamp: snap(110), value: 0.058 },
+        ];
     };
 
-    /**
-     * @returns the current in kW and water usage in L/min
-     */
     private fetchGaugeData = async () => {
         const response = await fetch("/api/usage/last");
         if (!response.ok) throw new Error(`Failed to fetch gauge data: ${response.status}`);
@@ -189,13 +174,8 @@ export class CurrentDataTab {
         };
     };
 
-    private powerUsage: CurrentFields = {
-        current: []
-    };
-
-    private waterUsage: WaterFields = {
-        water: []
-    };
+    private powerUsage: CurrentFields = { current: [] };
+    private gasUsage: GasFields = { gas: [] };
 
     private updatePowerUsageGraph = async (minutes = 1) => {
         const newValues = await this.retrievePowerUsage(minutes);
@@ -206,12 +186,9 @@ export class CurrentDataTab {
         this.drawPowerUsage(this.powerUsage);
     };
 
-    private updateWaterUsageGraph = async (minutes = 60) => {
-        const newValues = await this.retrieveWaterUsage(minutes);
-
-        this.waterUsage.water = newValues.water;
-
-        this.drawWaterUsage(this.waterUsage);
+    private updateGasUsageGraph = async () => {
+        this.gasUsage.gas = await this.retrieveGasUsage();
+        this.drawGasUsage(this.gasUsage);
     };
 
     private updateGaugeData = async () => {
@@ -231,13 +208,11 @@ export class CurrentDataTab {
         const recentCurrentContainer = recentCurrentCard.select(".chart");
         setCardTitle(recentCurrentCard, "Stroomverbruik laatste uur");
 
-        const currentInW = fieldsKW;
-
         this.recentCurrentGraph.setData(
             this.lastHourDescription,
             new CurrentPowerUsageGraphDescription(this.lastHourDescription),
             [{
-                name: "current", values: currentInW.current, lineColor: black, fill: {
+                name: "current", values: fieldsKW.current, lineColor: black, fill: {
                     positive: stroomUsageColorForCurrentGraph,
                     negative: stroomGenerationColorForCurrentGraph
                 }
@@ -247,27 +222,34 @@ export class CurrentDataTab {
         recentCurrentContainer.call(this.recentCurrentGraph.call);
     }
 
-    private drawWaterUsage(water: WaterFields) {
-        const recentWaterCard = d3.select("#recent_water");
-        const recentWaterContainer = recentWaterCard.select(".chart");
-        setCardTitle(recentWaterCard, "Watergebruik");
+    private drawGasUsage(gas: GasFields) {
+        const recentGasCard = d3.select("#recent_gas");
+        const recentGasContainer = recentGasCard.select(".chart");
+        setCardTitle(recentGasCard, "Gasverbruik");
 
-        const waterData = water.water.filter((el) => el.value > 0);
+        const sorted = [...gas.gas].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        if (sorted.length === 0) return;
 
-        const lastElement = water.water.at(-1);
-        if (!lastElement) {
-            return;
+        // Fill zeros for interior gaps between readings, but not after the last one
+        const padded: ValueWithTimestamp[] = [];
+        for (let i = 0; i < sorted.length; i++) {
+            if (i > 0) {
+                let t = addMinutes(sorted[i - 1].timestamp, 10);
+                while (t < sorted[i].timestamp) {
+                    padded.push({ timestamp: t, value: 0 });
+                    t = addMinutes(t, 10);
+                }
+            }
+            padded.push(sorted[i]);
         }
 
-        const graphDescription = new CurrentWaterUsageGraphDescription(this.lastHourDescription);
-
-        // Add 1 minute because the scale is non-inclusive at the end,
-        // causing the last measurement to fall off.
+        const lastElement = padded.at(-1)!;
         const endOfPeriod = addMinutes(lastElement.timestamp, 1);
 
-        this.recentWaterGraph.data(new HourDescription({ endOfPeriod }), graphDescription, waterData);
-
-        recentWaterContainer.call(this.recentWaterGraph.call);
+        const periodDescription = new HourDescription({ endOfPeriod });
+        const graphDescription = new CurrentGasUsageGraphDescription(periodDescription);
+        this.recentGasGraph.data(periodDescription, graphDescription, padded);
+        recentGasContainer.call(this.recentGasGraph.call);
     }
 
     private updateGauge(value: { current: number; water: number }) {
@@ -278,13 +260,5 @@ export class CurrentDataTab {
         this.powerUsageGauge.value(value.current);
 
         currentGaugeContainer.call(this.powerUsageGauge.call);
-
-        const waterGaugeCard = d3.select("#current_water_gauge");
-        const waterGaugeContainer = waterGaugeCard.select(".chart");
-        setCardTitle(waterGaugeCard, "Huidig watergebruik");
-
-        this.waterUsageGauge.value(value.water);
-
-        waterGaugeContainer.call(this.waterUsageGauge.call);
     }
 }
