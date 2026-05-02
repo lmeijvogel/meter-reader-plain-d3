@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import * as echarts from "echarts";
+import { graphic } from "echarts";
 import { addDays } from "date-fns";
 
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
@@ -8,6 +9,7 @@ import { PeriodDescription } from "../models/periodDescriptions/PeriodDescriptio
 import { HouseLocation } from "../models/HouseLocation";
 import { getTimes } from "suncalc";
 import { getMaximumIncidentSunlight } from "../lib/calculatePotentialIncidentSunlight";
+import { getChartTextColor, resizeObservers } from "./chartHelpers";
 
 export type Series = {
     name: string;
@@ -40,10 +42,6 @@ type Store = {
     clearCanvas: boolean;
     renderOutsideLightShading: boolean;
 };
-
-function getChartTextColor(): string {
-    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
-}
 
 function computeDomainY(store: Store): [number, number] {
     if (store.seriesCollection === "not_set") return [0, 1];
@@ -101,8 +99,11 @@ export function lineChart(): LineChartApi {
         let chart = echarts.getInstanceByDom(el);
         if (!chart) {
             chart = echarts.init(el);
-            const ro = new ResizeObserver(() => chart!.resize());
-            ro.observe(el);
+            if (!resizeObservers.has(el)) {
+                const ro = new ResizeObserver(() => echarts.getInstanceByDom(el)?.resize());
+                ro.observe(el);
+                resizeObservers.set(el, ro);
+            }
         }
 
         const { periodDescription, graphDescription, series } = store.seriesCollection;
@@ -122,7 +123,7 @@ export function lineChart(): LineChartApi {
             } else {
                 zeroOffset = yMax / range;
             }
-            return new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+            return new graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: fill.positive },
                 { offset: zeroOffset, color: fill.positive },
                 { offset: zeroOffset, color: fill.negative },

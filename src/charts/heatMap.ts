@@ -14,6 +14,7 @@ import {
 } from "date-fns";
 import { monthNames } from "../lib/monthNames";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
+import { getChartTextColor, resizeObservers } from "./chartHelpers";
 
 type GraphType = "hourly_30_days" | "hourly_year" | "year";
 
@@ -34,10 +35,6 @@ type Store = {
 
 export function formatMonthNames(domainValue: d3.NumberValue): string {
     return monthNames[getMonth(domainValue as any) + 1];
-}
-
-function getChartTextColor(): string {
-    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
 }
 
 export function heatMap(graphType: GraphType) {
@@ -95,10 +92,14 @@ export function heatMap(graphType: GraphType) {
             if (!el || store.data.length === 0) return api;
 
             let chart = echarts.getInstanceByDom(el);
-            if (chart) chart.dispose();
-            chart = echarts.init(el, store.backgroundColor === "black" ? "dark" : undefined);
-            const ro = new ResizeObserver(() => chart!.resize());
-            ro.observe(el);
+            if (!chart) {
+                chart = echarts.init(el, store.backgroundColor === "black" ? "dark" : undefined);
+                if (!resizeObservers.has(el)) {
+                    const ro = new ResizeObserver(() => echarts.getInstanceByDom(el)?.resize());
+                    ro.observe(el);
+                    resizeObservers.set(el, ro);
+                }
+            }
 
             const textColor = store.backgroundColor === "black" ? "#ccc" : getChartTextColor();
             const maxValue = d3.max(store.data, d => d.value) ?? 1;
@@ -144,9 +145,9 @@ export function heatMap(graphType: GraphType) {
                 xCategories = months.map(m => store.tickFormat(m));
                 yCategories = Array.from({ length: 31 }, (_, i) => String(i + 1));
 
+                const monthIndexMap = new Map(months.map((m, i) => [m.getTime(), i]));
                 seriesData = store.data.map(d => {
-                    const monthStart = startOfMonth(d.timestamp);
-                    const xIdx = months.findIndex(m => m.getTime() === monthStart.getTime());
+                    const xIdx = monthIndexMap.get(startOfMonth(d.timestamp).getTime()) ?? -1;
                     const yIdx = getDate(d.timestamp) - 1;
                     if (xIdx < 0) return null;
                     return {
@@ -171,9 +172,9 @@ export function heatMap(graphType: GraphType) {
                 xCategories = days.map(d => store.tickFormat(d));
                 yCategories = Array.from({ length: 24 }, (_, i) => String(i));
 
+                const dayIndexMap = new Map(days.map((d, i) => [d.getTime(), i]));
                 seriesData = store.data.map(d => {
-                    const dayStart = startOfDay(d.timestamp);
-                    const xIdx = days.findIndex(day => day.getTime() === dayStart.getTime());
+                    const xIdx = dayIndexMap.get(startOfDay(d.timestamp).getTime()) ?? -1;
                     const yIdx = getHours(d.timestamp);
                     if (xIdx < 0) return null;
                     return {

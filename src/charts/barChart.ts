@@ -4,6 +4,10 @@ import { GraphDescription } from "../models/GraphDescription";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
 import { grey } from "../colors";
+import { getChartTextColor, resizeObservers } from "./chartHelpers";
+
+const TEMP_AXIS_MIN_C = -5;
+const TEMP_AXIS_MAX_C = 40;
 
 export type BarChartApi = {
     data(
@@ -18,10 +22,6 @@ export type BarChartApi = {
     clearCanvas: (value: boolean) => BarChartApi;
     call: (selection: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => void;
 };
-
-function getChartTextColor(): string {
-    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
-}
 
 export function barChart(): BarChartApi {
     let currentPeriodDescription: PeriodDescription | null = null;
@@ -48,8 +48,11 @@ export function barChart(): BarChartApi {
         let chart = echarts.getInstanceByDom(el);
         if (!chart) {
             chart = echarts.init(el);
-            const ro = new ResizeObserver(() => chart!.resize());
-            ro.observe(el);
+            if (!resizeObservers.has(el)) {
+                const ro = new ResizeObserver(() => echarts.getInstanceByDom(el)?.resize());
+                ro.observe(el);
+                resizeObservers.set(el, ro);
+            }
         }
 
         const pd = currentPeriodDescription;
@@ -75,8 +78,8 @@ export function barChart(): BarChartApi {
         if (hasLine) {
             yAxes.push({
                 type: "value",
-                min: -5,
-                max: 40,
+                min: TEMP_AXIS_MIN_C,
+                max: TEMP_AXIS_MAX_C,
                 position: "right",
                 splitLine: { show: false },
                 axisLabel: { color: textColor },

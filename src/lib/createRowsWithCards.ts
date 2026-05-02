@@ -1,5 +1,9 @@
 import { createDivCard, createSvgCard } from "../vizCard";
 
+/**
+ * Plain string id → div card (for ECharts containers).
+ * Use { id, svg: true } for charts that still render to an <svg> element.
+ */
 export type CardSpec = string | { id: string; svg: true };
 
 export function createRowsWithCards(rows: CardSpec[][], containerSelector: string) {

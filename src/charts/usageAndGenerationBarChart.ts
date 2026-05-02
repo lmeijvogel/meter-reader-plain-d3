@@ -1,10 +1,10 @@
 import * as d3 from "d3";
 import * as echarts from "echarts";
 import { GraphDescription } from "../models/GraphDescription";
-import { isEqual } from "date-fns";
 import { stroomBackDeliveryColor, stroomGenerationColor, stroomUsageGraphColor } from "../colors";
 import { PeriodDescription } from "../models/periodDescriptions/PeriodDescription";
 import { ValueWithTimestamp } from "../models/ValueWithTimestamp";
+import { getChartTextColor, resizeObservers } from "./chartHelpers";
 
 export type UsageAndGenerationBarChartApi = {
     data(periodDescription: PeriodDescription, graphDescription: GraphDescription, data: Data): UsageAndGenerationBarChartApi;
@@ -26,22 +26,24 @@ type ConsolidatedData = {
     backDelivery: number;
 };
 
-function getChartTextColor(): string {
-    return getComputedStyle(document.documentElement).getPropertyValue("--color-text").trim() || "#333";
-}
-
 function consolidateData(input: Data): ConsolidatedData[] {
-    const getDates = (arr: ValueWithTimestamp[]) => arr.map(el => el.timestamp);
-    const dataFields: (keyof Data)[] = ["consumption", "generation", "backDelivery"];
-    const timestamps = d3.sort(d3.union(dataFields.flatMap(field => getDates(input[field]))));
+    const toMap = (arr: ValueWithTimestamp[]) =>
+        new Map(arr.map(el => [el.timestamp.getTime(), el.value]));
+
+    const consumptionMap = toMap(input.consumption);
+    const generationMap = toMap(input.generation);
+    const backDeliveryMap = toMap(input.backDelivery);
+
+    const allMs = new Set([...consumptionMap.keys(), ...generationMap.keys(), ...backDeliveryMap.keys()]);
+    const timestamps = d3.sort([...allMs].map(ms => new Date(ms)));
 
     return timestamps.map(ts => {
-        const consumption = input.consumption.find(el => isEqual(el.timestamp, ts))?.value ?? 0;
-        const generation = input.generation.find(el => isEqual(el.timestamp, ts))?.value ?? 0;
-        const backDelivery = input.backDelivery.find(el => isEqual(el.timestamp, ts))?.value ?? 0;
-
+        const ms = ts.getTime();
+        const consumption = consumptionMap.get(ms) ?? 0;
+        const generation = generationMap.get(ms) ?? 0;
         // backDelivery is already negative in the input (negated in fetchAndDrawStroomChart)
         // solarSelfUse = total generation minus what went back = generation + backDelivery (since backDelivery < 0)
+        const backDelivery = backDeliveryMap.get(ms) ?? 0;
         return {
             timestamp: ts,
             gridSource: consumption,
@@ -72,8 +74,11 @@ export function usageAndGenerationBarChart(): UsageAndGenerationBarChartApi {
         let chart = echarts.getInstanceByDom(el);
         if (!chart) {
             chart = echarts.init(el);
-            const ro = new ResizeObserver(() => chart!.resize());
-            ro.observe(el);
+            if (!resizeObservers.has(el)) {
+                const ro = new ResizeObserver(() => echarts.getInstanceByDom(el)?.resize());
+                ro.observe(el);
+                resizeObservers.set(el, ro);
+            }
         }
 
         const pd = currentPeriodDescription;
