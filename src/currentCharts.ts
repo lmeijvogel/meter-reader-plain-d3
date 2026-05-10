@@ -16,15 +16,47 @@ import {
 } from "./colors";
 import { mergeNewWithOldValues } from "./lib/mergeNewWithOldValues";
 import { createRowsWithCards } from "./lib/createRowsWithCards";
-import { CurrentPowerUsageGraphDescription, CurrentGasUsageGraphDescription } from "./models/GraphDescription";
+import { CurrentPowerUsageGraphDescription } from "./models/GraphDescription";
 import { ValueWithTimestamp } from "./models/ValueWithTimestamp";
 import { setCardTitle } from "./vizCard";
-import { HourDescription } from "./models/periodDescriptions/HourDescription";
 import { LastHourDescription } from "./models/periodDescriptions/LastHourDescription";
-import { barChart } from "./charts/barChart";
+import { gasUsageBurstsChart } from "./charts/gasUsageBurstsChart";
 
 type CurrentFields = { current: ValueWithTimestamp[] };
 type GasFields = { gas: ValueWithTimestamp[] };
+
+const MAX_BURST_GAP_MINUTES = 120;
+const MAX_BURSTS = 5;
+
+function buildGasBursts(measurements: ValueWithTimestamp[]): ValueWithTimestamp[][] {
+    const sorted = [...measurements].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    if (sorted.length === 0) return [];
+
+    const bursts: ValueWithTimestamp[][] = [];
+    let current: ValueWithTimestamp[] = [];
+
+    for (let i = 0; i < sorted.length; i++) {
+        if (i > 0) {
+            const gapMinutes =
+                (sorted[i].timestamp.getTime() - sorted[i - 1].timestamp.getTime()) / 60000;
+
+            if (gapMinutes > MAX_BURST_GAP_MINUTES) {
+                bursts.push(current);
+                current = [];
+            } else {
+                let t = addMinutes(sorted[i - 1].timestamp, 10);
+                while (t < sorted[i].timestamp) {
+                    current.push({ timestamp: t, value: 0 });
+                    t = addMinutes(t, 10);
+                }
+            }
+        }
+        current.push(sorted[i]);
+    }
+    bursts.push(current);
+
+    return bursts.filter((b) => b.some((p) => p.value > 0)).slice(-MAX_BURSTS);
+}
 
 export class CurrentDataTab {
     private readonly powerUsageGauge = gauge()
@@ -41,7 +73,7 @@ export class CurrentDataTab {
 
     private lastHourDescription = new LastHourDescription();
     private readonly recentCurrentGraph = lineChart().minMaxCalculation("quantile");
-    private readonly recentGasGraph = barChart().color(gasGraphColor);
+    private readonly recentGasGraph = gasUsageBurstsChart().color(gasGraphColor);
 
     private pageInvisibleTimestamp: Date | undefined;
 
@@ -138,15 +170,14 @@ export class CurrentDataTab {
         };
     };
 
-    // TODO: replace with real API fetch when backend is ready
     private retrieveGasUsage = async (): Promise<ValueWithTimestamp[]> => {
-        const response = await fetch("/api/gas/recent");
+        const response = await fetch("/api/gas/recent?minutes=10080");
         if (!response.ok) throw new Error(`Failed to fetch gas usage: ${response.status}`);
         const json = await response.json();
 
         return json.map((row: any) => ({
             timestamp: new Date(Date.parse(row.timestamp)),
-            value: Number(row.power),
+            value: Number(row.gas_usage),
         }));
     };
 
@@ -217,28 +248,10 @@ export class CurrentDataTab {
         const recentGasContainer = recentGasCard.select(".chart");
         setCardTitle(recentGasCard, "Gasverbruik");
 
-        const sorted = [...gas.gas].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-        if (sorted.length === 0) return;
+        const bursts = buildGasBursts(gas.gas);
+        if (bursts.length === 0) return;
 
-        // Fill zeros for interior gaps between readings, but not after the last one
-        const padded: ValueWithTimestamp[] = [];
-        for (let i = 0; i < sorted.length; i++) {
-            if (i > 0) {
-                let t = addMinutes(sorted[i - 1].timestamp, 10);
-                while (t < sorted[i].timestamp) {
-                    padded.push({ timestamp: t, value: 0 });
-                    t = addMinutes(t, 10);
-                }
-            }
-            padded.push(sorted[i]);
-        }
-
-        const lastElement = padded.at(-1)!;
-        const endOfPeriod = addMinutes(lastElement.timestamp, 1);
-
-        const periodDescription = new HourDescription({ endOfPeriod });
-        const graphDescription = new CurrentGasUsageGraphDescription(periodDescription);
-        this.recentGasGraph.data(periodDescription, graphDescription, padded);
+        this.recentGasGraph.data(bursts);
         recentGasContainer.call(this.recentGasGraph.call);
     }
 
